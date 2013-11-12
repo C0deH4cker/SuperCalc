@@ -39,14 +39,14 @@ Variables are supported:
 
 As are functions:
 
-    >>> f(x) = 3x + 4
+	>>> f(x) = 3x + 4
 	f
 	>>> f(7)
 	25
 
 Even with multiple arguments:
 
-    >>> f(x, y) = x + y
+	>>> f(x, y) = x + y
 	f
 	>>> f(3, 5)
 	8
@@ -57,11 +57,26 @@ Even with multiple arguments:
 
 Error messages attempt to be clear:
 
-    >>> 
+	>>> 3 / (1 - 1)
+	Math Error: Division by zero.
+	>>> sqrt()
+	Type Error: Builtin 'sqrt' takes 1 arguments, not 0.
+	>>> sqrt(4, 3)
+	Type Error: Builtin 'sqrt' takes 1 arguments, not 2.
+	>>> sqrt(-1)
+	Math Error: Builtin function 'sqrt' returned an invalid value.
+	>>> a
+	Name Error: No variable named 'a' found.
+	>>> 17 $ 8
+	Syntax Error: Unexpected character: '$'.
+	>>> 8 +
+	Syntax Error: Premature end of input.
+	>>> pi(1, 2)
+	Type Error: Builtin 'pi' is not a function.
 
 
 To build on Linux, you need Automake and Autoconf:
 
-    $ ./autogen.sh
-    $ ./configure
-    $ make
+	$ ./autogen.sh
+	$ ./configure
+	$ make
