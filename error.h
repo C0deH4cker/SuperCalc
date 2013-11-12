@@ -53,6 +53,8 @@ const char* kBadOpTypeStr;
 const char* kBadCharStr;
 const char* kBuiltinArgsStr;
 const char* kBuiltinNotFuncStr;
+const char* kEarlyEndStr;
+
 const char* kAllocErrStr;
 const char* kBadValStr;
 const char* kBadVarStr;
@@ -64,6 +66,7 @@ const char* kBadVarStr;
 #define badChar(ch)					syntaxError(kBadCharStr, (ch))
 #define builtinArgs(name, n1, n2)	typeError(kBuiltinArgsStr, (name), (n1), (n2))
 #define builtinNotFunc(name)		typeError(kBuiltinNotFuncStr, (name))
+#define earlyEnd()					syntaxError(kEarlyEndStr)
 
 /* Death macros */
 #define allocError()				die(kAllocErrStr)

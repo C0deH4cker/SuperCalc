@@ -58,7 +58,7 @@ Expression* Expression_parse(const char** expr) {
 		if(val->type == VAL_END) {
 			/* Empty input */
 			Value_free(val);
-			var = VarErr(syntaxError("Expected expression."));
+			var = VarErr(earlyEnd());
 			return Expression_new(var);
 		}
 		

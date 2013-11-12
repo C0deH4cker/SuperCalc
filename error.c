@@ -16,16 +16,18 @@
 
 
 
-const char* kNullErrStr		   = "NULL pointer value.";
-const char* kDivByZeroStr	   = "Division by zero.";
-const char* kVarNotFoundStr	   = "No variable named '%s' found.";
-const char* kBadOpTypeStr	   = "Bad %s operand type: %d.";
-const char* kBadCharStr		   = "Unexpected character: '%c'.";
-const char* kBuiltinArgsStr    = "Builtin '%s' takes %u arguments, not %u.";
-const char* kBuiltinNotFuncStr = "Builtin '%s' is not a function.";
-const char* kAllocErrStr	   = "Unable to allocate memory.";
-const char* kBadValStr		   = "Unexpected value type: %d.";
-const char* kBadVarStr		   = "Unexpected variable type: %d.";
+const char* kNullErrStr			= "NULL pointer value.";
+const char* kDivByZeroStr		= "Division by zero.";
+const char* kVarNotFoundStr		= "No variable named '%s' found.";
+const char* kBadOpTypeStr		= "Bad %s operand type: %d.";
+const char* kBadCharStr			= "Unexpected character: '%c'.";
+const char* kBuiltinArgsStr		= "Builtin '%s' takes %u arguments, not %u.";
+const char* kBuiltinNotFuncStr	= "Builtin '%s' is not a function.";
+const char* kEarlyEndStr		= "Premature end of input.";
+
+const char* kAllocErrStr		= "Unable to allocate memory.";
+const char* kBadValStr			= "Unexpected value type: %d.";
+const char* kBadVarStr			= "Unexpected variable type: %d.";
 
 
 static const char* error_messages[] = {

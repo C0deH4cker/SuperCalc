@@ -1,21 +1,30 @@
 #SuperCalc
 
-A mathematical expression parser and evaluator plus more.
+#####A mathematical expression parser and evaluator plus more.
 
 
 Currently, SuperCalc supports the following binary operators:
-* Addition (a + b)
-* Subtraction (a - b)
-* Multiplication (a * b)
-* Division (a / b)
-* Modulus (a % b)
-* Power (a ^ b)
+
+* Addition (`a + b`)
+* Subtraction (`a - b`)
+* Multiplication (`a * b`)
+* Division (`a / b`)
+* Modulus (`a % b`)
+* Power (`a ^ b`)
 
 SuperCalc also supports the following unary operators:
-* Negation (-x)
-* Factorial (x!)
 
-SuperCalc likes to be as precise as it knows how, so floating point values are avoided as much as possible. Even for division and negative powers, SuperCalc will attempt to use fractions instead of floating point values.
+* Negation (`-x`)
+* Factorial (`x!`)
+
+SuperCalc likes to be as precise as it knows how, so floating point values are avoided as much as possible. Even for division and negative powers, SuperCalc will attempt to use fractions as a value type instead of floating point values.
+
+Example of using fractions:
+
+    >>> (2 / 7) ^ 2
+    4/49 (0.081632653061224)
+    >>> -(3 + 4!/7)^3
+    -91125/343 (-265.670553935860084)
 
 Variables are supported:
 
@@ -25,6 +34,8 @@ Variables are supported:
     15
     >>> b = 2 * a + 4
     14
+    >>> ans + 4
+    18
 
 As are functions:
 
@@ -44,10 +55,13 @@ Even with multiple arguments:
 	>>> g(1, 2, 3)
 	9
 
+Error messages attempt to be clear:
 
-To build on Linux: you need Automake and Autoconf.
-```
-./autogen.sh
-./configure
-make
-```
+    >>> 
+
+
+To build on Linux, you need Automake and Autoconf:
+
+    $ ./autogen.sh
+    $ ./configure
+    $ make

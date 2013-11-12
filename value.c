@@ -287,6 +287,14 @@ Value* Value_parse(const char** expr) {
 			return val;
 		}
 		
+		/* End of input? */
+		if(val->type == VAL_END) {
+			if(tree) BinOp_free(tree);
+			
+			Value_free(val);
+			return ValErr(earlyEnd());
+		}
+		
 		/* Special case: negative value */
 		if(val->type == VAL_NEG) {
 			/* XXX: Is this right? */
@@ -435,6 +443,9 @@ static Value* parseToken(const char** expr) {
 	trimSpaces(expr);
 	
 	if(token == NULL) {
+		if(**expr == '\0')
+			return ValErr(earlyEnd());
+		
 		return ValErr(badChar(**expr));
 	}
 	
