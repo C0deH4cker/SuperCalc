@@ -75,6 +75,8 @@ Error messages attempt to be clear:
 	Type Error: Builtin 'pi' is not a function.
 
 
+##Building
+
 To build on Linux, you need Automake and Autoconf:
 
 	$ ./autogen.sh

@@ -62,7 +62,7 @@ Value* FuncCall_eval(FuncCall* call, Context* ctx) {
 		}
 		else {
 			/* Just multiply the variable by the value in the parentheses */
-			BinOp* mul = BinOp_new(BIN_MUL, var->val, evaluated->args[0]);
+			BinOp* mul = BinOp_new(BIN_MUL, var->val, Value_copy(evaluated->args[0]));
 			ret = BinOp_eval(mul, ctx);
 			BinOp_free(mul);
 		}
