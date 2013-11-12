@@ -50,10 +50,14 @@ Function* Function_copy(Function* func) {
 }
 
 Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
+	if(func->argcount != arglist->count) {
+		return ValErr(typeError("Function expects %u arguments, not %u.", func->argcount, arglist->count));
+	}
+	
 	Context* locals = Context_copy(ctx);
 	
 	unsigned i;
-	for(i = 0; i < func->argcount; i++) {
+	for(i = 0; i < arglist->count; i++) {
 		Value* val = Value_eval(arglist->args[i], ctx);
 		Variable* arg;
 		

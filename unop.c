@@ -104,7 +104,7 @@ char* UnOp_verbose(UnOp* term, int indent) {
 	char* current = spaces(indent);
 	char* a = Value_verbose(term->a, indent + IWIDTH);
 	
-	asprintf(&ret, "%c (\n%s[a] %s\n%s)", UnOp_getChar(term->type),
+	asprintf(&ret, "%c (\n%s%s\n%s)", UnOp_getChar(term->type),
 			 spacing, a,
 			 current);
 	

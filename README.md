@@ -1,4 +1,49 @@
-TODO: Write a README :P
+#SuperCalc
+
+A mathematical expression parser and evaluator plus more.
+
+
+Currently, SuperCalc supports the following binary operators:
+* Addition (a + b)
+* Subtraction (a - b)
+* Multiplication (a * b)
+* Division (a / b)
+* Modulus (a % b)
+* Power (a ^ b)
+
+SuperCalc also supports the following unary operators:
+* Negation (-x)
+* Factorial (x!)
+
+SuperCalc likes to be as precise as it knows how, so floating point values are avoided as much as possible. Even for division and negative powers, SuperCalc will attempt to use fractions instead of floating point values.
+
+Variables are supported:
+
+    >>> a = 5
+    5
+    >>> a * 3
+    15
+    >>> b = 2 * a + 4
+    14
+
+As are functions:
+
+    >>> f(x) = 3x + 4
+	f
+	>>> f(7)
+	25
+
+Even with multiple arguments:
+
+    >>> f(x, y) = x + y
+	f
+	>>> f(3, 5)
+	8
+	>>> g(x, y, z) = f(x, y) * z
+	g
+	>>> g(1, 2, 3)
+	9
+
 
 To build on Linux: you need Automake and Autoconf.
 ```
