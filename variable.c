@@ -125,10 +125,10 @@ Value* Variable_eval(const char* name, Context* ctx) {
 	/* Look up variable */
 	Variable* var = Variable_get(ctx, name);
 	if(var == NULL) {
-		return ValErr(varNotFound(name));
+		ret = ValErr(varNotFound(name));
 	}
 	else if(var->type == VAR_FUNC) {
-		return ValVar(name);
+		ret = ValErr(typeError("Variable '%s' is a function.", name));
 	}
 	else if(var->type == VAR_BUILTIN) {
 		ArgList* noArgs = ArgList_new(0);

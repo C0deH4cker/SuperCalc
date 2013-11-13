@@ -2,7 +2,6 @@
 
 #####A mathematical expression parser and evaluator plus more.
 
-
 Currently, SuperCalc supports the following binary operators:
 
 * Addition (`a + b`)
@@ -78,6 +77,8 @@ Variables are supported:
 	>>> ans + 4
 	18
 
+Variable names may only contain alphanumeric characters and '_', but the first character may not be a number.
+
 Shorthand notations for variable modification work as well using any of the binary operators:
 
 	>>> x = 4
@@ -141,6 +142,25 @@ Functions can use global variables:
 	>>> other(4)
 	16
 
+Functions *are* variables:
+
+	>>> f(x, y) = x^2 - y^2
+	>>> g = f
+	>>> g(4, 3)
+	7
+
+Variables can be deleted using `~`:
+
+	>>> a = 4
+	4
+	>>> ~a
+	>>> a
+	Name Error: No variable named 'a' found.
+	>>> f(x) = 2x + 5
+	>>> ~f
+	>>> f(3)
+	Name Error: No variable named 'f' found.
+
 Error messages attempt to be clear:
 
 	>>> 3 / (1 - 1)
@@ -160,6 +180,64 @@ Error messages attempt to be clear:
 	>>> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
+For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree.
+
+Examples of verbose printing:
+
+	>>> ? 3 + 4 - 2
+	((3 + 4) - 2)
+	5
+	>>> ?? 8 - 9(6^2 + 3/7)^3
+	- (
+	  [a] 8
+	  [b] * (
+	    [a] 9
+	    [b] ^ (
+	      [a] + (
+	        [a] ^ (
+	          [a] 6
+	          [b] 2
+	        )
+	        [b] / (
+	          [a] 3
+	          [b] 7
+	        )
+	      )
+	      [b] 3
+	    )
+	  )
+	)
+	(8 - (9 * (((6 ^ 2) + (3 / 7)) ^ 3)))
+	-149229631/343 (-435071.810495627)
+
+Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of it's body.
+
+Examples of printing functions verbosely:
+
+	>>> f(x) = 3x
+	>>> ?f
+	f(x) = (3 * x)
+	>>> g(x, y) = x^2 - 2x*y + 1
+	>>> ??g
+	g(x, y) {
+	  + (
+	    [a] - (
+	      [a] ^ (
+	        [a] x
+	        [b] 2
+	      )
+	      [b] * (
+	        [a] * (
+	          [a] 2
+	          [b] x
+	        )
+	        [b] y
+	      )
+	    )
+	    [b] 1
+	  )
+	}
+	g(x, y) = (((x ^ 2) - ((2 * x) * y)) + 1)
 
 ##Building
 

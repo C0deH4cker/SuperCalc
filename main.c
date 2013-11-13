@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 		Expression_free(expr);
 		
 		/* Print result */
-		Value_print(result);
+		Value_print(result, ctx);
 		
 		Value_free(result);
 	}

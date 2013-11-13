@@ -211,18 +211,38 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 	Variable* var = expr->var;
 	
 	if(var->type == VAR_VALUE) {
+		/* Variable assignment */
+		if(var->val->type == VAL_VAR) {
+			/* Right side is a variable */
+			Variable* func = Variable_get(ctx, var->val->name);
+			if(func == NULL)
+				return ValErr(varNotFound(var->val->name));
+			
+			if(func->type != VAR_BUILTIN) {
+				if(var->name != NULL)
+					Context_set(ctx, var->name, func);
+				
+				return ValVar(var->val->name);
+			}
+		}
+		
+		/* Right side is an expression */
 		ret = Value_eval(var->val, ctx);
 		
-		/* As long as there wasn't an error, assign the new values */
-		if(ret->type != VAL_ERR) {
-			Value_free(var->val);
-			var->val = Value_copy(ret);
-			
-			if(var->name != NULL)
-				Context_set(ctx, var->name, var);
-			
-			Context_set(ctx, "ans", var);
-		}
+		/* If an error occurred, bail */
+		if(ret->type == VAL_ERR)
+			return ret;
+		
+		/* This means ret must be a Value */
+		Value_free(var->val);
+		var->val = Value_copy(ret);
+		
+		/* Update ans */
+		Context_set(ctx, "ans", var);
+		
+		/* Save the newly evaluated variable */
+		if(var->name != NULL)
+			Context_set(ctx, var->name, var);
 	}
 	else if(var->type == VAR_FUNC) {
 		ret = ValVar(var->name);
@@ -271,7 +291,6 @@ void Expression_print(Expression* expr, Context* ctx, int verbosity) {
 	if(verbosity >= 2) {
 		/* Dump expression tree */
 		char* tree = Expression_verbose(expr, ctx);
-		fprintf(stderr, "Dumping parse tree:\n");
 		printf("%s\n", tree);
 		free(tree);
 	}

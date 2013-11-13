@@ -144,7 +144,7 @@ char* ArgList_verbose(ArgList* arglist, int indent) {
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		Value* arg = arglist->args[i];
-		char* argstr = Value_verbose(arg, indent + IWIDTH);
+		char* argstr = Value_verbose(arg, indent);
 		char* curarg;
 		
 		asprintf(&curarg, "%s[%d] %s\n", spacing, i, argstr);

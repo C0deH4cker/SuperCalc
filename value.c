@@ -586,10 +586,15 @@ char* Value_repr(Value* val) {
 	return ret;
 }
 
-void Value_print(Value* val) {
+void Value_print(Value* val, Context* ctx) {
 	if(val->type == VAL_VAR) {
-		/* Nothing to print */
-		return;
+		Variable* var = Variable_get(ctx, val->name);
+		
+		/* Don't try to evaluate a function */
+		if(var->type == VAR_FUNC)
+			return;
+		
+		val = Variable_eval(val->name, ctx);
 	}
 	
 	if(val->type == VAL_ERR) {
