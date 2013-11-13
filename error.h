@@ -64,7 +64,7 @@ const char* kBadVarStr;
 #define varNotFound(name)			nameError(kVarNotFoundStr, (name))
 #define badOpType(op, type)			typeError(kBadOpTypeStr, (op), (type))
 #define badChar(ch)					syntaxError(kBadCharStr, (ch))
-#define builtinArgs(name, n1, n2)	typeError(kBuiltinArgsStr, (name), (n1), (n2))
+#define builtinArgs(name, n1, n2)	typeError(kBuiltinArgsStr, (name), (n1), (n1) == 1 ? "" : "s", (n2))
 #define builtinNotFunc(name)		typeError(kBuiltinNotFuncStr, (name))
 #define earlyEnd()					syntaxError(kEarlyEndStr)
 
