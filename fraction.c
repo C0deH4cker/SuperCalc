@@ -30,8 +30,8 @@ static int fracCmp(Fraction* a, Fraction* b);
 Fraction* Fraction_new(long long numerator, long long denominator) {
 	Fraction* ret = fmalloc(sizeof(*ret));
 	
-	ret->n = numerator;
-	ret->d = denominator;
+	ret->n = numerator * (denominator < 0 ? -1 : 1);
+	ret->d = ABS(denominator);
 	
 	Fraction_simplify(ret);
 	

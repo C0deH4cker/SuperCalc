@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
 		
 		/* If the result is a fraction, also print out the floating point representation */
 		if(result->type == VAL_FRAC) {
-			printf(" (%.*f)", DBL_DIG, Fraction_asReal(result->frac));
+			printf(" (%.*g)", DBL_DIG, Fraction_asReal(result->frac));
 		}
 		
 		putchar('\n');

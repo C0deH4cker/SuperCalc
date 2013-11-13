@@ -126,7 +126,9 @@ EVAL_FUNC(acsch, asinh(1 / a[0]), 1);
 EVAL_FUNC(acoth, atanh(1 / a[0]), 1);
 
 EVAL_FUNC(log, log10(a[0]), 1);
+EVAL_FUNC(log2, log2(a[0]), 1);
 EVAL_FUNC(ln, log(a[0]), 1);
+EVAL_FUNC(logbase, log(a[0]) / log(a[1]), 2);
 
 
 static const char* math_names[] = {
@@ -140,7 +142,8 @@ static const char* math_names[] = {
 	"sech", "csch", "coth",
 	"asinh", "acosh", "atanh",
 	"asech", "acsch", "acoth",
-	"log", "ln", "atan2"
+	"log", "log2", "ln",
+	"logbase", "atan2"
 };
 
 static builtin_eval_t math_funcs[] = {
@@ -154,7 +157,8 @@ static builtin_eval_t math_funcs[] = {
 	&eval_sech, &eval_csch, &eval_coth,
 	&eval_asinh, &eval_acosh, &eval_atanh,
 	&eval_asech, &eval_acsch, &eval_acoth,
-	&eval_log, &eval_ln, &eval_atan2
+	&eval_log, &eval_log2, &eval_ln,
+	&eval_logbase, &eval_atan2
 };
 
 void register_math(Context* ctx) {

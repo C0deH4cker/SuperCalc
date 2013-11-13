@@ -506,7 +506,7 @@ char* Value_verbose(Value* val, int indent) {
 			break;
 		
 		case VAL_REAL:
-			asprintf(&ret, "%.*f", DBL_DIG, val->rval);
+			asprintf(&ret, "%.*g", DBL_DIG, val->rval);
 			break;
 		
 		case VAL_FRAC:
@@ -551,7 +551,7 @@ char* Value_repr(Value* val) {
 			break;
 		
 		case VAL_REAL:
-			asprintf(&ret, "%.*f", DBL_DIG, val->rval);
+			asprintf(&ret, "%.*g", DBL_DIG, val->rval);
 			break;
 		
 		case VAL_FRAC:
