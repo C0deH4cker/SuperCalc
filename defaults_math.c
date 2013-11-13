@@ -23,7 +23,7 @@
 		return ValErr(builtinNotFunc(#name)); \
 	} \
 	if(arglist->count == 1) { \
-		return ValExpr(BinOp_new(BIN_MUL, ValReal((val)), arglist->args[0])); \
+		return ValExpr(BinOp_new(BIN_MUL, ValReal((val)), Value_copy(arglist->args[0]))); \
 	} \
 	return ValReal((val)); \
 }

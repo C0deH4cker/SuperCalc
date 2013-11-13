@@ -24,7 +24,7 @@ struct Function {
 
 
 /* Constructor */
-Function* Function_new(unsigned argcount, const char* const* argnames, Value* body);
+Function* Function_new(unsigned argcount, char** argnames, Value* body);
 
 /* Destructor */
 void Function_free(Function* func);

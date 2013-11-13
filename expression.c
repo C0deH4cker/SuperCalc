@@ -64,6 +64,12 @@ Expression* Expression_parse(const char** expr) {
 		
 		/* Now parse the left side */
 		char* name = nextToken(expr);
+		if(name == NULL) {
+			Value_free(val);
+			var = VarErr(syntaxError("No variable to assign to."));
+			return Expression_new(var);
+		}
+		
 		trimSpaces(expr);
 		
 		if(**expr == '(') {
@@ -79,6 +85,16 @@ Expression* Expression_parse(const char** expr) {
 			char* arg = nextToken(expr);
 			
 			if(arg == NULL) {
+				if(**expr == ')') {
+					/* Empty parameter list means function with no args */
+					free(args);
+					var = VarFunc(name, Function_new(0, NULL, val));
+					free(name);
+					
+					return Expression_new(var);
+				}
+				
+				/* Invalid character */
 				Value_free(val);
 				free(args);
 				free(name);
@@ -91,9 +107,10 @@ Expression* Expression_parse(const char** expr) {
 			while(**expr == ',' || **expr == ')') {
 				args[len++] = arg;
 				
-				if(*(*expr)++ == ')') {
+				if(**expr == ')')
 					break;
-				}
+				
+				(*expr)++;
 				
 				/* Expand argument array if it's too small */
 				if(len >= size) {
@@ -102,23 +119,60 @@ Expression* Expression_parse(const char** expr) {
 				}
 				
 				arg = nextToken(expr);
+				if(arg == NULL) {
+					/* Invalid character */
+					Value_free(val);
+					free(name);
+					/* Free argument names and return */
+					unsigned i;
+					for(i = 0; i < len; i++) {
+						free(args[i]);
+					}
+					free(args);
+					
+					var = VarErr(badChar(**expr));
+					return Expression_new(var);
+				}
+				
 				trimSpaces(expr);
 			}
 			
-			trimSpaces(expr);
-			
-			if(**expr != '=') {
+			if(**expr != ')') {
+				/* Invalid character inside argument name list */
 				Value_free(val);
-				free(args);
 				free(name);
+				
+				/* Free argument names and return */
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
 				
 				var = VarErr(badChar(**expr));
 				return Expression_new(var);
 			}
 			
+			/* Skip closing parenthesis */
+			(*expr)++;
+			trimSpaces(expr);
 			
-			Function* func = Function_new(len, (const char* const*)args, val);
-			free(args);
+			if(**expr != '=') {
+				Value_free(val);
+				free(name);
+				
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
+				
+				var = VarErr(badChar(**expr));
+				return Expression_new(var);
+			}
+			
+			/* Construct function and return it */
+			Function* func = Function_new(len, args, val);
 			var = VarFunc(name, func);
 			free(name);
 			
@@ -181,6 +235,10 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 	return ret;
 }
 
+bool Expression_didError(Expression* expr) {
+	return (expr->var->type == VAR_ERR);
+}
+
 char* Expression_verbose(Expression* expr, int indent) {
 	return Variable_verbose(expr->var, indent);
 }
@@ -189,4 +247,26 @@ char* Expression_repr(Expression* expr) {
 	return Variable_repr(expr->var);
 }
 
+void Expression_print(Expression* expr, int verbosity) {
+	/* Error parsing? */
+	if(Expression_didError(expr)) {
+		Error_raise(expr->var->err);
+		return;
+	}
+	
+	if(verbosity >= 2) {
+		/* Dump expression tree */
+		char* tree = Expression_verbose(expr, 0);
+		fprintf(stderr, "Dumping parse tree:\n");
+		printf("%s\n", tree);
+		free(tree);
+	}
+	
+	if(verbosity >= 1) {
+		/* Print parenthesized expression */
+		char* reprinted = Expression_repr(expr);
+		printf("%s\n", reprinted);
+		free(reprinted);
+	}
+}
 

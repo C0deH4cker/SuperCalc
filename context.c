@@ -28,6 +28,8 @@ Context* Context_new(void) {
 	
 	ret->varlist = NULL;
 	
+	Context_add(ret, VarValue("ans", ValInt(0)));
+	
 	return ret;
 }
 
@@ -116,6 +118,11 @@ Variable* Context_get(Context* ctx, const char* name) {
 }
 
 void Context_set(Context* ctx, const char* name, Variable* var) {
+	if(var->type == VAR_FUNC && strcmp(name, "ans") == 0) {
+		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."));
+		return;
+	}
+	
 	Variable* cpy = Variable_copy(var);
 	Variable* dst = Context_get(ctx, name);
 	
@@ -130,7 +137,7 @@ void Context_set(Context* ctx, const char* name, Variable* var) {
 	}
 	else {
 		if(dst->type == VAR_BUILTIN) {
-			SHOW(typeError("Unable to modify builtin variable '%s'.", dst->name));
+			RAISE(typeError("Unable to modify builtin variable '%s'.", dst->name));
 			return;
 		}
 		
@@ -143,10 +150,15 @@ void Context_del(Context* ctx, const char* name) {
 	struct VarList* cur = ctx->varlist;
 	struct VarList* prev = NULL;
 	
+	if(strcmp(name, "ans") == 0) {
+		RAISE(nameError("Cannot delete special variable 'ans'."));
+		return;
+	}
+	
 	while(cur) {
 		if(strcmp(cur->var->name, name) == 0) {
 			if(cur->var->type == VAR_BUILTIN) {
-				SHOW(typeError("Cannot delete built-in variable '%s'.", name));
+				RAISE(typeError("Cannot delete builtin variable '%s'.", name));
 				return;
 			}
 			
@@ -163,12 +175,14 @@ void Context_del(Context* ctx, const char* name) {
 			Variable_free(cur->var);
 			free(cur);
 			
-			break;
+			return;
 		}
 		
 		prev = cur;
 		cur = cur->next;
 	}
+	
+	RAISE(varNotFound(name));
 }
 
 

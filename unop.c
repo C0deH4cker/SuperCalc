@@ -30,7 +30,7 @@ static Value* unop_fact(Context* ctx, Value* a) {
 	Value* ret;
 	
 	if(a->type != VAL_INT) {
-		return ValErr(mathError("Factorial operand must be an integer."));
+		return ValErr(typeError("Factorial operand must be an integer."));
 	}
 	
 	if(a->ival > 20) {

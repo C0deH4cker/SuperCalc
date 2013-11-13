@@ -291,8 +291,7 @@ Value* Value_parse(const char** expr) {
 		if(val->type == VAL_END) {
 			if(tree) BinOp_free(tree);
 			
-			Value_free(val);
-			return ValErr(earlyEnd());
+			return val;
 		}
 		
 		/* Special case: negative value */
@@ -326,7 +325,7 @@ Value* Value_parse(const char** expr) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
-			if(**expr != '\0')
+			if(**expr == ',')
 				(*expr)++;
 			
 			/* If there was only one value, return it */
@@ -430,7 +429,7 @@ static Value* parseNum(const char** expr) {
 	}
 	else {
 		/* Both failed to convert the data */
-		ret = ValErr(syntaxError("Unexpected character: %c.", **expr));
+		ret = ValErr(badChar(**expr));
 	}
 	
 	return ret;
@@ -442,12 +441,8 @@ static Value* parseToken(const char** expr) {
 	char* token = nextToken(expr);
 	trimSpaces(expr);
 	
-	if(token == NULL) {
-		if(**expr == '\0')
-			return ValErr(earlyEnd());
-		
+	if(token == NULL)
 		return ValErr(badChar(**expr));
-	}
 	
 	if(**expr == '(') {
 		(*expr)++;
@@ -478,20 +473,25 @@ Value* Value_next(const char** expr) {
 	else if(**expr == '(') {
 		(*expr)++;
 		ret = Value_parse(expr);
+		
+		/* Skip closing parenthesis if it exists */
+		if(**expr == ')')
+			(*expr)++;
+	}
+	else if(**expr == ')') {
+		(*expr)++;
+		return ValEnd();
 	}
 	else {
 		ret = parseToken(expr);
 	}
 	
 	/* Check for unary sign(s) afterwards */
-	while(1) {
+	trimSpaces(expr);
+	while(**expr == '!') {
+		(*expr)++;
 		trimSpaces(expr);
-		
-		if(**expr == '!') {
-			(*expr)++;
-			ret = ValUnary(UnOp_new(UN_FACT, ret));
-		}
-		else break;
+		ret = ValUnary(UnOp_new(UN_FACT, ret));
 	}
 
 	return ret;
@@ -584,5 +584,27 @@ char* Value_repr(Value* val) {
 	}
 	
 	return ret;
+}
+
+void Value_print(Value* val) {
+	if(val->type == VAL_ERR) {
+		/* An error occurred, so print it and continue. */
+		Error_raise(val->err);
+		return;
+	}
+	
+	/* Print the value */
+	char* valString = Value_repr(val);
+	if(valString) {
+		printf("%s", valString);
+		free(valString);
+	}
+	
+	/* If the result is a fraction, also print out the floating point representation */
+	if(val->type == VAL_FRAC) {
+		printf(" (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
+	}
+	
+	putchar('\n');
 }
 

@@ -48,55 +48,44 @@ int main(int argc, char* argv[]) {
 		}
 		trimSpaces(&p);
 		
-		/* Parse the user's input */
-		Expression* expr = Expression_parse(&p);
-		
-		/* Error parsing? */
-		if(expr->var->type == VAR_ERR) {
-			Error_raise(expr->var->err);
-			Expression_free(expr);
+		if(*p == '~') {
+			/* Variable deletion */
+			p++;
+			
+			char* name = nextToken(&p);
+			if(name == NULL) {
+				if(*p == '\0') {
+					RAISE(earlyEnd());
+					continue;
+				}
+				
+				RAISE(badChar(*p));
+				continue;
+			}
+			
+			Context_del(ctx, name);
+			
+			free(name);
+			
 			continue;
 		}
 		
-		if(verbose >= 2) {
-			/* Dump expression tree */
-			char* tree = Expression_verbose(expr, 0);
-			fprintf(stderr, "Dumping parse tree:\n");
-			printf("%s\n", tree);
-			free(tree);
-		}
+		/* Parse the user's input */
+		Expression* expr = Expression_parse(&p);
 		
-		if(verbose >= 1) {
-			/* Print parenthesized expression */
-			char* reprinted = Expression_repr(expr);
-			printf("%s = ", reprinted);
-			free(reprinted);
-		}
+		/* Print expression depending on verbosity */
+		Expression_print(expr, verbose);
+		
+		/* Error? Go to next loop iteration */
+		if(Expression_didError(expr))
+			continue;
 		
 		/* Evaluate expression */
 		Value* result = Expression_eval(expr, ctx);
 		Expression_free(expr);
 		
-		if(result->type == VAL_ERR) {
-			/* An error occurred, so print it and continue. */
-			Error_raise(result->err);
-			Value_free(result);
-			continue;
-		}
-		
-		/* Print the result of the expression */
-		char* resultString = Value_repr(result);
-		if(resultString) {
-			printf("%s", resultString);
-			free(resultString);
-		}
-		
-		/* If the result is a fraction, also print out the floating point representation */
-		if(result->type == VAL_FRAC) {
-			printf(" (%.*g)", DBL_DIG, Fraction_asReal(result->frac));
-		}
-		
-		putchar('\n');
+		/* Print result */
+		Value_print(result);
 		
 		Value_free(result);
 	}

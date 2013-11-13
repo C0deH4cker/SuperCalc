@@ -16,19 +16,11 @@
 #include "context.h"
 
 
-Function* Function_new(unsigned argcount, const char* const* argnames, Value* body) {
+Function* Function_new(unsigned argcount, char** argnames, Value* body) {
 	Function* ret = fmalloc(sizeof(*ret));
 	
 	ret->argcount = argcount;
-	
-	ret->argnames = fmalloc(argcount * sizeof(*ret->argnames));
-	
-	/* Copy all argument names */
-	unsigned i;
-	for(i = 0; i < argcount; i++) {
-		ret->argnames[i] = strdup(argnames[i]);
-	}
-	
+	ret->argnames = argnames;
 	ret->body = body;
 	
 	return ret;
@@ -39,6 +31,7 @@ void Function_free(Function* func) {
 	for(i = 0; i < func->argcount; i++) {
 		free(func->argnames[i]);
 	}
+	free(func->argnames);
 	
 	Value_free(func->body);
 	
@@ -46,7 +39,13 @@ void Function_free(Function* func) {
 }
 
 Function* Function_copy(Function* func) {
-	return Function_new(func->argcount, (const char* const*)func->argnames, Value_copy(func->body));
+	char** argsCopy = fmalloc(func->argcount * sizeof(*argsCopy));
+	unsigned i;
+	for(i = 0; i < func->argcount; i++) {
+		argsCopy[i] = strdup(func->argnames[i]);
+	}
+	
+	return Function_new(func->argcount, argsCopy, Value_copy(func->body));
 }
 
 Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
@@ -123,14 +122,16 @@ static char* argsVerbose(Function* func) {
 char* Function_verbose(Function* func, int indent) {
 	char* ret;
 	
+	char* spacing = spaces(indent + IWIDTH);
 	char* current = spaces(indent);
 	
 	char* args = argsVerbose(func);
 	
-	asprintf(&ret, "(%s) {\n%s\n%s}", args,
-			 Value_verbose(func->body, indent + IWIDTH),
+	asprintf(&ret, "(%s) {\n%s%s\n%s}", args,
+			 spacing, Value_verbose(func->body, indent + IWIDTH),
 			 current);
 	
+	free(spacing);
 	free(current);
 	free(args);
 	

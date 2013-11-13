@@ -128,7 +128,7 @@ Value* Variable_eval(const char* name, Context* ctx) {
 		return ValErr(varNotFound(name));
 	}
 	else if(var->type == VAR_FUNC) {
-		return ValErr(typeError("Variable '%s' is a function.", name));
+		return ValVar(name);
 	}
 	else if(var->type == VAR_BUILTIN) {
 		ArgList* noArgs = ArgList_new(0);

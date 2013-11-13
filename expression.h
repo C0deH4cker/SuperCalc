@@ -27,11 +27,15 @@ void Expression_free(Expression* expr);
 /* Parsing */
 Expression* Expression_parse(const char** expr);
 
+/* Error handling */
+bool Expression_didError(Expression* expr);
+
 /* Evaluation */
 Value* Expression_eval(Expression* expr, Context* ctx);
 
 /* Printing */
 char* Expression_verbose(Expression* expr, int indent);
 char* Expression_repr(Expression* expr);
+void Expression_print(Expression* expr, int verbosity);
 
 #endif

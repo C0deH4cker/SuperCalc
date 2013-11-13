@@ -81,5 +81,6 @@ Value* Value_next(const char** expr);
 /* Printing */
 char* Value_verbose(Value* val, int indent);
 char* Value_repr(Value* val);
+void Value_print(Value* val);
 
 #endif
