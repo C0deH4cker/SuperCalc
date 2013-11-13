@@ -36,7 +36,7 @@ Function* Function_copy(Function* func);
 Value* Function_eval(Function* func, Context* ctx, ArgList* arglist);
 
 /* Printing */
-char* Function_verbose(Function* func, int indent);
+char* Function_verbose(Function* func);
 char* Function_repr(Function* func);
 
 

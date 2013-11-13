@@ -57,7 +57,7 @@ Variable* Variable_get(Context* ctx, const char* name);
 void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */
-char* Variable_verbose(Variable* var, int indent);
+char* Variable_verbose(Variable* var);
 char* Variable_repr(Variable* var);
 
 #endif

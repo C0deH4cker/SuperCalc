@@ -191,16 +191,16 @@ void Variable_update(Variable* dst, Variable* src) {
 	}
 }
 
-char* Variable_verbose(Variable* var, int indent) {
+char* Variable_verbose(Variable* var) {
 	char* ret;
 	
 	if(var->type == VAR_FUNC) {
-		char* func = Function_verbose(var->func, indent);
+		char* func = Function_verbose(var->func);
 		asprintf(&ret, "%s%s", var->name, func);
 		free(func);
 	}
 	else if(var->type == VAR_BUILTIN) {
-		char* blt = Builtin_verbose(var->blt, indent);
+		char* blt = Builtin_verbose(var->blt, 0);
 		if(var->name == NULL) {
 			ret = blt;
 		}
@@ -210,7 +210,7 @@ char* Variable_verbose(Variable* var, int indent) {
 		}
 	}
 	else {
-		char* val = Value_verbose(var->val, indent);
+		char* val = Value_verbose(var->val, 0);
 		if(var->name == NULL) {
 			ret = val;
 		}

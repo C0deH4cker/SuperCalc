@@ -239,15 +239,29 @@ bool Expression_didError(Expression* expr) {
 	return (expr->var->type == VAR_ERR);
 }
 
-char* Expression_verbose(Expression* expr, int indent) {
-	return Variable_verbose(expr->var, indent);
+char* Expression_verbose(Expression* expr, Context* ctx) {
+	/* What an if statement!!! */
+	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
+		/* Return the verbose representation of the variable in ctx */
+		Variable* var = Variable_get(ctx, expr->var->val->name);
+		return Variable_verbose(var);
+	}
+	
+	return Variable_verbose(expr->var);
 }
 
-char* Expression_repr(Expression* expr) {
+char* Expression_repr(Expression* expr, Context* ctx) {
+	/* And another crazy if statement!!! */
+	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
+		/* Return the reprint of the variable in ctx */
+		Variable* var = Variable_get(ctx, expr->var->val->name);
+		return Variable_repr(var);
+	}
+	
 	return Variable_repr(expr->var);
 }
 
-void Expression_print(Expression* expr, int verbosity) {
+void Expression_print(Expression* expr, Context* ctx, int verbosity) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
 		Error_raise(expr->var->err);
@@ -256,7 +270,7 @@ void Expression_print(Expression* expr, int verbosity) {
 	
 	if(verbosity >= 2) {
 		/* Dump expression tree */
-		char* tree = Expression_verbose(expr, 0);
+		char* tree = Expression_verbose(expr, ctx);
 		fprintf(stderr, "Dumping parse tree:\n");
 		printf("%s\n", tree);
 		free(tree);
@@ -264,7 +278,7 @@ void Expression_print(Expression* expr, int verbosity) {
 	
 	if(verbosity >= 1) {
 		/* Print parenthesized expression */
-		char* reprinted = Expression_repr(expr);
+		char* reprinted = Expression_repr(expr, ctx);
 		printf("%s\n", reprinted);
 		free(reprinted);
 	}

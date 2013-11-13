@@ -119,20 +119,18 @@ static char* argsVerbose(Function* func) {
 	return ret;
 }
 
-char* Function_verbose(Function* func, int indent) {
+char* Function_verbose(Function* func) {
 	char* ret;
 	
-	char* spacing = spaces(indent + IWIDTH);
-	char* current = spaces(indent);
+	char* spacing = spaces(IWIDTH);
 	
 	char* args = argsVerbose(func);
 	
-	asprintf(&ret, "(%s) {\n%s%s\n%s}", args,
-			 spacing, Value_verbose(func->body, indent + IWIDTH),
-			 current);
+	asprintf(&ret, "(%s) {\n%s%s\n}", args,
+			 spacing, Value_verbose(func->body, IWIDTH)
+			 );
 	
 	free(spacing);
-	free(current);
 	free(args);
 	
 	return ret;

@@ -587,6 +587,11 @@ char* Value_repr(Value* val) {
 }
 
 void Value_print(Value* val) {
+	if(val->type == VAL_VAR) {
+		/* Nothing to print */
+		return;
+	}
+	
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
 		Error_raise(val->err);

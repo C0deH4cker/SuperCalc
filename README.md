@@ -100,18 +100,15 @@ Shorthand notations for variable modification work as well using any of the bina
 Functions are also supported:
 
 	>>> f(x) = 3x + 4
-	f
 	>>> f(7)
 	25
 
 Even with multiple arguments:
 
 	>>> f(x, y) = x + y
-	f
 	>>> f(3, 5)
 	8
 	>>> g(x, y, z) = f(x, y) * z
-	g
 	>>> g(1, 2, 3)
 	9
 
@@ -120,7 +117,6 @@ Function arguments do not affect variables:
 	>>> x = 7
 	7
 	>>> f(x) = 4x
-	f
 	>>> f(6)
 	24
 	>>> x
@@ -129,7 +125,6 @@ Function arguments do not affect variables:
 Functions can use global variables:
 
 	>>> myFunc(arg) = 3 * arg + glb
-	myFunc
 	>>> glb = 7
 	7
 	>>> myFunc(4)
@@ -139,7 +134,6 @@ Functions can use global variables:
 	>>> myFunc(4)
 	22
 	>>> other(x) = x + ans
-	other
 	>>> 8
 	8
 	>>> other(4)
