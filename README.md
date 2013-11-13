@@ -152,9 +152,9 @@ Error messages attempt to be clear:
 	>>> 3 / (1 - 1)
 	Math Error: Division by zero.
 	>>> sqrt()
-	Type Error: Builtin 'sqrt' takes 1 arguments, not 0.
+	Type Error: Builtin 'sqrt' takes 1 argument, not 0.
 	>>> sqrt(4, 3)
-	Type Error: Builtin 'sqrt' takes 1 arguments, not 2.
+	Type Error: Builtin 'sqrt' takes 1 argument, not 2.
 	>>> sqrt(-1)
 	Math Error: Builtin function 'sqrt' returned an invalid value.
 	>>> a
