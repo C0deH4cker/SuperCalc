@@ -83,8 +83,10 @@ Error* Error_copy(Error* err) {
 void Error_raise(Error* err) {
 	fprintf(stderr, "%s", err->msg);
 	
-	if(!Error_canRecover(err))
+	if(!Error_canRecover(err)) {
+		fprintf(stderr, "Crashing line:\n%s", line);
 		exit(EXIT_FAILURE);
+	}
 }
 
 bool Error_canRecover(Error* err) {
@@ -103,7 +105,7 @@ bool Error_canRecover(Error* err) {
 	}
 }
 
-void die(const char* fmt, ...) {
+void die(const char* file, const char* function, int line, const char* fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
 	
@@ -111,6 +113,7 @@ void die(const char* fmt, ...) {
 	
 	va_end(va);
 	
+	fprintf(stderr, "\n\nFile %s in %s on line %d:\n", file, function, line);
 	Error_raise(err);
 	/* Error_raise will cause the program to die */
 	

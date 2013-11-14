@@ -69,9 +69,10 @@ const char* kBadVarStr;
 #define earlyEnd()					syntaxError(kEarlyEndStr)
 
 /* Death macros */
-#define allocError()				die(kAllocErrStr)
-#define badValType(type)			die(kBadValStr, (type))
-#define badVarType(type)			die(kBadVarStr, (type))
+#define DIE(args...)                die(__FILE__, __FUNCTION__, __LINE__, ##args)
+#define allocError()				DIE(kAllocErrStr)
+#define badValType(type)			DIE(kBadValStr, (type))
+#define badVarType(type)			DIE(kBadVarStr, (type))
 
 /* Constructors */
 Error* Error_new(ERRTYPE type, const char* fmt, ...);
@@ -90,6 +91,6 @@ void Error_raise(Error* err);
 bool Error_canRecover(Error* err);
 
 /* Death function */
-void die(const char* fmt, ...) __attribute__((__noreturn__));
+void die(const char* file, const char* function, int line, const char* fmt, ...) __attribute__((__noreturn__));
 
 #endif

@@ -9,8 +9,16 @@
 #include "generic.h"
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
+
+char* nextLine(void) {
+	fprintf(stderr, ">>> ");
+	fgets(line, sizeof(line), stdin);
+	
+	return line;
+}
 
 void trimSpaces(const char** str) {
 	const char* p = *str;

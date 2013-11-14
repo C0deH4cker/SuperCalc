@@ -19,15 +19,6 @@
 #include "expression.h"
 #include "defaults.h"
 
-
-static char line[1024];
-static char* nextLine(void) {
-	fprintf(stderr, ">>> ");
-	fgets(line, sizeof(line), stdin);
-	
-	return line;
-}
-
 int main(int argc, char* argv[]) {
 	Context* ctx = Context_new();
 	register_math(ctx);

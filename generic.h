@@ -32,7 +32,9 @@
 
 #define IWIDTH 2
 
+char line[1024];
 
+char* nextLine(void);
 void trimSpaces(const char** str);
 char* spaces(int n);
 char* strNULL(void);

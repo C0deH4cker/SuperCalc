@@ -130,7 +130,7 @@ char* UnOp_repr(UnOp* term) {
 			
 		default:
 			/* Shouldn't be reached */
-			die("Unknown unary operator type: %d.", term->type);
+			DIE("Unknown unary operator type: %d.", term->type);
 	}
 	
 	free(val);
