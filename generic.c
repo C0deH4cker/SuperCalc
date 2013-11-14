@@ -14,7 +14,7 @@
 
 
 char* nextLine(void) {
-	fprintf(stderr, ">>> ");
+	printf(">>> ");
 	fgets(line, sizeof(line), stdin);
 	
 	return line;
