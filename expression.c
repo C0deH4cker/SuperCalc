@@ -43,6 +43,7 @@ Expression* Expression_parse(const char** expr) {
 		val = Value_parse(expr);
 		
 		if(val->type == VAL_END) {
+			Value_free(val);
 			var = VarErr(ignoreError());
 		}
 		else if(val->type == VAL_ERR) {
