@@ -61,6 +61,13 @@ Expression* Expression_parse(const char** expr) {
 		equals++;
 		val = Value_parse(&equals);
 		
+		if(val->type == VAL_ERR) {
+			/* A parse error occurred */
+			var = VarErr(Error_copy(val->err));
+			Value_free(val);
+			return Expression_new(var);
+		}
+		
 		if(val->type == VAL_END) {
 			/* Empty input */
 			Value_free(val);
@@ -281,6 +288,11 @@ char* Expression_repr(Expression* expr, Context* ctx) {
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
+		if(var == NULL) {
+			/* If the variable doesn't exist, just return its name */
+			return strdup(expr->var->val->name);
+		}
+		
 		return Variable_repr(var);
 	}
 	
