@@ -128,7 +128,7 @@ Expression* Expression_parse(const char** expr) {
 				/* Expand argument array if it's too small */
 				if(len >= size) {
 					size *= 2;
-					args = frealloc(args, size);
+					args = frealloc(args, size * sizeof(*args));
 				}
 				
 				arg = nextToken(expr);

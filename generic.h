@@ -25,7 +25,7 @@
 })
 
 #define frealloc(mem, size) ({ \
-	void* _mem = realloc((mem), (size)); \
+	__typeof__(mem) _mem = realloc((mem), (size)); \
 	if(_mem == NULL) allocError(); \
 	_mem; \
 })
