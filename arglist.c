@@ -155,7 +155,7 @@ char* ArgList_verbose(ArgList* arglist, int indent) {
 		size_t newlen = strlen(ret) + strlen(curarg);
 		if(newlen > size) {
 			size = newlen;
-			ret = frealloc(ret, size + 1);
+			ret = frealloc(ret, (size + 1) * sizeof(*ret));
 		}
 		
 		strncat(ret, curarg, size);
@@ -186,7 +186,7 @@ char* ArgList_repr(ArgList* arglist) {
 		size_t newlen = strlen(ret) + 2 + strlen(argstr);
 		if(newlen > size) {
 			size = newlen;
-			ret = frealloc(ret, size + 1);
+			ret = frealloc(ret, (size + 1) * sizeof(*ret));
 		}
 		
 		if(i > 0) {
