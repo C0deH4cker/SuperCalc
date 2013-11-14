@@ -277,6 +277,11 @@ char* Expression_verbose(Expression* expr, Context* ctx) {
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
+		if(var == NULL) {
+			/* If the variable doesn't exist, just return its name */
+			return strdup(expr->var->val->name);
+		}
+		
 		return Variable_verbose(var);
 	}
 	

@@ -486,6 +486,10 @@ Value* Value_next(const char** expr) {
 		ret = parseToken(expr);
 	}
 	
+	/* Check if a parse error occurred */
+	if(ret->type == VAL_ERR)
+		return ret;
+	
 	/* Check for unary sign(s) afterwards */
 	trimSpaces(expr);
 	while(**expr == '!') {
