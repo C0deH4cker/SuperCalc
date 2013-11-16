@@ -138,6 +138,10 @@ void Value_free(Value* val) {
 		case VAL_VAR:
 			free(val->name);
 			break;
+		
+		case VAL_ERR:
+			Error_free(val->err);
+			break;
 			
 		default:
 			/* The rest don't need to be freed */
