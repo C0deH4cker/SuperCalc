@@ -369,10 +369,13 @@ Value* BinOp_eval(BinOp* node, Context* ctx) {
 	return ret;
 }
 
-BINTYPE BinOp_nextType(const char** expr) {
+BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
 	BINTYPE ret;
 	
 	trimSpaces(expr);
+	
+	if(**expr == sep || **expr == end)
+		return BIN_END;
 	
 	switch(**expr) {
 		case '+':
@@ -394,8 +397,6 @@ BINTYPE BinOp_nextType(const char** expr) {
 			ret = BIN_POW;
 			break;
 		
-		case ')': /* Closing parenthesis means end of argument list */
-		case ',': /* Comma means end of argument value */
 		case '\0':
 			return BIN_END;
 		

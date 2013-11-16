@@ -47,7 +47,7 @@ BinOp* BinOp_copy(BinOp* node);
 Value* BinOp_eval(BinOp* node, Context* ctx);
 
 /* Tokenizer */
-BINTYPE BinOp_nextType(const char** expr);
+BINTYPE BinOp_nextType(const char** expr, char sep, char end);
 
 /* Operator precedence */
 int BinOp_cmp(BINTYPE a, BINTYPE b);

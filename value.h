@@ -75,7 +75,7 @@ Value* Value_eval(Value* expr, Context* ctx);
 double Value_asReal(Value* val);
 
 /* Tree generator */
-Value* Value_parse(const char** expr);
+Value* Value_parse(const char** expr, char sep, char end);
 
 /* Parsing */
 Value* Value_next(const char** expr);
