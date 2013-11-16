@@ -39,11 +39,16 @@ Builtin* Builtin_copy(Builtin* blt) {
 
 void Builtin_register(Builtin* blt, Context* ctx) {
 	Variable* var = VarBuiltin(blt->name, blt);
-	Context_add(ctx, var);
+	Context_addGlobal(ctx, var);
 }
 
 Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist) {
+	/* Evaluate arguments and call evaluator */
+	ArgList* evaluated = ArgList_eval(arglist, ctx);
 	Value* tmp = blt->evaluator(ctx, arglist);
+	ArgList_free(evaluated);
+	
+	/* Simplify result */
 	Value* ret = Value_eval(tmp, ctx);
 	Value_free(tmp);
 	

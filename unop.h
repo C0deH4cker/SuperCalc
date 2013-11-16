@@ -27,6 +27,7 @@ struct UnOp {
 
 
 /* Constructor */
+/* This method consumes the `a` argument */
 UnOp* UnOp_new(UNTYPE type, Value* a);
 
 /* Destructor */

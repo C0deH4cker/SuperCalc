@@ -590,7 +590,7 @@ char* Value_repr(Value* val) {
 	return ret;
 }
 
-void Value_print(Value* val, Context* ctx) {
+void Value_fprint(FILE* fp, Value* val, Context* ctx) {
 	if(val->type == VAL_VAR) {
 		Variable* var = Variable_get(ctx, val->name);
 		
@@ -610,15 +610,19 @@ void Value_print(Value* val, Context* ctx) {
 	/* Print the value */
 	char* valString = Value_repr(val);
 	if(valString) {
-		printf("%s", valString);
+		fprintf(fp, "%s", valString);
 		free(valString);
 	}
 	
 	/* If the result is a fraction, also print out the floating point representation */
 	if(val->type == VAL_FRAC) {
-		printf(" (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
+		fprintf(fp, " (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
 	}
 	
-	putchar('\n');
+	fputc('\n', fp);
+}
+
+void Value_print(Value* val, Context* ctx) {
+	Value_fprint(stdout, val, ctx);
 }
 

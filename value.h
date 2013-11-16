@@ -9,6 +9,7 @@
 #ifndef _SC_VALUE_H_
 #define _SC_VALUE_H_
 
+#include <stdio.h>
 
 typedef struct Value Value;
 #include "fraction.h"
@@ -49,6 +50,7 @@ struct Value {
 };
 
 /* Value constructors */
+/* Each method which takes an object pointer as an argument consumes it */
 Value* ValEnd(void);
 Value* ValErr(Error* err);
 Value* ValNeg(void);
@@ -81,6 +83,7 @@ Value* Value_next(const char** expr);
 /* Printing */
 char* Value_verbose(Value* val, int indent);
 char* Value_repr(Value* val);
+void Value_fprint(FILE* fp, Value* val, Context* ctx);
 void Value_print(Value* val, Context* ctx);
 
 #endif

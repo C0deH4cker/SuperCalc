@@ -9,6 +9,8 @@
 #ifndef _SC_EXPRESSION_H_
 #define _SC_EXPRESSION_H_
 
+#include <stdio.h>
+
 typedef struct Expression Expression;
 #include "variable.h"
 #include "value.h"
@@ -19,6 +21,11 @@ struct Expression {
 
 
 /* Constructor */
+/*
+ This method consumes the `var` argument, which is an unusual variable:
+  - Its name is NULL unless there is an assignment
+  - Its value is not simplified. It will store the entire expression tree
+*/
 Expression* Expression_new(Variable* var);
 
 /* Destructor */
@@ -36,6 +43,7 @@ Value* Expression_eval(Expression* expr, Context* ctx);
 /* Printing */
 char* Expression_verbose(Expression* expr, Context* ctx);
 char* Expression_repr(Expression* expr, Context* ctx);
+void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity);
 void Expression_print(Expression* expr, Context* ctx, int verbosity);
 
 #endif

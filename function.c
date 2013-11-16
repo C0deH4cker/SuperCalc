@@ -53,7 +53,7 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 		return ValErr(typeError("Function expects %u arguments, not %u.", func->argcount, arglist->count));
 	}
 	
-	Context* locals = Context_copy(ctx);
+	Context_pushLocals(ctx);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
@@ -65,15 +65,15 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 			
 			switch(var->type) {
 				case VAR_VALUE:
-					arg = VarValue(func->argnames[i], var->val);
+					arg = VarValue(func->argnames[i], Value_copy(var->val));
 					break;
 				
 				case VAR_FUNC:
-					arg = VarFunc(func->argnames[i], var->func);
+					arg = VarFunc(func->argnames[i], Function_copy(var->func));
 					break;
 				
 				case VAR_BUILTIN:
-					arg = VarBuiltin(func->argnames[i], var->blt);
+					arg = VarBuiltin(func->argnames[i], Builtin_copy(var->blt));
 					break;
 				
 				default:
@@ -81,13 +81,17 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 			}
 		}
 		else {
-			arg = VarValue(func->argnames[i], arglist->args[i]);
+			arg = VarValue(func->argnames[i], val);
 		}
 		
-		Context_add(locals, arg);
+		Context_addLocal(ctx, arg);
 	}
 	
-	return Value_eval(func->body, locals);
+	Value* ret = Value_eval(func->body, ctx);
+	
+	Context_popLocals(ctx);
+	
+	return ret;
 }
 
 static char* argsVerbose(Function* func) {

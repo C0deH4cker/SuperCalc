@@ -233,7 +233,7 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 			
 			if(func->type != VAR_BUILTIN) {
 				if(var->name != NULL)
-					Context_set(ctx, var->name, func);
+					Context_setGlobal(ctx, var->name, Variable_copy(func));
 				
 				return ValVar(var->val->name);
 			}
@@ -251,15 +251,15 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 		var->val = Value_copy(ret);
 		
 		/* Update ans */
-		Context_set(ctx, "ans", var);
+		Context_setGlobal(ctx, "ans", Variable_copy(var));
 		
 		/* Save the newly evaluated variable */
 		if(var->name != NULL)
-			Context_set(ctx, var->name, var);
+			Context_setGlobal(ctx, var->name, Variable_copy(var));
 	}
 	else if(var->type == VAR_FUNC) {
 		ret = ValVar(var->name);
-		Context_set(ctx, var->name, var);
+		Context_setGlobal(ctx, var->name, Variable_copy(var));
 	}
 	else {
 		badVarType(var->type);
@@ -304,7 +304,7 @@ char* Expression_repr(Expression* expr, Context* ctx) {
 	return Variable_repr(expr->var);
 }
 
-void Expression_print(Expression* expr, Context* ctx, int verbosity) {
+void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
 		Error_raise(expr->var->err);
@@ -314,15 +314,19 @@ void Expression_print(Expression* expr, Context* ctx, int verbosity) {
 	if(verbosity >= 2) {
 		/* Dump expression tree */
 		char* tree = Expression_verbose(expr, ctx);
-		printf("%s\n", tree);
+		fprintf(fp, "%s\n", tree);
 		free(tree);
 	}
 	
 	if(verbosity >= 1) {
 		/* Print parenthesized expression */
 		char* reprinted = Expression_repr(expr, ctx);
-		printf("%s\n", reprinted);
+		fprintf(fp, "%s\n", reprinted);
 		free(reprinted);
 	}
+}
+
+void Expression_print(Expression* expr, Context* ctx, int verbosity) {
+	Expression_fprint(stdout, expr, ctx, verbosity);
 }
 

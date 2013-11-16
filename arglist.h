@@ -27,7 +27,7 @@ ArgList* ArgList_new(unsigned count);
 void ArgList_free(ArgList* arglist);
 
 /* Initializer */
-ArgList* ArgList_create(unsigned count, ...);
+ArgList* ArgList_create(unsigned count, /* Value* */...);
 ArgList* ArgList_vcreate(unsigned count, va_list args);
 
 /* Copying */

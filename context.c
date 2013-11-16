@@ -9,38 +9,53 @@
 #include "context.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "generic.h"
 #include "variable.h"
 
 
-struct VarList {
+struct VarNode {
 	Variable* var;
-	struct VarList* next;
+	struct VarNode* next;
+};
+
+struct ContextStack {
+	struct VarNode* vars;
+	struct ContextStack* next;
 };
 
 struct Context {
-	struct VarList* varlist;
+	struct VarNode* globals;
+	struct ContextStack* locals;
 };
+
+
+static void freeVars(struct VarNode* vars);
+static struct VarNode* copyVars(struct VarNode* src);
+void addVar(struct VarNode** vars, Variable* var);
+struct VarNode* findNode(struct VarNode* cur, const char* name);
+Variable* findVar(struct VarNode* cur, const char* name);
+static struct VarNode* findPrev(struct VarNode* cur, const char* name);
+static bool isFirst(struct VarNode* cur, const char* name);
+
 
 Context* Context_new(void) {
 	Context* ret = fmalloc(sizeof(*ret));
 	
-	ret->varlist = NULL;
+	ret->globals = NULL;
+	ret->locals = NULL;
 	
-	Context_add(ret, VarValue("ans", ValInt(0)));
+	Context_addGlobal(ret, VarValue("ans", ValInt(0)));
 	
 	return ret;
 }
 
-void Context_free(Context* ctx) {
-	struct VarList* cur = ctx->varlist;
-	if(cur == NULL) {
-		free(ctx);
+static void freeVars(struct VarNode* cur) {
+	if(cur == NULL)
 		return;
-	}
 	
-	struct VarList* next = cur->next;
+	struct VarNode* next = cur->next;
 	
 	while(cur) {
 		/* Free current element */
@@ -52,39 +67,46 @@ void Context_free(Context* ctx) {
 		if(cur)
 			next = cur->next;
 	}
+}
+
+static void freeStack(struct ContextStack* stack) {
+	while(stack) {
+		struct ContextStack* next = stack->next;
+		freeVars(stack->vars);
+		stack = next;
+	}
+}
+
+void Context_free(Context* ctx) {
+	freeVars(ctx->globals);
+	freeStack(ctx->locals);
 	
 	free(ctx);
 }
 
-Context* Context_copy(Context* ctx) {
-	if(!ctx) return NULL;
-	
-	Context* ret = Context_new();
-	
-	/* Try to keep the elements in the same order */
-	struct VarList* src = ctx->varlist;
-	
-	struct VarList* dst = ret->varlist;
-	struct VarList* prev = NULL;
+static struct VarNode* copyVars(struct VarNode* src) {
+	struct VarNode* ret = NULL;
+	struct VarNode* cur;
+	struct VarNode* prev = NULL;
 	
 	while(src) {
 		/* Allocate next node */
-		dst = fmalloc(sizeof(*dst));
-		dst->var = Variable_copy(src->var);
-		dst->next = NULL;
+		cur = fmalloc(sizeof(*cur));
+		cur->var = Variable_copy(src->var);
+		cur->next = NULL;
 		
 		
-		if(prev == NULL) {
-			/* Link new node to list root */
-			ret->varlist = dst;
+		if(prev) {
+			/* Link previous node to newly created one */
+			prev->next = cur;
 		}
 		else {
-			/* Link previous node to newly created one */
-			prev->next = dst;
+			/* List root */
+			ret = cur;
 		}
 		
 		/* Save pointer to current node as the previous one for next loop iteration */
-		prev = dst;
+		prev = cur;
 		
 		/* Move to next source node */
 		src = src->next;
@@ -93,22 +115,65 @@ Context* Context_copy(Context* ctx) {
 	return ret;
 }
 
-void Context_add(Context* ctx, Variable* var) {
-	struct VarList* elem = fmalloc(sizeof(*elem));
+static struct ContextStack* copyStack(struct ContextStack* stack) {
+	struct ContextStack* ret = NULL;
+	struct ContextStack* prev = NULL;
+	
+	while(stack) {
+		struct ContextStack* dst = fmalloc(sizeof(*dst));
+		dst->vars = copyVars(stack->vars);
+		dst->next = NULL;
+		
+		if(ret == NULL)
+			ret = dst;
+		
+		if(prev)
+			prev->next = dst;
+		
+		prev = dst;
+		dst = dst->next;
+		stack = stack->next;
+	}
+	
+	return ret;
+}
+
+Context* Context_copy(Context* ctx) {
+	if(!ctx) return NULL;
+	
+	Context* ret = Context_new();
+	
+	ret->globals = copyVars(ctx->globals);
+	ret->locals = copyStack(ctx->locals);
+	
+	return ret;
+}
+
+void addVar(struct VarNode** vars, Variable* var) {
+	struct VarNode* elem = fmalloc(sizeof(*elem));
 	
 	elem->var = var;
 	
 	/* Put the new element in the front of the linked list and move the rest back */
-	elem->next = ctx->varlist;
-	ctx->varlist = elem;
+	elem->next = *vars;
+	*vars = elem;
 }
 
-Variable* Context_get(Context* ctx, const char* name) {
-	struct VarList* cur = ctx->varlist;
+void Context_addGlobal(Context* ctx, Variable* var) {
+	addVar(&ctx->globals, var);
+}
+
+void Context_addLocal(Context* ctx, Variable* var) {
+	if(ctx->locals == NULL)
+		Context_pushLocals(ctx);
 	
+	addVar(&ctx->locals->vars, var);
+}
+
+struct VarNode* findNode(struct VarNode* cur, const char* name) {
 	while(cur) {
 		if(strcmp(cur->var->name, name) == 0) {
-			return cur->var;
+			return cur;
 		}
 		
 		cur = cur->next;
@@ -117,23 +182,41 @@ Variable* Context_get(Context* ctx, const char* name) {
 	return NULL;
 }
 
-void Context_set(Context* ctx, const char* name, Variable* var) {
+Variable* findVar(struct VarNode* cur, const char* name) {
+	struct VarNode* node = findNode(cur, name);
+	
+	return node ? node->var : NULL;
+}
+
+Variable* Context_get(Context* ctx, const char* name) {
+	Variable* ret = NULL;
+	
+	if(ctx->locals != NULL) {
+		/* Search the top locals stack frame for the variable */
+		ret = findVar(ctx->locals->vars, name);
+	}
+	
+	/* Search globals as a last resort only if it wasn't found in locals */
+	return ret ?: findVar(ctx->globals, name);
+}
+
+void Context_setGlobal(Context* ctx, const char* name, Variable* var) {
 	if(var->type == VAR_FUNC && strcmp(name, "ans") == 0) {
 		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."));
 		return;
 	}
 	
-	Variable* cpy = Variable_copy(var);
-	Variable* dst = Context_get(ctx, name);
+	Variable* dst = findVar(ctx->globals, name);
 	
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
-		if(cpy->name != NULL)
-			free(cpy->name);
 		
-		cpy->name = strdup(name);
+		/* Make sure we are assigning the correct variable */
+		if(var->name != NULL)
+			free(var->name);
+		var->name = strdup(name);
 		
-		Context_add(ctx, cpy);
+		Context_addGlobal(ctx, var);
 	}
 	else {
 		if(dst->type == VAR_BUILTIN) {
@@ -142,48 +225,107 @@ void Context_set(Context* ctx, const char* name, Variable* var) {
 		}
 		
 		/* Variable already exists, so update it */
-		Variable_update(dst, cpy);
+		Variable_update(dst, var);
 	}
 }
 
+void Context_pushLocals(Context* ctx) {
+	struct ContextStack* frame = fmalloc(sizeof(*frame));
+	memset(frame, 0, sizeof(*frame));
+	
+	frame->next = ctx->locals;
+	ctx->locals = frame;
+}
+
+void Context_popLocals(Context* ctx) {
+	struct ContextStack* next = ctx->locals->next;
+	
+	freeVars(ctx->locals->vars);
+	free(ctx->locals);
+	
+	ctx->locals = next;
+}
+
+static struct VarNode* findPrev(struct VarNode* cur, const char* name) {
+	if(cur == NULL) return NULL;
+	
+	while(cur->next) {
+		if(strcmp(cur->next->var->name, name) == 0) {
+			return cur;
+		}
+		
+		cur = cur->next;
+	}
+	
+	return NULL;
+}
+
+static bool isFirst(struct VarNode* cur, const char* name) {
+	return cur && strcmp(cur->var->name, name) == 0;
+}
+
 void Context_del(Context* ctx, const char* name) {
-	struct VarList* cur = ctx->varlist;
-	struct VarList* prev = NULL;
+	struct VarNode* cur;
+	struct VarNode* prev = NULL;
 	
 	if(strcmp(name, "ans") == 0) {
 		RAISE(nameError("Cannot delete special variable 'ans'."));
 		return;
 	}
 	
-	while(cur) {
-		if(strcmp(cur->var->name, name) == 0) {
-			if(cur->var->type == VAR_BUILTIN) {
-				RAISE(typeError("Cannot delete builtin variable '%s'.", name));
-				return;
-			}
+	/* First node in locals linked list */
+	if(ctx->locals != NULL) {
+		if(isFirst(ctx->locals->vars, name)) {
+			/* Link the previous node to the next one */
+			cur = ctx->locals->vars;
+			ctx->locals->vars = cur->next;
 			
-			/* Skip current element altogether */
-			if(prev == NULL) {
-				/* First element in linked list */
-				ctx->varlist = cur->next;
-			}
-			else {
-				prev->next = cur->next;
-			}
-			
-			/* Free current element */
+			/* Free node */
 			Variable_free(cur->var);
 			free(cur);
 			
 			return;
 		}
 		
-		prev = cur;
-		cur = cur->next;
+		/* Search current locals stack frame first */
+		prev = findPrev(ctx->locals->vars, name);
+	}
+		
+	/* Is the variable the very fist global node? */
+	if(prev == NULL && isFirst(ctx->globals, name)) {
+		/* Link the previous node to the next one */
+		cur = ctx->globals;
+		ctx->globals = cur->next;
+		
+		/* Free node */
+		Variable_free(cur->var);
+		free(cur);
+		
+		return;
 	}
 	
-	RAISE(varNotFound(name));
+	/* If prev is still NULL, search globals for it */
+	prev = prev ?: findPrev(ctx->globals, name);
+	
+	/* If prev is STILL NULL, it wasn't found */
+	if(prev == NULL) {
+		RAISE(varNotFound(name));
+		return;
+	}
+	
+	cur = prev->next;
+	
+	if(cur->var->type == VAR_BUILTIN) {
+		RAISE(typeError("Cannot delete builtin variable '%s'.", name));
+		return;
+	}
+	
+	/* Link previous node to next one */
+	prev->next = cur->next;
+	
+	/* Free current node */
+	Variable_free(cur->var);
+	free(cur);
 }
-
 
 

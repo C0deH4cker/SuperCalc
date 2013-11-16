@@ -27,9 +27,11 @@ void Fraction_free(Fraction* frac);
 /* Copying */
 Fraction* Fraction_copy(Fraction* frac);
 
-/* Arithmetic operations */
+/* In-place simplification */
 void Fraction_simplify(Fraction* frac);
 void Fraction_reduce(Value* frac);
+
+/* Arithmetic operations */
 Value* Fraction_add(Fraction* a, Value* b);
 Value* Fraction_sub(Fraction* a, Value* b);
 Value* Fraction_mul(Fraction* a, Value* b);

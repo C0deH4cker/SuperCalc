@@ -46,29 +46,25 @@ Value* FuncCall_eval(FuncCall* call, Context* ctx) {
 		return ValErr(varNotFound(call->name));
 	}
 	
-	ArgList* evaluated = ArgList_eval(call->arglist, ctx);
-	
 	if(var->type == VAR_FUNC) {
 		/* Call the function */
-		ret = Function_eval(var->func, ctx, evaluated);
+		ret = Function_eval(var->func, ctx, call->arglist);
 	}
 	else if(var->type == VAR_BUILTIN) {
-		ret = Builtin_eval(var->blt, ctx, evaluated);
+		ret = Builtin_eval(var->blt, ctx, call->arglist);
 	}
 	else {
 		/* Handle cases like a(4 + 6/7) -> a * (4 + 6/7) */
-		if(evaluated->count != 1) {
+		if(call->arglist->count != 1) {
 			ret = ValErr(nameError("Variable '%s' is not a function.", call->name));
 		}
 		else {
 			/* Just multiply the variable by the value in the parentheses */
-			BinOp* mul = BinOp_new(BIN_MUL, Value_copy(var->val), Value_copy(evaluated->args[0]));
+			BinOp* mul = BinOp_new(BIN_MUL, Value_copy(var->val), Value_copy(call->arglist->args[0]));
 			ret = BinOp_eval(mul, ctx);
 			BinOp_free(mul);
 		}
 	}
-	
-	ArgList_free(evaluated);
 	
 	return ret;
 }

@@ -34,6 +34,7 @@ struct BinOp {
 };
 
 /* Constructor */
+/* This method consumes both the `a` and `b` arguments */
 BinOp* BinOp_new(BINTYPE type, Value* a, Value* b);
 
 /* Destructor */

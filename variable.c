@@ -32,6 +32,14 @@ static Variable* allocVar(VARTYPE type, const char* name) {
 	return ret;
 }
 
+Variable* VarErr(Error* err) {
+	Variable* ret = allocVar(VAR_ERR, "error");
+	
+	ret->err = err;
+	
+	return ret;
+}
+
 Variable* VarBuiltin(const char* name, Builtin* blt) {
 	Variable* ret = allocVar(VAR_BUILTIN, name);
 	
@@ -52,14 +60,6 @@ Variable* VarFunc(const char* name, Function* func) {
 	Variable* ret = allocVar(VAR_FUNC, name);
 	
 	ret->func = func;
-	
-	return ret;
-}
-
-Variable* VarErr(Error* err) {
-	Variable* ret = allocVar(VAR_ERR, "error");
-	
-	ret->err = err;
 	
 	return ret;
 }
@@ -128,7 +128,7 @@ Value* Variable_eval(const char* name, Context* ctx) {
 		ret = ValErr(varNotFound(name));
 	}
 	else if(var->type == VAR_FUNC) {
-		ret = ValErr(typeError("Variable '%s' is a function.", name));
+		ret = ValVar(var->name);
 	}
 	else if(var->type == VAR_BUILTIN) {
 		ArgList* noArgs = ArgList_new(0);
@@ -172,23 +172,29 @@ void Variable_update(Variable* dst, Variable* src) {
 	switch(src->type) {
 		case VAR_BUILTIN:
 			dst->blt = src->blt;
+			src->blt = NULL;
 			break;
 		
 		case VAR_ERR:
 			dst->err = src->err;
+			src->err = NULL;
 			break;
 		
 		case VAR_FUNC:
 			dst->func = src->func;
+			src->func = NULL;
 			break;
 		
 		case VAR_VALUE:
 			dst->val = src->val;
+			src->val = NULL;
 			break;
 		
 		default:
 			badVarType(src->type);
 	}
+	
+	free(src);
 }
 
 char* Variable_verbose(Variable* var) {

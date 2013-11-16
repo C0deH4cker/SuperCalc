@@ -25,6 +25,7 @@ struct FuncCall {
 
 
 /* Constructor */
+/* This method consumes the `arglist` argument */
 FuncCall* FuncCall_new(const char* name, ArgList* arglist);
 
 /* Destructor */

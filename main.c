@@ -45,6 +45,15 @@ int main(int argc, char* argv[]) {
 			
 			char* name = nextToken(&p);
 			if(name == NULL) {
+				/* '~~~' means reset interpreter */
+				if(p[0] == '~' && p[1] == '~') {
+					/* Wipe out context */
+					Context_free(ctx);
+					ctx = Context_new();
+					register_math(ctx);
+					continue;
+				}
+				
 				if(*p == '\0') {
 					RAISE(earlyEnd());
 					continue;

@@ -24,6 +24,7 @@ struct Function {
 
 
 /* Constructor */
+/* This method consumes both the `argnames` and `body` arguments */
 Function* Function_new(unsigned argcount, char** argnames, Value* body);
 
 /* Destructor */

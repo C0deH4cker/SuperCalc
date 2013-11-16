@@ -29,19 +29,20 @@ struct Variable {
 	VARTYPE type;
 	char* name;
 	union {
+		Error* err;
 		Builtin* blt;
 		Value* val;
 		Function* func;
-		Error* err;
 	};
 };
 
 
 /* Constructors */
+/* Each of these methods consume its last argument */
+Variable* VarErr(Error* err);
 Variable* VarBuiltin(const char* name, Builtin* blt);
 Variable* VarValue(const char* name, Value* val);
 Variable* VarFunc(const char* name, Function* func);
-Variable* VarErr(Error* err);
 
 /* Destructor */
 void Variable_free(Variable* var);
@@ -54,6 +55,12 @@ Value* Variable_eval(const char* name, Context* ctx);
 
 /* Variable accessing */
 Variable* Variable_get(Context* ctx, const char* name);
+
+/*
+ This method basically frees the content of `dst`, moves
+ the content of `src` into dst, then frees `src`, so
+ `src` is consumed.
+*/
 void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */

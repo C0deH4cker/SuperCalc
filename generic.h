@@ -34,14 +34,21 @@
 
 char line[1024];
 
-char* nextLine(void);
+/* Tokenization */
 void trimSpaces(const char** str);
-char* spaces(int n);
-char* strNULL(void);
-long long ipow(long long base, long long exp);
-long long gcd(long long a, long long b);
 char* nextToken(const char** expr);
 char* copyUntilClose(const char** expr);
 int getSign(const char** expr);
+
+/* Input */
+char* nextLine(void);
+
+/* Verbose printing */
+char* spaces(int n);
+char* strNULL(void);
+
+/* Math */
+long long ipow(long long base, long long exp);
+long long gcd(long long a, long long b);
 
 #endif
