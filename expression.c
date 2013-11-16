@@ -32,7 +32,7 @@ void Expression_free(Expression* expr) {
 }
 
 Expression* Expression_parse(const char** expr) {
-	Expression* ret;
+	Expression* ret = NULL;
 	Variable* var;
 	Value* val;
 	
@@ -97,16 +97,7 @@ Expression* Expression_parse(const char** expr) {
 			/* Add each argument name to the array */
 			char* arg = nextToken(expr);
 			
-			if(arg == NULL) {
-				if(**expr == ')') {
-					/* Empty parameter list means function with no args */
-					free(args);
-					var = VarFunc(name, Function_new(0, NULL, val));
-					free(name);
-					
-					return Expression_new(var);
-				}
-				
+			if(arg == NULL && **expr != ')') {
 				/* Invalid character */
 				Value_free(val);
 				free(args);
@@ -117,37 +108,47 @@ Expression* Expression_parse(const char** expr) {
 			}
 			
 			trimSpaces(expr);
-			while(**expr == ',' || **expr == ')') {
-				args[len++] = arg;
-				
-				if(**expr == ')')
-					break;
-				
-				(*expr)++;
-				
-				/* Expand argument array if it's too small */
-				if(len >= size) {
-					size *= 2;
-					args = frealloc(args, size * sizeof(*args));
-				}
-				
-				arg = nextToken(expr);
-				if(arg == NULL) {
-					/* Invalid character */
-					Value_free(val);
-					free(name);
-					/* Free argument names and return */
-					unsigned i;
-					for(i = 0; i < len; i++) {
-						free(args[i]);
-					}
-					free(args);
+			
+			if(arg == NULL) {
+				/* Empty parameter list means function with no args */
+				free(args);
+				args = NULL;
+				len = 0;
+			}
+			else {
+				/* Loop through each argument in the list */
+				while(**expr == ',' || **expr == ')') {
+					args[len++] = arg;
 					
-					var = VarErr(badChar(**expr));
-					return Expression_new(var);
+					if(**expr == ')')
+						break;
+					
+					(*expr)++;
+					
+					/* Expand argument array if it's too small */
+					if(len >= size) {
+						size *= 2;
+						args = frealloc(args, size * sizeof(*args));
+					}
+					
+					arg = nextToken(expr);
+					if(arg == NULL) {
+						/* Invalid character */
+						Value_free(val);
+						free(name);
+						/* Free argument names and return */
+						unsigned i;
+						for(i = 0; i < len; i++) {
+							free(args[i]);
+						}
+						free(args);
+						
+						var = VarErr(badChar(**expr));
+						return Expression_new(var);
+					}
+					
+					trimSpaces(expr);
 				}
-				
-				trimSpaces(expr);
 			}
 			
 			if(**expr != ')') {
@@ -224,38 +225,39 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 	Variable* var = expr->var;
 	
 	if(var->type == VAR_VALUE) {
-		/* Variable assignment */
-		if(var->val->type == VAL_VAR) {
-			/* Right side is a variable */
-			Variable* func = Variable_get(ctx, var->val->name);
-			if(func == NULL)
-				return ValErr(varNotFound(var->val->name));
-			
-			if(func->type != VAR_BUILTIN) {
-				if(var->name != NULL)
-					Context_setGlobal(ctx, var->name, Variable_copy(func));
-				
-				return ValVar(var->val->name);
-			}
-		}
-		
-		/* Right side is an expression */
+		/* Evaluate right side */
 		ret = Value_eval(var->val, ctx);
 		
 		/* If an error occurred, bail */
 		if(ret->type == VAL_ERR)
 			return ret;
 		
-		/* This means ret must be a Value */
-		Value_free(var->val);
-		var->val = Value_copy(ret);
-		
-		/* Update ans */
-		Context_setGlobal(ctx, "ans", Variable_copy(var));
-		
-		/* Save the newly evaluated variable */
-		if(var->name != NULL)
-			Context_setGlobal(ctx, var->name, Variable_copy(var));
+		/* Variable assignment? */
+		if(ret->type == VAL_VAR) {
+			/* This means ret must be a function */
+			Variable* func = Variable_get(ctx, ret->name);
+			if(func == NULL)
+				return ValErr(varNotFound(ret->name));
+			
+			if(func->type == VAR_BUILTIN) {
+				return ValErr(typeError("Cannot assign a variable to a builtin value."));
+			}
+			
+			if(var->name != NULL)
+				Context_setGlobal(ctx, var->name, Variable_copy(func));
+		}
+		else {
+			/* This means ret must be a Value */
+			Value_free(var->val);
+			var->val = Value_copy(ret);
+			
+			/* Update ans */
+			Context_setGlobal(ctx, "ans", Variable_copy(var));
+			
+			/* Save the newly evaluated variable */
+			if(var->name != NULL)
+				Context_setGlobal(ctx, var->name, Variable_copy(var));
+		}
 	}
 	else if(var->type == VAR_FUNC) {
 		ret = ValVar(var->name);

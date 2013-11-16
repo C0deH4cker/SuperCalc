@@ -146,6 +146,10 @@ Variable* Variable_get(Context* ctx, const char* name) {
 	return Context_get(ctx, name);
 }
 
+Variable* Variable_getAbove(Context* ctx, const char* name) {
+	return Context_getAbove(ctx, name);
+}
+
 void Variable_update(Variable* dst, Variable* src) {
 	/* Free old value */
 	switch(dst->type) {
@@ -193,6 +197,8 @@ void Variable_update(Variable* dst, Variable* src) {
 		default:
 			badVarType(src->type);
 	}
+	
+	dst->type = src->type;
 	
 	free(src);
 }

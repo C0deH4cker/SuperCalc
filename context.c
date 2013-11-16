@@ -32,12 +32,14 @@ struct Context {
 
 
 static void freeVars(struct VarNode* vars);
+static void freeStack(struct ContextStack* stack);
 static struct VarNode* copyVars(struct VarNode* src);
+static struct ContextStack* copyStack(struct ContextStack* stack);
 void addVar(struct VarNode** vars, Variable* var);
-struct VarNode* findNode(struct VarNode* cur, const char* name);
-Variable* findVar(struct VarNode* cur, const char* name);
 static struct VarNode* findPrev(struct VarNode* cur, const char* name);
 static bool isFirst(struct VarNode* cur, const char* name);
+struct VarNode* findNode(struct VarNode* cur, const char* name);
+Variable* findVar(struct VarNode* cur, const char* name);
 
 
 Context* Context_new(void) {
@@ -170,36 +172,6 @@ void Context_addLocal(Context* ctx, Variable* var) {
 	addVar(&ctx->locals->vars, var);
 }
 
-struct VarNode* findNode(struct VarNode* cur, const char* name) {
-	while(cur) {
-		if(strcmp(cur->var->name, name) == 0) {
-			return cur;
-		}
-		
-		cur = cur->next;
-	}
-	
-	return NULL;
-}
-
-Variable* findVar(struct VarNode* cur, const char* name) {
-	struct VarNode* node = findNode(cur, name);
-	
-	return node ? node->var : NULL;
-}
-
-Variable* Context_get(Context* ctx, const char* name) {
-	Variable* ret = NULL;
-	
-	if(ctx->locals != NULL) {
-		/* Search the top locals stack frame for the variable */
-		ret = findVar(ctx->locals->vars, name);
-	}
-	
-	/* Search globals as a last resort only if it wasn't found in locals */
-	return ret ?: findVar(ctx->globals, name);
-}
-
 void Context_setGlobal(Context* ctx, const char* name, Variable* var) {
 	if(var->type == VAR_FUNC && strcmp(name, "ans") == 0) {
 		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."));
@@ -326,6 +298,46 @@ void Context_del(Context* ctx, const char* name) {
 	/* Free current node */
 	Variable_free(cur->var);
 	free(cur);
+}
+
+struct VarNode* findNode(struct VarNode* cur, const char* name) {
+	while(cur) {
+		if(strcmp(cur->var->name, name) == 0) {
+			return cur;
+		}
+		
+		cur = cur->next;
+	}
+	
+	return NULL;
+}
+
+Variable* findVar(struct VarNode* cur, const char* name) {
+	struct VarNode* node = findNode(cur, name);
+	
+	return node ? node->var : NULL;
+}
+
+Variable* Context_get(Context* ctx, const char* name) {
+	Variable* ret = NULL;
+	
+	if(ctx->locals != NULL) {
+		/* Search the top locals stack frame for the variable */
+		ret = findVar(ctx->locals->vars, name);
+	}
+	
+	/* Search globals as a last resort only if it wasn't found in locals */
+	return ret ?: findVar(ctx->globals, name);
+}
+
+Variable* Context_getAbove(Context* ctx, const char* name) {
+	Variable* ret = NULL;
+	
+	if(ctx->locals != NULL && ctx->locals->next != NULL) {
+		ret = findVar(ctx->locals->next->vars, name);
+	}
+	
+	return ret ?: findVar(ctx->globals, name);
 }
 
 

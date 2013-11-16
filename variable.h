@@ -55,6 +55,7 @@ Value* Variable_eval(const char* name, Context* ctx);
 
 /* Variable accessing */
 Variable* Variable_get(Context* ctx, const char* name);
+Variable* Variable_getAbove(Context* ctx, const char* name);
 
 /*
  This method basically frees the content of `dst`, moves

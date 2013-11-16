@@ -38,9 +38,10 @@ void Context_popLocals(Context* ctx);
 void Context_del(Context* ctx, const char* name);
 
 /*
- Context_get returns a pointer from within the context list, so do
- not free the returned variable.
+ Context_get and Context_getAbove return a pointer from within the
+ context, so do not free the returned variable.
 */
 Variable* Context_get(Context* ctx, const char* name);
+Variable* Context_getAbove(Context* ctx, const char* name);
 
 #endif

@@ -53,15 +53,17 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 		return ValErr(typeError("Function expects %u arguments, not %u.", func->argcount, arglist->count));
 	}
 	
+	ArgList* evaluated = ArgList_eval(arglist, ctx);
+	
 	Context_pushLocals(ctx);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* val = Value_eval(arglist->args[i], ctx);
+		Value* val = Value_copy(evaluated->args[i]);
 		Variable* arg;
 		
 		if(val->type == VAL_VAR) {
-			Variable* var = Variable_get(ctx, val->name);
+			Variable* var = Variable_getAbove(ctx, val->name);
 			
 			switch(var->type) {
 				case VAR_VALUE:
@@ -86,6 +88,8 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 		
 		Context_addLocal(ctx, arg);
 	}
+	
+	ArgList_free(evaluated);
 	
 	Value* ret = Value_eval(func->body, ctx);
 	
