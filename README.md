@@ -148,6 +148,11 @@ Functions *are* variables:
 	>>> g = f
 	>>> g(4, 3)
 	7
+	>>> h(x) = x^2
+	>>> getFunc() = h
+	>>> func = getFunc()
+	>>> func(3)
+	9
 
 Variables can be deleted using `~`:
 
@@ -158,6 +163,19 @@ Variables can be deleted using `~`:
 	Name Error: No variable named 'a' found.
 	>>> f(x) = 2x + 5
 	>>> ~f
+	>>> f(3)
+	Name Error: No variable named 'f' found.
+
+And the interpreter can be reset using `~~~`:
+
+	>>> a = 4
+	4
+	>>> b = 7
+	7
+	>>> f(x) = 4x - 3!
+	>>> ~~~
+	>>> a
+	Name Error: No variable named 'a' found.
 	>>> f(3)
 	Name Error: No variable named 'f' found.
 

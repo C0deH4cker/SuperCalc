@@ -444,6 +444,7 @@ static Value* parseToken(const char** expr) {
 	if(token == NULL)
 		return ValErr(badChar(**expr));
 	
+	/* TODO: Handle nested calls like getFunc()(4) */
 	if(**expr == '(') {
 		(*expr)++;
 		ArgList* arglist = ArgList_parse(expr);
