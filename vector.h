@@ -45,6 +45,7 @@ Value* Vector_div(Vector* vec, Value* other, Context* ctx);
 Value* Vector_rdiv(Vector* vec, Value* scalar, Context* ctx);
 Value* Vector_pow(Vector* vec, Value* other, Context* ctx);
 Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx);
+Value* Vector_magnitude(Vector* vec, Context* ctx);
 
 /* Builtin registration */
 void Vector_register(Context* ctx);
