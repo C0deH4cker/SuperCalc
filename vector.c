@@ -36,6 +36,11 @@ Vector* Vector_copy(Vector* vec) {
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
 	
+	if(vals->count < 1) {
+		ArgList_free(vals);
+		return ValErr(syntaxError("Vector must have at least 2 components."));
+	}
+	
 	return ValVec(Vector_new(vals));
 }
 
