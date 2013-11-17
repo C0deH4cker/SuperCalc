@@ -142,6 +142,10 @@ void Value_free(Value* val) {
         case VAL_VEC:
             Vector_free(val->vec);
             break;
+		
+		case VAL_ERR:
+			Error_free(val->err);
+			break;
 			
 		default:
 			/* The rest don't need to be freed */
@@ -278,7 +282,7 @@ double Value_asReal(Value* val) {
 	return ret;
 }
 
-Value* Value_parse(const char** expr) {
+Value* Value_parse(const char** expr, char sep, char end) {
 	Value* val;
 	BINTYPE op = BIN_UNK;
 	BinOp* tree = NULL;
@@ -323,7 +327,7 @@ Value* Value_parse(const char** expr) {
 		}
 		
 		/* Get next operator if it exists */
-		op = BinOp_nextType(expr);
+		op = BinOp_nextType(expr, sep, end);
 		
 		/* Invalid operator? Return syntax error */
 		if(op == BIN_UNK) {
@@ -337,7 +341,7 @@ Value* Value_parse(const char** expr) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
-			if(**expr == ',')
+			if(**expr == sep)
 				(*expr)++;
 			
 			/* If there was only one value, return it */
@@ -459,7 +463,7 @@ static Value* parseToken(const char** expr) {
 	/* TODO: Handle nested calls like getFunc()(4) */
 	if(**expr == '(') {
 		(*expr)++;
-		ArgList* arglist = ArgList_parse(expr);
+		ArgList* arglist = ArgList_parse(expr, ',', ')');
 		FuncCall* call = FuncCall_new(token, arglist);
 		
 		ret = ValCall(call);
@@ -485,7 +489,7 @@ Value* Value_next(const char** expr) {
 	}
 	else if(**expr == '(') {
 		(*expr)++;
-		ret = Value_parse(expr);
+		ret = Value_parse(expr, 0, 0);
 		
 		/* Skip closing parenthesis if it exists */
 		if(**expr == ')')

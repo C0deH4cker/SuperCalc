@@ -38,7 +38,7 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx);
 double* ArgList_toReals(ArgList* arglist, Context* ctx);
 
 /* Parsing */
-ArgList* ArgList_parse(const char** expr);
+ArgList* ArgList_parse(const char** expr, char sep, char end);
 
 /* Printing */
 char* ArgList_verbose(ArgList* arglist, int indent);

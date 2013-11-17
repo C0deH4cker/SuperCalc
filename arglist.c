@@ -103,14 +103,14 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 	return ret;
 }
 
-ArgList* ArgList_parse(const char** expr) {
+ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
-	Value* arg = Value_parse(expr);
+	Value* arg = Value_parse(expr, sep, end);
 	while(arg->type != VAL_END && arg->type != VAL_ERR) {
 		if(count >= size) {
 			size *= 2;
@@ -119,7 +119,7 @@ ArgList* ArgList_parse(const char** expr) {
 		
 		args[count++] = arg;
 		
-		arg = Value_parse(expr);
+		arg = Value_parse(expr, sep, end);
 	}
 	
 	ArgList* ret = ArgList_new(count);

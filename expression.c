@@ -40,7 +40,7 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		val = Value_parse(expr);
+		val = Value_parse(expr, 0, 0);
 		
 		if(val->type == VAL_END) {
 			Value_free(val);
@@ -59,7 +59,7 @@ Expression* Expression_parse(const char** expr) {
 		/* There is an assignment */
 		/* First, parse the right side of the assignment */
 		equals++;
-		val = Value_parse(&equals);
+		val = Value_parse(&equals, 0, 0);
 		
 		if(val->type == VAL_ERR) {
 			/* A parse error occurred */
@@ -196,7 +196,7 @@ Expression* Expression_parse(const char** expr) {
 			/* Defining a variable */
 			if(**expr != '=') {
 				/* In-place manipulation */
-				BINTYPE bin = BinOp_nextType(expr);
+				BINTYPE bin = BinOp_nextType(expr, 0, 0);
 				
 				/* Still not an equals sign means invalid character */
 				if(**expr != '=') {
