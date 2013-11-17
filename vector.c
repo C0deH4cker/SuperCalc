@@ -1,10 +1,10 @@
 /*
-  vector.c
-  SuperCalc
-
-  Created by Silas Schwarz on 11/16/13.
-  Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
-*/
+ vector.c
+ SuperCalc
+ 
+ Created by Silas Schwarz on 11/16/13.
+ Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
+ */
 
 #include "vector.h"
 #include <stdio.h>
@@ -36,7 +36,7 @@ Vector* Vector_copy(Vector* vec) {
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
 	
-	if(vals->count < 2) {
+	if(vals->count < 1) {
 		ArgList_free(vals);
 		return ValErr(syntaxError("Vector must have at least 2 components."));
 	}
@@ -71,6 +71,23 @@ static Value* vecScalarOp(Vector* vec, Value* scalar, Context *ctx, BINTYPE bin)
 	return ValVec(Vector_new(newv));
 }
 
+static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
+	/* Calculate old magnitude */
+	Value* mag = Vector_magnitude(vec, ctx);
+	
+	/* Calculate new magnitude */
+	BinOp* magOp = BinOp_new(bin, Value_copy(mag), Value_copy(scalar));
+	Value* newMag = BinOp_eval(magOp, ctx);
+	BinOp_free(magOp);
+	
+	/* Calculate scalar factor */
+	BinOp* newDivOld = BinOp_new(BIN_DIV, newMag, mag);
+	Value* scalFact = BinOp_eval(newDivOld, ctx);
+	
+	/* Calculate new vector */
+	return vecScalarOp(vec, scalFact, ctx, BIN_MUL);
+}
+
 static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
 	ArgList* newv = ArgList_new(vec->vals->count);
 	
@@ -96,14 +113,14 @@ static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE b
 
 static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin) {
 	unsigned count = vector1->vals->count;
-	if(count != vector2->vals->count) {
+	if(count != vector2->vals->count && vector2->vals->count > 1) {
 		return ValErr(mathError("Cannot %s vectors of different sizes.", binop_verb[bin]));
 	}
 	
 	ArgList* newv = ArgList_new(count);
 	for (long long i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
-		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(vector2->vals->args[i]));
+		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy((vector2->vals->count == 1 ? vector2->vals->args[0] : vector2->vals->args[i])));
 		Value* result = BinOp_eval(op, ctx);
 		BinOp_free(op);
 		
@@ -124,8 +141,7 @@ Value* Vector_add(Vector* vec, Value* other, Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_ADD);
 	}
-	
-	return vecScalarOp(vec, other, ctx, BIN_ADD);
+	return vecMagOp(vec, other, ctx, BIN_ADD);
 }
 
 Value* Vector_sub(Vector* vec, Value* other, Context* ctx) {
@@ -133,7 +149,7 @@ Value* Vector_sub(Vector* vec, Value* other, Context* ctx) {
 		return vecCompOp(vec, other->vec, ctx, BIN_SUB);
 	}
 	
-	return vecScalarOp(vec, other, ctx, BIN_SUB);
+	return vecMagOp(vec, other, ctx, BIN_SUB);
 }
 
 Value* Vector_rsub(Vector* vec, Value* scalar, Context* ctx) {
@@ -172,6 +188,52 @@ Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx) {
 	return vecScalarOpRev(vec, scalar, ctx, BIN_POW);
 }
 
+static Value* Vector_dot(Value* vector1, Value* vector2, Context* ctx) {
+	unsigned count = vector1->vec->vals->count;
+	if(count != vector2->vec->vals->count && vector2->vec->vals->count != 1) {
+		/* Both vectors must have the same number of values */
+		return ValErr(mathError("Vectors must have the same dimensions for dot product."));
+	}
+	
+	Value* total = ValInt(0); /* store the total value of the dot product */
+	
+	unsigned i;
+	for(i = 0; i < count; i++) {
+		/* Multiply v1[i] and v2[i] */
+		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[i]), Value_copy((vector2->vec->vals->count == 1 ? vector2->vec->vals->args[0] : vector2->vec->vals->args[i])));
+		
+		Value* part = BinOp_eval(mul, ctx);
+		BinOp_free(mul);
+		
+		/* Accumulate the sum for all products */
+		BinOp* add = BinOp_new(BIN_ADD, part, total);
+		total = BinOp_eval(add, ctx);
+		BinOp_free(add);
+	}
+	
+	Value_free(vector1);
+	Value_free(vector2);
+	
+	return total;
+}
+
+Value* Vector_magnitude(Vector* vec, Context* ctx) {
+	/* |v|^2 = dot(v,v) */
+	Vector* value1 = Vector_copy(vec);
+	Vector* value2 = Vector_copy(vec);
+	Value* v1 = ValVec(value1);
+	Value* v2 = ValVec(value2);
+	Value* magSqu = Vector_dot(v1, v2, ctx);
+	
+	/* Calculate actual magnitude */
+	ArgList* args = ArgList_new(1);
+	args->args[0] = magSqu;
+	FuncCall *sqr = FuncCall_new("sqrt", args);
+	Value* mag = FuncCall_eval(sqr, ctx);
+	FuncCall_free(sqr);
+	return mag;
+}
+
 static Value* eval_dot(Context* ctx, ArgList* arglist) {
 	if(arglist->count != 2) {
 		/* Two vectors are required for a dot product */
@@ -194,29 +256,7 @@ static Value* eval_dot(Context* ctx, ArgList* arglist) {
 		return ValErr(typeError("Builtin dot expects two vectors."));
 	}
 	
-	unsigned count = vector1->vec->vals->count;
-	if(count != vector2->vec->vals->count) {
-		/* Both vectors must have the same number of values */
-		return ValErr(mathError("Vectors must have the same dimensions for dot product."));
-	}
-	
-	Value* total = ValInt(0); // store the total value of the dot product
-	
-	unsigned i;
-	for(i = 0; i < count; i++) {
-		/* Multiply v1[i] and v2[i] */
-		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[i]), Value_copy(vector2->vec->vals->args[i]));
-		
-		Value* part = BinOp_eval(mul, ctx);
-		BinOp_free(mul);
-		
-		/* Accumulate the sum for all products */
-		BinOp* add = BinOp_new(BIN_ADD, part, total);
-		total = BinOp_eval(add, ctx);
-		BinOp_free(add);
-	}
-	
-	return total;
+	return Vector_dot(vector1, vector2, ctx);
 }
 
 static Value* eval_cross(Context* ctx, ArgList* arglist) {
@@ -352,12 +392,68 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	return ValVec(Vector_new(args));
 }
 
+static Value* eval_map(Context* ctx, ArgList* arglist) {
+	if(arglist->count != 2) {
+		return ValErr(builtinArgs("map", 2, arglist->count));
+	}
+	
+	Value* func = Value_copy(arglist->args[0]);
+	if(func->type != VAL_VAR) {
+		Value* val = Value_eval(func, ctx);
+		Value_free(func);
+		
+		if(val->type == VAL_ERR)
+			return val;
+		
+		if(val->type != VAL_VAR) {
+			Value_free(val);
+			return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
+		}
+		
+		func = val;
+	}
+	
+	Value* vec = Value_eval(arglist->args[1], ctx);
+	if(vec->type == VAL_ERR) {
+		Value_free(func);
+		return vec;
+	}
+	
+	if(func->type != VAL_VAR) {
+		Value_free(func);
+		Value_free(vec);
+		return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
+	}
+	
+	if(vec->type != VAL_VEC) {
+		Value_free(func);
+		Value_free(vec);
+		return ValErr(typeError("Builtin 'map' expects a vector as its second argument."));
+	}
+	
+	ArgList* mapping = ArgList_new(vec->vec->vals->count);
+	
+	/* Don't evaluate the call now. Let Builtin_eval do this for us */
+	unsigned i;
+	for(i = 0; i < mapping->count; i++) {
+		ArgList* arg = ArgList_create(1, Value_copy(vec->vec->vals->args[i]));
+		Value* call = ValCall(FuncCall_new(func->name, arg));
+		
+		mapping->args[i] = call;
+	}
+	
+	Value_free(func);
+	Value_free(vec);
+	
+	return ValVec(Vector_new(mapping));
+}
+
 
 static const char* vector_names[] = {
-	"dot", "cross"
+	"dot", "cross", "map"
 };
 static builtin_eval_t vector_funcs[] = {
-	&eval_dot, &eval_cross
+	&eval_dot, &eval_cross, &eval_map
 };
 
 /* This is just a copy of register_math remade for vectors */

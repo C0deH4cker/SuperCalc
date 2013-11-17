@@ -511,6 +511,16 @@ Value* Value_next(const char** expr, char end) {
 		(*expr)++;
 		ret = Vector_parse(expr);
 	}
+	else if(**expr == '|') {
+		(*expr)++;
+		ArgList* args = ArgList_new(1);
+		args->args[0] = Value_parse(expr, 0, '|');
+		if (args->args[0]->type == VAL_ERR)
+			return args->args[0];
+		FuncCall* abs = FuncCall_new("abs", args);
+		ret = ValCall(abs);
+		(*expr)++;
+	}
 	else {
 		ret = parseToken(expr);
 	}
@@ -539,7 +549,7 @@ char* Value_verbose(Value* val, int indent) {
 			break;
 		
 		case VAL_REAL:
-			asprintf(&ret, "%.*g", DBL_DIG, val->rval);
+			asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
 			break;
 		
 		case VAL_FRAC:
@@ -588,7 +598,7 @@ char* Value_repr(Value* val) {
 			break;
 		
 		case VAL_REAL:
-			asprintf(&ret, "%.*g", DBL_DIG, val->rval);
+			asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
 			break;
 		
 		case VAL_FRAC:
