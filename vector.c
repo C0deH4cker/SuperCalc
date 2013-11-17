@@ -17,7 +17,7 @@
 Value *Vector_new(Value *count, Value **args) {
     type_chk(count, VAL_INT) return NULL; chk_end // count must be an integer.
     Vector *vector_ret = fmalloc(sizeof(*vector_ret));
-    vector_ret->vals->count = (unsigned)count->ival;
+    vector_ret->vals = ArgList_new((unsigned)count->ival);
     Value_free(count); // I said it would be consumed
     if (!args) { // account for null 'args'
         Value *zero = ValInt(0);
@@ -35,7 +35,7 @@ Value *Vector_new(Value *count, Value **args) {
 
 Value *Vector_copy(Value *vector) {
     Vector *new_vector = fmalloc(sizeof(*vector));
-    new_vector->vals->count = vector->vec->vals->count;
+    new_vector->vals = ArgList_new(vector->vec->vals->count);
     new_vector->vals->args = fmalloc(sizeof(Value)*new_vector->vals->count);
     for (int i = 0; i < new_vector->vals->count; i++) {
         new_vector->vals->args[i] = Value_copy(vector->vec->vals->args[i]);
