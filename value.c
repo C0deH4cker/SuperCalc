@@ -515,8 +515,10 @@ Value* Value_next(const char** expr, char end) {
 		(*expr)++;
 		ArgList* args = ArgList_new(1);
 		args->args[0] = Value_parse(expr, 0, '|');
+		/* check for error */
 		if (args->args[0]->type == VAL_ERR)
 			return args->args[0];
+		/* use built in absolute value function */
 		FuncCall* abs = FuncCall_new("abs", args);
 		ret = ValCall(abs);
 		(*expr)++;
