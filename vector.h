@@ -17,15 +17,15 @@
 
 struct Vector {
     long long count;
-    Value **values;
+    Value **args;
 };
 
 /*
  * Constructors
  */
-// 'count' is required. If 'values' is NULL they will be created as 0 int values.
-// All values in 'values' and are consumed, as is 'count'
-Value *Vector_new(Value *count, Value **values);
+// 'count' is required. If 'args' is NULL they will be created as 0 int values.
+// All values in 'args' and are consumed, as is 'count'
+Value *Vector_new(Value *count, Value **args);
 Value *Vector_copy(Value *vector);
 // The input vector is obviously consumed.
 void Vector_free(struct Vector *vector);
