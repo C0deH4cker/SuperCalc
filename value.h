@@ -33,7 +33,7 @@ typedef enum {
 	VAL_UNARY,
 	VAL_CALL,
 	VAL_VAR,
-    VAL_VECT
+    VAL_VEC
 } VALTYPE;
 
 
@@ -43,7 +43,7 @@ struct Value {
 		long long ival;
 		double rval;
 		Fraction* frac;
-        struct Vector* vval;
+        struct Vector* vec;
 		UnOp* term;
 		BinOp* expr;
 		FuncCall* call;

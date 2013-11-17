@@ -139,8 +139,8 @@ void Value_free(Value* val) {
 			free(val->name);
 			break;
             
-        case VAL_VECT:
-            Vector_free(val->vval);
+        case VAL_VEC:
+            Vector_free(val->vec);
             break;
 			
 		default:
@@ -192,7 +192,7 @@ Value* Value_copy(Value* val) {
 			ret = ValErr(Error_copy(val->err));
 			break;
             
-        case VAL_VECT:
+        case VAL_VEC:
             ret = Vector_copy(val);
             break;
 		
@@ -233,7 +233,7 @@ Value* Value_eval(Value* val, Context* ctx) {
 			ret = Variable_eval(val->name, ctx);
 			break;
             
-        case VAL_VECT:
+        case VAL_VEC:
             ret = Vector_eval(val, ctx);
             break;
 		
@@ -597,7 +597,7 @@ char* Value_repr(Value* val) {
 			ret = strdup(val->name);
 			break;
             
-        case VAL_VECT:
+        case VAL_VEC:
             ret = Vector_repr(val);
             break;
 		
