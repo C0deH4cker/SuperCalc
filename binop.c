@@ -146,7 +146,6 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
 	if (a->type == VAL_VEC) {
-        // both must be vectors if one is
         switch (b->type) {
             case VAL_VEC:
                 ret = Vector_comp_multiply(a, b, ctx);
@@ -162,10 +161,9 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
         }
     }
     else if (b->type == VAL_VEC) {
-        // both must be vectors if one is
         switch (a->type) {
             case VAL_VEC:
-                ret = Vector_comp_multiply(a, b, ctx);
+                ret = Vector_comp_multiply(b, a, ctx);
                 break;
             case VAL_FRAC:
             case VAL_INT:
@@ -216,7 +214,6 @@ static Value* binop_div(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
 	if (a->type == VAL_VEC) {
-        // both must be vectors if one is
         switch (b->type) {
             case VAL_VEC:
                 ret = Vector_comp_divide(a, b, ctx);
@@ -232,17 +229,12 @@ static Value* binop_div(Context* ctx, Value* a, Value* b) {
         }
     }
     else if (b->type == VAL_VEC) {
-        // both must be vectors if one is
         switch (a->type) {
             case VAL_VEC:
                 ret = Vector_comp_divide(b, a, ctx);
                 break;
             case VAL_FRAC:
-                ret = Vector_scalar_divide(b, a, ctx);
-                break;
             case VAL_INT:
-                ret = Vector_scalar_divide(b, a, ctx);
-                break;
             case VAL_REAL:
                 ret = Vector_scalar_divide(b, a, ctx);
                 break;

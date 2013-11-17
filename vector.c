@@ -199,10 +199,10 @@ Value *_Vector_scalar_op(Value *vector, Value *scalar, Context *ctx, BINTYPE op_
     return Vector_new(ValInt(vector->vec->dimensions), values);
 }
 Value *Vector_scalar_multiply(Value *vector, Value *scalar, Context *ctx) {
-    return _Vector_scalar_op(vector, scalar, ctx, BIN_MUL);
+    return _Vector_scalar_op(Value_eval(vector, ctx), Value_eval(scalar, ctx), ctx, BIN_MUL);
 }
 Value *Vector_scalar_divide(Value *vector, Value *scalar, Context *ctx) {
-    return _Vector_scalar_op(vector, scalar, ctx, BIN_DIV);
+    return _Vector_scalar_op(Value_eval(vector, ctx), Value_eval(scalar, ctx), ctx, BIN_DIV);
 }
 Value *_Vector_comp_op(Value *vector1, Value *vector2, Context *ctx, BINTYPE op_type) {
     type_chk(vector1, VAL_VEC) return NULL; chk_end
