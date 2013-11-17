@@ -36,10 +36,10 @@ Vector* Vector_copy(Vector* vec) {
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
 	
-	if(vals->count < 2) {
-		ArgList_free(vals);
-		return ValErr(syntaxError("Vector must have at least 2 components."));
-	}
+//	if(vals->count < 2) {
+//		ArgList_free(vals);
+//		return ValErr(syntaxError("Vector must have at least 2 components."));
+//	}
 	
 	return ValVec(Vector_new(vals));
 }
@@ -96,14 +96,14 @@ static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE b
 
 static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin) {
 	unsigned count = vector1->vals->count;
-	if(count != vector2->vals->count) {
+	if(count != vector2->vals->count && vector2->vals->count > 1) {
 		return ValErr(mathError("Cannot %s vectors of different sizes.", binop_verb[bin]));
 	}
 	
 	ArgList* newv = ArgList_new(count);
 	for (long long i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
-		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(vector2->vals->args[i]));
+		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy((vector2->vals->count == 1 ? vector2->vals->args[0] : vector2->vals->args[i])));
 		Value* result = BinOp_eval(op, ctx);
 		BinOp_free(op);
 		
