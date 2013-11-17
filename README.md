@@ -24,38 +24,38 @@ Additionally, the following constants are defined:
 
 As well as the following mathematical functions:
 
-* `sqrt`
-* `abs`
-* `exp`
-* `log` (base 10)
-* `log2` (base 2)
-* `ln` (base e)
+* `sqrt(x)`
+* `abs(x)`
+* `exp(x)`
+* `log(x)` (base 10)
+* `log2(x)` (base 2)
+* `ln(x)` (base e)
 * `logbase(x, b)` -> log_b(x)
-* `sin`
-* `cos`
-* `tan`
-* `sec`
-* `csc`
-* `cot`
-* `asin`
-* `acos`
-* `atan`
-* `atan2`
-* `asec`
-* `acsc`
-* `acot`
-* `sinh`
-* `cosh`
-* `tanh`
-* `sech`
-* `csch`
-* `coth`
-* `asinh`
-* `acosh`
-* `atanh`
-* `asech`
-* `acsch`
-* `acoth`
+* `sin(x)`
+* `cos(x)`
+* `tan(x)`
+* `sec(x)`
+* `csc(x)`
+* `cot(x)`
+* `asin(x)`
+* `acos(x)`
+* `atan(x)`
+* `atan2(y, x)`
+* `asec(x)`
+* `acsc(x)`
+* `acot(x)`
+* `sinh(x)`
+* `cosh(x)`
+* `tanh(x)`
+* `sech(x)`
+* `csch(x)`
+* `coth(x)`
+* `asinh(x)`
+* `acosh(x)`
+* `atanh(x)`
+* `asech(x)`
+* `acsch(x)`
+* `acoth(x)`
 
 SuperCalc likes to be as precise as it knows how, so floating point values are avoided as much as possible. Even for division and negative powers, SuperCalc will attempt to use fractions as a value type instead of floating point values.
 
@@ -154,8 +154,25 @@ Functions *are* variables:
 	>>> func(3)
 	9
 
-Vectors are supported:
+Vectors are supported as well:
 
+	>>> a = <1, 2, 3>
+	<1, 2, 3>
+	>>> b = <6, 5, 3>
+	<6, 5, 3>
+	>>> a - b
+	<-5, -3, 0>
+	>>> 6 * a - b
+	<0, 7, 15>
+
+Vector specific builtins:
+
+* `dot(vector1, vector2)`
+* `cross(vector1, vector2)`
+* `map(function, vector)`
+
+Vector functions:
+	
 	>>> a = <1, 2, 3>
 	<1, 2, 3>
 	>>> b = <6, 5, 3>
@@ -164,12 +181,21 @@ Vectors are supported:
 	<-9, -15, -7>
 	>>> dot(a, b)
 	25
-	>>> a - b
-	<-5, -3, 0>
-	>>> 6 * a - b
-	<0, 7, 15>
-	
-With any dimension greater than one:
+
+Examples using `map`:
+
+	>>> a = <3, 4, 5>
+	<3, 4, 5>
+	>>> f(x) = 2x + 1
+	>>> map(f, a)
+	<7, 9, 11>
+	>>> angles = <0, pi/2, pi, 3pi/2, 2pi>
+	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
+	>>> map(sin, angles)
+	<0, 1, 0, -1, 0>
+
+
+Vectors can have any dimension greater than one:
 
 	>>> a = <7, 2, 5.5, 7.6>
 	<7, 2, 5.5, 7.6>

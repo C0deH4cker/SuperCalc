@@ -31,6 +31,7 @@
 })
 
 #define IWIDTH 2
+#define EPSILON 1e-12
 
 char line[1024];
 
@@ -50,5 +51,6 @@ char* strNULL(void);
 /* Math */
 long long ipow(long long base, long long exp);
 long long gcd(long long a, long long b);
+double approx(double real);
 
 #endif
