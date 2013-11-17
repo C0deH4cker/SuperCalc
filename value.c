@@ -347,8 +347,8 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
-			/* Skip the separator, but don't do this for the end character */
-			if(**expr == sep)
+			/* Skip the separator or end character */
+			if(**expr == sep || **expr == end)
 				(*expr)++;
 			
 			/* If there was only one value, return it */
@@ -501,11 +501,7 @@ Value* Value_next(const char** expr, char end) {
 	}
 	else if(**expr == '(') {
 		(*expr)++;
-		ret = Value_parse(expr, 0, 0);
-		
-		/* Skip closing parenthesis if it exists */
-		if(**expr == ')')
-			(*expr)++;
+		ret = Value_parse(expr, 0, ')');
 	}
 	else if(**expr == '<') {
 		(*expr)++;
