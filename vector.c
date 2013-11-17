@@ -352,12 +352,68 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	return ValVec(Vector_new(args));
 }
 
+static Value* eval_map(Context* ctx, ArgList* arglist) {
+	if(arglist->count != 2) {
+		return ValErr(builtinArgs("map", 2, arglist->count));
+	}
+	
+	Value* func = Value_copy(arglist->args[0]);
+	if(func->type != VAL_VAR) {
+		Value* val = Value_eval(func, ctx);
+		Value_free(func);
+		
+		if(val->type == VAL_ERR)
+			return val;
+		
+		if(val->type != VAL_VAR) {
+			Value_free(val);
+			return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
+		}
+		
+		func = val;
+	}
+	
+	Value* vec = Value_eval(arglist->args[1], ctx);
+	if(vec->type == VAL_ERR) {
+		Value_free(func);
+		return vec;
+	}
+	
+	if(func->type != VAL_VAR) {
+		Value_free(func);
+		Value_free(vec);
+		return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
+	}
+	
+	if(vec->type != VAL_VEC) {
+		Value_free(func);
+		Value_free(vec);
+		return ValErr(typeError("Builtin 'map' expects a vector as its second argument."));
+	}
+	
+	ArgList* mapping = ArgList_new(vec->vec->vals->count);
+	
+	/* Don't evaluate the call now. Let Builtin_eval do this for us */
+	unsigned i;
+	for(i = 0; i < mapping->count; i++) {
+		ArgList* arg = ArgList_create(1, Value_copy(vec->vec->vals->args[i]));
+		Value* call = ValCall(FuncCall_new(func->name, arg));
+		
+		mapping->args[i] = call;
+	}
+	
+	Value_free(func);
+	Value_free(vec);
+	
+	return ValVec(Vector_new(mapping));
+}
+
 
 static const char* vector_names[] = {
-	"dot", "cross"
+	"dot", "cross", "map"
 };
 static builtin_eval_t vector_funcs[] = {
-	&eval_dot, &eval_cross
+	&eval_dot, &eval_cross, &eval_map
 };
 
 /* This is just a copy of register_math remade for vectors */

@@ -144,4 +144,12 @@ int getSign(const char** expr) {
 	return sign;
 }
 
+double approx(double real) {
+	/* "Close enough" to zero */
+	if(ABS(real) < EPSILON)
+		return 0;
+	
+	return real;
+}
+
 

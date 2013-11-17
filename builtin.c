@@ -43,16 +43,8 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 }
 
 Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist) {
-	/* Evaluate arguments and call evaluator */
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
-	if(evaluated == NULL) {
-		/* An error occurred while evaluating arguments and was already raised */
-		return ValErr(ignoreError());
-	}
-	
 	/* Call the builtin's evaluator function */
 	Value* tmp = blt->evaluator(ctx, arglist);
-	ArgList_free(evaluated);
 	
 	/* Simplify result */
 	Value* ret = Value_eval(tmp, ctx);
