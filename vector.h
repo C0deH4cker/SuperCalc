@@ -16,16 +16,16 @@
 // #define Vector struct vector_t
 
 struct Vector {
-    long long dimensions;
+    long long count;
     Value **values;
 };
 
 /*
  * Constructors
  */
-// 'dimensions' is required. If 'values' is NULL they will be created as 0 int values.
-// All values in 'values' and are consumed, as is 'dimensions'
-Value *Vector_new(Value *dimensions, Value **values);
+// 'count' is required. If 'values' is NULL they will be created as 0 int values.
+// All values in 'values' and are consumed, as is 'count'
+Value *Vector_new(Value *count, Value **values);
 Value *Vector_copy(Value *vector);
 // The input vector is obviously consumed.
 void Vector_free(struct Vector *vector);

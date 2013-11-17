@@ -14,14 +14,14 @@
 #define type_chk(value, _type) if (value->type != _type) { RAISE(typeError("Input type %d.", ""));
 #define chk_end }
 
-Value *Vector_new(Value *dimensions, Value **values) {
-    type_chk(dimensions, VAL_INT) return NULL; chk_end // dimensions must be an integer.
+Value *Vector_new(Value *count, Value **values) {
+    type_chk(count, VAL_INT) return NULL; chk_end // count must be an integer.
     struct Vector *vector_ret = fmalloc(sizeof(*vector_ret));
-    vector_ret->dimensions = dimensions->ival;
-    Value_free(dimensions); // I said it would be consumed
+    vector_ret->count = count->ival;
+    Value_free(count); // I said it would be consumed
     if (!values) { // account for null 'values'
         Value *zero = ValInt(0);
-        for (long long i = 0; i < dimensions->ival; i++) {
+        for (long long i = 0; i < count->ival; i++) {
             vector_ret->values[i] = Value_copy(zero); // copy values so that they can be changed independently
         }
     } else {
@@ -35,9 +35,9 @@ Value *Vector_new(Value *dimensions, Value **values) {
 
 Value *Vector_copy(Value *vector) {
     struct Vector *new_vector = fmalloc(sizeof(*vector));
-    new_vector->dimensions = vector->vec->dimensions;
-    new_vector->values = fmalloc(sizeof(Value)*new_vector->dimensions);
-    for (int i = 0; i < new_vector->dimensions; i++) {
+    new_vector->count = vector->vec->count;
+    new_vector->values = fmalloc(sizeof(Value)*new_vector->count);
+    for (int i = 0; i < new_vector->count; i++) {
         new_vector->values[i] = Value_copy(vector->vec->values[i]);
     }
     Value *ret = fmalloc(sizeof(*ret));
@@ -47,7 +47,7 @@ Value *Vector_copy(Value *vector) {
 }
 
 void Vector_free(struct Vector *vector) {
-    for (long long i = 0; i < vector->dimensions; i++) {
+    for (long long i = 0; i < vector->count; i++) {
         Value_free(vector->values[i]); // free all values
     }
     free(vector); // free the vector itself
@@ -83,11 +83,11 @@ Value* eval_dot(Context* ctx, ArgList* arglist) {
     Value *vector2 = Value_eval(arglist->args[1], ctx);
     type_chk(vector1, VAL_VEC) return NULL; chk_end // vectors are required
     type_chk(vector2, VAL_VEC) return NULL; chk_end
-    if (vector1->vec->dimensions != vector2->vec->dimensions) { // check number of dimensions
-        return ValErr(mathError("Vectors must have the same number of dimensions for dot product: %d != %d.", vector1->vec->dimensions, vector2->vec->dimensions));
+    if (vector1->vec->count != vector2->vec->count) { // check number of count
+        return ValErr(mathError("Vectors must have the same number of count for dot product: %d != %d.", vector1->vec->count, vector2->vec->count));
     }
     Value *total = ValInt(0); // store the total value of the dot product
-    for (long long i = 0; i < vector1->vec->dimensions; i++) {
+    for (long long i = 0; i < vector1->vec->count; i++) {
         BinOp *mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->values[i]), Value_copy(vector2->vec->values[i])); // multiply v1.x and v2.x
         Value *part = BinOp_eval(mul, ctx);
         BinOp *add = BinOp_new(BIN_ADD, part, total); // add v1.x*v2.x to the total dot product
@@ -103,11 +103,11 @@ Value* eval_cross(Context* ctx, ArgList* arglist) {
     Value *vector2 = Value_eval(arglist->args[1], ctx);
     type_chk(vector1, VAL_VEC) return NULL; chk_end // vectors are required
     type_chk(vector2, VAL_VEC) return NULL; chk_end;
-    if (vector1->vec->dimensions != vector2->vec->dimensions) { // check number of dimensions
-        return ValErr(mathError("Vectors must have the same number of dimensions for cross product: %d != %d.", vector1->vec->dimensions, vector2->vec->dimensions));
+    if (vector1->vec->count != vector2->vec->count) { // check number of count
+        return ValErr(mathError("Vectors must have the same number of count for cross product: %d != %d.", vector1->vec->count, vector2->vec->count));
     }
-    if (vector1->vec->dimensions != 3) {
-        return ValErr(mathError("Vectors must have three dimensions for cross product. %d != 3", vector1->vec->dimensions));
+    if (vector1->vec->count != 3) {
+        return ValErr(mathError("Vectors must have three count for cross product. %d != 3", vector1->vec->count));
     }
     BinOp *i_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->values[1]), Value_copy(vector2->vec->values[2]));
     BinOp *i_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->values[2]), Value_copy(vector2->vec->values[1]));
@@ -163,11 +163,11 @@ void Vector_register(Context *ctx) {
 }
 
 Value *Vector_eval(Value *vector, Context *ctx) {
-    Value **new_values = fmalloc((sizeof(*new_values)*vector->vec->dimensions));
-    for (long long i = 0; i < vector->vec->dimensions; i++) {
+    Value **new_values = fmalloc((sizeof(*new_values)*vector->vec->count));
+    for (long long i = 0; i < vector->vec->count; i++) {
         new_values[i] = Value_eval(vector->vec->values[i], ctx);
     }
-    Value *new = Vector_new(ValInt(vector->vec->dimensions), new_values);
+    Value *new = Vector_new(ValInt(vector->vec->count), new_values);
     if (!new) {
         return vector;
     }
@@ -176,11 +176,11 @@ Value *Vector_eval(Value *vector, Context *ctx) {
 
 char *Vector_repr(Value *vector) {
     type_chk(vector, VAL_VEC) RAISE(typeError("Vector required to print vector.")); return NULL; chk_end
-    char *out = fmalloc((sizeof(*out)*(vector->vec->dimensions*20)));
+    char *out = fmalloc((sizeof(*out)*(vector->vec->count*20)));
     char *temp = out;
     temp += sprintf(temp, "<");
-    for (long long i = 0; i < vector->vec->dimensions; i++) {
-        temp += sprintf(temp, (vector->vec->dimensions==(i+1) ? "%s" : "%s,"), Value_repr(vector->vec->values[i]));
+    for (long long i = 0; i < vector->vec->count; i++) {
+        temp += sprintf(temp, (vector->vec->count==(i+1) ? "%s" : "%s,"), Value_repr(vector->vec->values[i]));
     }
     temp += sprintf(temp, ">");
     *temp = '\0';
@@ -189,14 +189,14 @@ char *Vector_repr(Value *vector) {
 
 Value *_Vector_scalar_op(Value *vector, Value *scalar, Context *ctx, BINTYPE op_type) {
     type_chk(vector, VAL_VEC) return NULL; chk_end
-    Value **values = fmalloc((sizeof(*values)*vector->vec->dimensions));
-    for (long long i = 0; i < vector->vec->dimensions; i++) {
+    Value **values = fmalloc((sizeof(*values)*vector->vec->count));
+    for (long long i = 0; i < vector->vec->count; i++) {
         BinOp *op = BinOp_new(op_type, Value_copy(vector->vec->values[i]), Value_copy(scalar));
         values[i] = BinOp_eval(op, ctx);
         BinOp_free(op);
     }
     Value_free(scalar);
-    return Vector_new(ValInt(vector->vec->dimensions), values);
+    return Vector_new(ValInt(vector->vec->count), values);
 }
 Value *Vector_scalar_multiply(Value *vector, Value *scalar, Context *ctx) {
     return _Vector_scalar_op(Value_eval(vector, ctx), Value_eval(scalar, ctx), ctx, BIN_MUL);
@@ -207,16 +207,16 @@ Value *Vector_scalar_divide(Value *vector, Value *scalar, Context *ctx) {
 Value *_Vector_comp_op(Value *vector1, Value *vector2, Context *ctx, BINTYPE op_type) {
     type_chk(vector1, VAL_VEC) return NULL; chk_end
     type_chk(vector1, VAL_VEC) return NULL; chk_end
-    if (vector1->vec->dimensions != vector2->vec->dimensions) {
-        return ValErr(mathError("Component operations must operate on vectors of the same number of dimensions."));
+    if (vector1->vec->count != vector2->vec->count) {
+        return ValErr(mathError("Component operations must operate on vectors of the same number of count."));
     }
-    Value **values = fmalloc((sizeof(*values)*vector1->vec->dimensions));
-    for (long long i = 0; i < vector1->vec->dimensions; i++) { // perform the operation on each matching component.
+    Value **values = fmalloc((sizeof(*values)*vector1->vec->count));
+    for (long long i = 0; i < vector1->vec->count; i++) { // perform the operation on each matching component.
         BinOp *comp_add = BinOp_new(op_type, Value_copy(vector1->vec->values[i]), Value_copy(vector2->vec->values[i]));
         values[i] = BinOp_eval(comp_add, ctx);
         BinOp_free(comp_add);
     }
-    return Vector_new(ValInt(vector1->vec->dimensions), values);
+    return Vector_new(ValInt(vector1->vec->count), values);
 }
 Value *Vector_comp_add(Value *vector1, Value *vector2, Context *ctx) {
     return _Vector_comp_op(vector1, vector2, ctx, BIN_ADD);
