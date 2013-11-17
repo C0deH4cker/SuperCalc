@@ -511,6 +511,17 @@ Value* Value_next(const char** expr, char end) {
 		(*expr)++;
 		ret = Vector_parse(expr);
 	}
+	else if(**expr == '|') {
+		(*expr)++;
+		ArgList* args = ArgList_new(1);
+		args->args[0] = Value_parse(expr, 0, '|');
+		if (args->args[0]->type == VAL_ERR) {
+			RAISE(syntaxError("Parsing inside of absolute value failed."));
+		}
+		FuncCall* abs = FuncCall_new("abs", args);
+		ret = ValCall(abs);
+		(*expr)++;
+	}
 	else {
 		ret = parseToken(expr);
 	}

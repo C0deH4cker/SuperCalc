@@ -65,7 +65,7 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
 	
-	Value* val = arglist->args[0];
+	Value* val = Value_eval(arglist->args[0], ctx);
 	
 	switch(val->type) {
 		case VAL_INT:
@@ -76,6 +76,9 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 		
 		case VAL_FRAC:
 			return ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
+			
+		case VAL_VEC:
+			return Vector_magnitude(val->vec, ctx);
 		
 		default:
 			badValType(val->type);
