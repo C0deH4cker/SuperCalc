@@ -20,6 +20,7 @@
 #include "value.h"
 #include "fraction.h"
 
+#include "vector.h"
 
 /* Operator comparison table */
 static const int _op_cmp[6][6] = {
@@ -50,7 +51,14 @@ static Value* val_ipow(long long base, long long exp) {
 static Value* binop_add(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_FRAC) {
+	if (a->type == VAL_VEC) {
+        // both must be vectors if one is
+        (b->type == VAL_VEC) ? (ret = Vector_comp_add(a, b, ctx)) : (ret = ValErr(badOpType("right", b->type)));
+    }
+    else if (b->type == VAL_VEC) {
+        (a->type == VAL_VEC) ? (ret = Vector_comp_add(a, b, ctx)) : (ret = ValErr(badOpType("left", b->type)));
+    }
+    else if(a->type == VAL_FRAC) {
 		ret = Fraction_add(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -88,7 +96,14 @@ static Value* binop_add(Context* ctx, Value* a, Value* b) {
 static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_FRAC) {
+	if (a->type == VAL_VEC) {
+        // both must be vectors if one is
+        (b->type == VAL_VEC) ? (ret = Vector_comp_subtract(a, b, ctx)) : (ret = ValErr(badOpType("right", b->type)));
+    }
+    else if (b->type == VAL_VEC) {
+        (a->type == VAL_VEC) ? (ret = Vector_comp_subtract(a, b, ctx)) : (ret = ValErr(badOpType("left", b->type)));
+    }
+    else if(a->type == VAL_FRAC) {
 		ret = Fraction_sub(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -130,7 +145,37 @@ static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_FRAC) {
+	if (a->type == VAL_VEC) {
+        switch (b->type) {
+            case VAL_VEC:
+                ret = Vector_comp_multiply(a, b, ctx);
+                break;
+            case VAL_FRAC:
+            case VAL_INT:
+            case VAL_REAL:
+                ret = Vector_scalar_multiply(a, b, ctx);
+                break;
+            default:
+                ret = ValErr(badOpType("right", b->type));
+                break;
+        }
+    }
+    else if (b->type == VAL_VEC) {
+        switch (a->type) {
+            case VAL_VEC:
+                ret = Vector_comp_multiply(b, a, ctx);
+                break;
+            case VAL_FRAC:
+            case VAL_INT:
+            case VAL_REAL:
+                ret = Vector_scalar_multiply(b, a, ctx);
+                break;
+            default:
+                ret = ValErr(badOpType("left", a->type));
+                break;
+        }
+    }
+    else if(a->type == VAL_FRAC) {
 		ret = Fraction_mul(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -168,7 +213,37 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 static Value* binop_div(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_FRAC) {
+	if (a->type == VAL_VEC) {
+        switch (b->type) {
+            case VAL_VEC:
+                ret = Vector_comp_divide(a, b, ctx);
+                break;
+            case VAL_FRAC:
+            case VAL_INT:
+            case VAL_REAL:
+                ret = Vector_scalar_divide(a, b, ctx);
+                break;
+            default:
+                ret = ValErr(badOpType("right", b->type));
+                break;
+        }
+    }
+    else if (b->type == VAL_VEC) {
+        switch (a->type) {
+            case VAL_VEC:
+                ret = Vector_comp_divide(b, a, ctx);
+                break;
+            case VAL_FRAC:
+            case VAL_INT:
+            case VAL_REAL:
+                ret = Vector_scalar_divide(b, a, ctx);
+                break;
+            default:
+                ret = ValErr(badOpType("left", a->type));
+                break;
+        }
+    }
+    else if(a->type == VAL_FRAC) {
 		ret = Fraction_div(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {

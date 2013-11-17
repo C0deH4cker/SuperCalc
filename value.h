@@ -19,7 +19,9 @@ typedef struct Value Value;
 #include "variable.h"
 #include "context.h"
 #include "error.h"
+#include "vector.h"
 
+typedef struct Vector Vector;
 
 typedef enum {
 	VAL_END = -3,
@@ -31,7 +33,8 @@ typedef enum {
 	VAL_EXPR,
 	VAL_UNARY,
 	VAL_CALL,
-	VAL_VAR
+	VAL_VAR,
+    VAL_VEC
 } VALTYPE;
 
 
@@ -41,6 +44,7 @@ struct Value {
 		long long ival;
 		double rval;
 		Fraction* frac;
+        Vector* vec;
 		UnOp* term;
 		BinOp* expr;
 		FuncCall* call;
@@ -61,6 +65,7 @@ Value* ValExpr(BinOp* expr);
 Value* ValUnary(UnOp* term);
 Value* ValCall(FuncCall* call);
 Value* ValVar(const char* name);
+Value* ValVec(ArgList *args);
 
 /* Destructor */
 void Value_free(Value* val);

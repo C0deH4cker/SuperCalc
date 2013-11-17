@@ -115,6 +115,16 @@ Value* ValVar(const char* name) {
 	return ret;
 }
 
+Value* ValVec(ArgList *args) {
+    Value* ret = allocValue(VAL_VEC);
+    
+    Vector *vector = fmalloc(sizeof(*vector));
+    vector->vals = args;
+    ret->vec = vector;
+    
+    return ret;
+}
+
 void Value_free(Value* val) {
 	if(!val) return;
 	
@@ -138,6 +148,10 @@ void Value_free(Value* val) {
 		case VAL_VAR:
 			free(val->name);
 			break;
+            
+        case VAL_VEC:
+            Vector_free(val->vec);
+            break;
 		
 		case VAL_ERR:
 			Error_free(val->err);
@@ -191,6 +205,10 @@ Value* Value_copy(Value* val) {
 		case VAL_ERR:
 			ret = ValErr(Error_copy(val->err));
 			break;
+            
+        case VAL_VEC:
+            ret = Vector_copy(val);
+            break;
 		
 		default:
 			typeError("Unknown value type: %d.", val->type);
@@ -228,6 +246,10 @@ Value* Value_eval(Value* val, Context* ctx) {
 		case VAL_VAR:
 			ret = Variable_eval(val->name, ctx);
 			break;
+            
+        case VAL_VEC:
+            ret = Vector_eval(val, ctx);
+            break;
 		
 		/* These can't be simplified, so just copy them */
 		case VAL_INT:
@@ -486,7 +508,10 @@ Value* Value_next(const char** expr) {
 	else if(**expr == ')') {
 		(*expr)++;
 		return ValEnd();
-	}
+	} else if (**expr == '<') {
+        (*expr)++;
+        ret = ValVec(ArgList_parse(expr, ',', '>'));
+    }
 	else {
 		ret = parseToken(expr);
 	}
@@ -586,6 +611,10 @@ char* Value_repr(Value* val) {
 		case VAL_VAR:
 			ret = strdup(val->name);
 			break;
+            
+        case VAL_VEC:
+            ret = Vector_repr(val);
+            break;
 		
 		default:
 			/* Shouldn't be reached */

@@ -162,6 +162,8 @@ static builtin_eval_t math_funcs[] = {
 };
 
 void register_math(Context* ctx) {
+    Vector_register(ctx);
+    
 	unsigned count = sizeof(math_names) / sizeof(math_names[0]);
 	
 	unsigned i;
