@@ -83,6 +83,8 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 		default:
 			badValType(val->type);
 	}
+	
+	Value_free(val);
 }
 
 Value* eval_exp(Context* ctx, ArgList* arglist) {
