@@ -33,6 +33,9 @@ struct BinOp {
 	Value* b;
 };
 
+/* Contains strings such as "multiply" for index BIN_ADD */
+const char* binop_verb[6];
+
 /* Constructor */
 /* This method consumes both the `a` and `b` arguments */
 BinOp* BinOp_new(BINTYPE type, Value* a, Value* b);

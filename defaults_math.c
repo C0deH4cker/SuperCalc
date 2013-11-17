@@ -16,6 +16,7 @@
 #include "arglist.h"
 #include "value.h"
 #include "binop.h"
+#include "vector.h"
 
 
 #define EVAL_CONST(name, val) Value* eval_ ## name(Context* ctx, ArgList* arglist) { \
@@ -40,7 +41,7 @@ EVAL_CONST(phi, PHI);
 	} \
 	double* a = ArgList_toReals(arglist, ctx); \
 	if(!a) { \
-		return ValErr(ignoreError()); \
+		return ValErr(badConversion(#name)); \
 	} \
 	Value* ret = ValReal((func)); \
 	free(a); \
@@ -162,8 +163,8 @@ static builtin_eval_t math_funcs[] = {
 };
 
 void register_math(Context* ctx) {
-    Vector_register(ctx);
-    
+	Vector_register(ctx);
+	
 	unsigned count = sizeof(math_names) / sizeof(math_names[0]);
 	
 	unsigned i;

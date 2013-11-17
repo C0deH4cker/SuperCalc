@@ -154,6 +154,50 @@ Functions *are* variables:
 	>>> func(3)
 	9
 
+Vectors are supported:
+
+	>>> a = <1, 2, 3>
+	<1, 2, 3>
+	>>> b = <6, 5, 3>
+	<6, 5, 3>
+	>>> cross(a, b)
+	<-9, -15, -7>
+	>>> dot(a, b)
+	25
+	>>> a - b
+	<-5, -3, 0>
+	>>> 6 * a - b
+	<0, 7, 15>
+	
+With any dimension greater than one:
+
+	>>> a = <7, 2, 5.5, 7.6>
+	<7, 2, 5.5, 7.6>
+	>>> dot(a, <1, 2, 3, 4>)
+	57.9
+	>>> c = <1, 2>
+	<1, 2>
+	
+Multiplying or dividing two vectors uses their components:
+
+	>>> <1, 2, 3> * <4, 7, 2>
+	<4, 14, 6>
+	>>> <1, 4, 5> / <4, 6, 2>
+	<1/4, 2/3, 5/2>
+
+Vectors even support scalar operations:
+
+	>>> a = <4, 7, -3>
+	<4, 7, -3>
+	>>> a + 2
+	<6, 9, -1>
+	>>> ans / 3
+	<2, 3, -1/3>
+	>>> ans ^ 2
+	<4, 9, 1/9>
+	>>> 2 / ans
+	<1/2, 2/9, 18>
+
 Variables can be deleted using `~`:
 
 	>>> a = 4
@@ -197,37 +241,6 @@ Error messages attempt to be clear:
 	Syntax Error: Premature end of input.
 	>>> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
-	
-Vectors are supported:
-
-	>>> a = <1, 2, 3>
-	<1,2,3>
-	>>> b = < 6, 5, 3>
-	<6,5,3>
-	>>> cross(a, b)
-	<-9,-15,-7>
-	>>> dot(a, b)
-	25
-	>>> a-b
-	<-5,-3,0>
-	>>> 6*a-b
-	<0,7,15>
-	
-With any dimension greater that zero:
-
-	>>> a = <7, 2, 5.5, 7.6>
-	<7,2,5.5,7.6>
-	>>> dot(a, <1, 2, 3, 4>)
-	57.9
-	>> c = <1>
-	<1>
-	
-Multiplying or dividing two vectors uses their components:
-
-	>>> <1, 2, 3>*<4, 7, 2>
-	<4,14,6>
-	>>> <1, 4, 5>/<4, 6, 2>
-	<1/4,2/3,5/2>
 
 For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree.
 

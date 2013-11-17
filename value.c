@@ -115,14 +115,12 @@ Value* ValVar(const char* name) {
 	return ret;
 }
 
-Value* ValVec(ArgList *args) {
-    Value* ret = allocValue(VAL_VEC);
-    
-    Vector *vector = fmalloc(sizeof(*vector));
-    vector->vals = args;
-    ret->vec = vector;
-    
-    return ret;
+Value* ValVec(Vector* vec) {
+	Value* ret = allocValue(VAL_VEC);
+	
+	ret->vec = vec;
+	
+	return ret;
 }
 
 void Value_free(Value* val) {
@@ -132,31 +130,31 @@ void Value_free(Value* val) {
 		case VAL_EXPR:
 			BinOp_free(val->expr);
 			break;
-			
+		
 		case VAL_UNARY:
 			UnOp_free(val->term);
 			break;
-			
+		
 		case VAL_CALL:
 			FuncCall_free(val->call);
 			break;
-			
+		
 		case VAL_FRAC:
 			Fraction_free(val->frac);
 			break;
-			
+		
 		case VAL_VAR:
 			free(val->name);
 			break;
-            
-        case VAL_VEC:
-            Vector_free(val->vec);
-            break;
+		
+		case VAL_VEC:
+			Vector_free(val->vec);
+			break;
 		
 		case VAL_ERR:
 			Error_free(val->err);
 			break;
-			
+		
 		default:
 			/* The rest don't need to be freed */
 			break;
@@ -197,6 +195,10 @@ Value* Value_copy(Value* val) {
 			ret = ValVar(val->name);
 			break;
 		
+		case VAL_VEC:
+			ret = ValVec(Vector_copy(val->vec));
+			break;
+		
 		case VAL_NEG:
 			/* Shouldn't be reached, but so easy to code */
 			ret = ValNeg();
@@ -205,10 +207,6 @@ Value* Value_copy(Value* val) {
 		case VAL_ERR:
 			ret = ValErr(Error_copy(val->err));
 			break;
-            
-        case VAL_VEC:
-            ret = Vector_copy(val);
-            break;
 		
 		default:
 			typeError("Unknown value type: %d.", val->type);
@@ -246,10 +244,10 @@ Value* Value_eval(Value* val, Context* ctx) {
 		case VAL_VAR:
 			ret = Variable_eval(val->name, ctx);
 			break;
-            
-        case VAL_VEC:
-            ret = Vector_eval(val, ctx);
-            break;
+		
+		case VAL_VEC:
+			ret = Vector_eval(val->vec, ctx);
+			break;
 		
 		/* These can't be simplified, so just copy them */
 		case VAL_INT:
@@ -299,12 +297,10 @@ Value* Value_parse(const char** expr, char sep, char end) {
 	BinOp* prev;
 	
 	trimSpaces(expr);
-	if(**expr == '\0')
-		return ValEnd();
 	
 	while(1) {
 		/* Get next value */
-		val = Value_next(expr);
+		val = Value_next(expr, end);
 		
 		/* Error parsing next value? */
 		if(val->type == VAL_ERR) {
@@ -351,6 +347,7 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
+			/* Skip the separator, but don't do this for the end character */
 			if(**expr == sep)
 				(*expr)++;
 			
@@ -487,10 +484,15 @@ static Value* parseToken(const char** expr) {
 	return ret;
 }
 
-Value* Value_next(const char** expr) {
+Value* Value_next(const char** expr, char end) {
 	Value* ret;
 	
-	if(getSign(expr) == -1) return ValNeg();
+	trimSpaces(expr);
+	if(**expr == end)
+		return ValEnd();
+	
+	if(getSign(expr) == -1)
+		return ValNeg();
 	
 	trimSpaces(expr);
 	
@@ -505,13 +507,10 @@ Value* Value_next(const char** expr) {
 		if(**expr == ')')
 			(*expr)++;
 	}
-	else if(**expr == ')') {
+	else if(**expr == '<') {
 		(*expr)++;
-		return ValEnd();
-	} else if (**expr == '<') {
-        (*expr)++;
-        ret = ValVec(ArgList_parse(expr, ',', '>'));
-    }
+		ret = Vector_parse(expr);
+	}
 	else {
 		ret = parseToken(expr);
 	}
@@ -563,6 +562,10 @@ char* Value_verbose(Value* val, int indent) {
 			ret = strdup(val->name);
 			break;
 		
+		case VAL_VEC:
+			ret = Vector_verbose(val->vec, indent);
+			break;
+		
 		default:
 			badValType(val->type);
 	}
@@ -611,10 +614,10 @@ char* Value_repr(Value* val) {
 		case VAL_VAR:
 			ret = strdup(val->name);
 			break;
-            
-        case VAL_VEC:
-            ret = Vector_repr(val);
-            break;
+		
+		case VAL_VEC:
+			ret = Vector_repr(val->vec);
+			break;
 		
 		default:
 			/* Shouldn't be reached */

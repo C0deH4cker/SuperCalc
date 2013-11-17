@@ -48,11 +48,13 @@ struct Error {
 
 const char* kNullErrStr;
 const char* kDivByZeroStr;
+const char* kModByZeroStr;
 const char* kVarNotFoundStr;
 const char* kBadOpTypeStr;
 const char* kBadCharStr;
 const char* kBuiltinArgsStr;
 const char* kBuiltinNotFuncStr;
+const char* kBadConversionStr;
 const char* kEarlyEndStr;
 
 const char* kAllocErrStr;
@@ -61,11 +63,13 @@ const char* kBadVarStr;
 
 #define nullError()					unknownError(kNullErrStr)
 #define zeroDivError()				mathError(kDivByZeroStr)
+#define zeroModError()				mathError(kModByZeroStr)
 #define varNotFound(name)			nameError(kVarNotFoundStr, (name))
 #define badOpType(op, type)			typeError(kBadOpTypeStr, (op), (type))
 #define badChar(ch)					(ch ? syntaxError(kBadCharStr, (ch)) : syntaxError(kEarlyEndStr))
 #define builtinArgs(name, n1, n2)	typeError(kBuiltinArgsStr, (name), (n1), (n1) == 1 ? "" : "s", (n2))
 #define builtinNotFunc(name)		typeError(kBuiltinNotFuncStr, (name))
+#define badConversion(name)			typeError(kBadConversionStr, (name))
 #define earlyEnd()					syntaxError(kEarlyEndStr)
 
 /* Death macros */
