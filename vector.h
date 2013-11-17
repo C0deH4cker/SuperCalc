@@ -16,12 +16,11 @@
 
 // #define Vector struct vector_t
 
-//Vector {
-//    long long count;
-//    Value **args;
-//};
+struct Vector {
+    ArgList *vals;
+};
 
- typedef ArgList Vector;
+typedef struct Vector Vector;
 
 /*
  * Constructors

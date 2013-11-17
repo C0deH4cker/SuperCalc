@@ -21,7 +21,7 @@ typedef struct Value Value;
 #include "error.h"
 #include "vector.h"
 
-typedef ArgList Vector;
+typedef struct Vector Vector;
 
 typedef enum {
 	VAL_END = -3,

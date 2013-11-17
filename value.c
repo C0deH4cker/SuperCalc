@@ -118,7 +118,9 @@ Value* ValVar(const char* name) {
 Value* ValVec(ArgList *args) {
     Value* ret = allocValue(VAL_VEC);
     
-    ret->vec = args;
+    Vector *vector = fmalloc(sizeof(*vector));
+    vector->vals = args;
+    ret->vec = vector;
     
     return ret;
 }
