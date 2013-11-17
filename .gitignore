@@ -12,6 +12,7 @@ build/*
 *.perspectivev3
 *.pbxuser
 *.xcworkspace
+*.xcodeproj
 xcuserdata
 
 # svn & cvs

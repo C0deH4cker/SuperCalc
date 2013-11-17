@@ -138,6 +138,10 @@ void Value_free(Value* val) {
 		case VAL_VAR:
 			free(val->name);
 			break;
+            
+        case VAL_VECT:
+            Vector_free(val->vval);
+            break;
 			
 		default:
 			/* The rest don't need to be freed */
@@ -187,6 +191,10 @@ Value* Value_copy(Value* val) {
 		case VAL_ERR:
 			ret = ValErr(Error_copy(val->err));
 			break;
+            
+        case VAL_VECT:
+            ret = Vector_copy(val);
+            break;
 		
 		default:
 			typeError("Unknown value type: %d.", val->type);
@@ -224,6 +232,10 @@ Value* Value_eval(Value* val, Context* ctx) {
 		case VAL_VAR:
 			ret = Variable_eval(val->name, ctx);
 			break;
+            
+        case VAL_VECT:
+            ret = Vector_eval(val, ctx);
+            break;
 		
 		/* These can't be simplified, so just copy them */
 		case VAL_INT:
@@ -482,7 +494,9 @@ Value* Value_next(const char** expr) {
 	else if(**expr == ')') {
 		(*expr)++;
 		return ValEnd();
-	}
+	} else if (**expr == '<') {
+        ret = Vector_parse(expr);
+    }
 	else {
 		ret = parseToken(expr);
 	}
@@ -582,6 +596,10 @@ char* Value_repr(Value* val) {
 		case VAL_VAR:
 			ret = strdup(val->name);
 			break;
+            
+        case VAL_VECT:
+            ret = Vector_repr(val);
+            break;
 		
 		default:
 			/* Shouldn't be reached */
