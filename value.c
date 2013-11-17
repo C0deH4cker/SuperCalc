@@ -115,6 +115,14 @@ Value* ValVar(const char* name) {
 	return ret;
 }
 
+Value* ValVec(ArgList *args) {
+    Value* ret = allocValue(VAL_VEC);
+    
+    ret->vec = args;
+    
+    return ret;
+}
+
 void Value_free(Value* val) {
 	if(!val) return;
 	
@@ -499,7 +507,8 @@ Value* Value_next(const char** expr) {
 		(*expr)++;
 		return ValEnd();
 	} else if (**expr == '<') {
-        ret = Vector_parse(expr);
+        (*expr)++;
+        ret = ValVec(ArgList_parse(expr, ',', '>'));
     }
 	else {
 		ret = parseToken(expr);

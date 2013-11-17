@@ -65,6 +65,7 @@ Value* ValExpr(BinOp* expr);
 Value* ValUnary(UnOp* term);
 Value* ValCall(FuncCall* call);
 Value* ValVar(const char* name);
+Value* ValVec(ArgList *args);
 
 /* Destructor */
 void Value_free(Value* val);

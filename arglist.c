@@ -126,6 +126,8 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	memcpy(ret->args, args, count * sizeof(*args));
 	
 	free(args);
+    
+    (*expr)++;
 	
 	return ret;
 }

@@ -52,28 +52,6 @@ void Vector_free(Vector *vector) {
     }
     free(vector); // free the vector itself
 }
-#define prc printf("%c\n", **expr);
-Value *Vector_parse(const char **expr) {
-    size_t size = 2;
-    Value **args = fmalloc(size*sizeof(*args));
-    unsigned i = 1;
-    (*expr) ++;
-    args[0] = Value_next(expr);
-    while (**expr == ',') {
-        (*expr) ++;
-        args[i++] = Value_next(expr);
-        if (i >= size && **expr == ',') {
-            size *= 2;
-            args = frealloc(args, (size*sizeof(*args)));
-        }
-    }
-    if (**expr != '>') {
-        return ValErr(syntaxError("Closing vector bracket ('>') missing: %c%c%c", *(*expr-1), *(*expr), *(*expr+1)));
-    }
-    (*expr) ++;
-    Value *parsed = Vector_new(ValInt(i), args);
-    return (parsed ? parsed : ValErr(syntaxError("Vector parsing failed.")));
-}
 
 Value* eval_dot(Context* ctx, ArgList* arglist) {
 	if(arglist->count != 2) {

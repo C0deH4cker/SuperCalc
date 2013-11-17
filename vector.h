@@ -32,7 +32,6 @@ Value *Vector_new(Value *count, Value **args);
 Value *Vector_copy(Value *vector);
 // The input vector is obviously consumed.
 void Vector_free(Vector *vector);
-Value *Vector_parse(const char **expr);
 
 void Vector_register(Context *ctx);
 
