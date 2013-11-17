@@ -21,6 +21,7 @@ typedef struct Value Value;
 #include "error.h"
 #include "vector.h"
 
+typedef ArgList Vector;
 
 typedef enum {
 	VAL_END = -3,
@@ -43,7 +44,7 @@ struct Value {
 		long long ival;
 		double rval;
 		Fraction* frac;
-        struct Vector* vec;
+        Vector* vec;
 		UnOp* term;
 		BinOp* expr;
 		FuncCall* call;

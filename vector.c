@@ -16,7 +16,7 @@
 
 Value *Vector_new(Value *count, Value **args) {
     type_chk(count, VAL_INT) return NULL; chk_end // count must be an integer.
-    struct Vector *vector_ret = fmalloc(sizeof(*vector_ret));
+    Vector *vector_ret = fmalloc(sizeof(*vector_ret));
     vector_ret->count = count->ival;
     Value_free(count); // I said it would be consumed
     if (!args) { // account for null 'args'
@@ -34,7 +34,7 @@ Value *Vector_new(Value *count, Value **args) {
 }
 
 Value *Vector_copy(Value *vector) {
-    struct Vector *new_vector = fmalloc(sizeof(*vector));
+    Vector *new_vector = fmalloc(sizeof(*vector));
     new_vector->count = vector->vec->count;
     new_vector->args = fmalloc(sizeof(Value)*new_vector->count);
     for (int i = 0; i < new_vector->count; i++) {
@@ -46,7 +46,7 @@ Value *Vector_copy(Value *vector) {
     return ret;
 }
 
-void Vector_free(struct Vector *vector) {
+void Vector_free(Vector *vector) {
     for (long long i = 0; i < vector->count; i++) {
         Value_free(vector->args[i]); // free all args
     }

@@ -10,15 +10,18 @@
 #define SuperCalc_vector_h
 
 #include "value.h"
+#include "arglist.h"
 
 // typedef struct vector_t Vector;
 
 // #define Vector struct vector_t
 
-struct Vector {
-    long long count;
-    Value **args;
-};
+//Vector {
+//    long long count;
+//    Value **args;
+//};
+
+ typedef ArgList Vector;
 
 /*
  * Constructors
@@ -28,7 +31,7 @@ struct Vector {
 Value *Vector_new(Value *count, Value **args);
 Value *Vector_copy(Value *vector);
 // The input vector is obviously consumed.
-void Vector_free(struct Vector *vector);
+void Vector_free(Vector *vector);
 Value *Vector_parse(const char **expr);
 
 void Vector_register(Context *ctx);
