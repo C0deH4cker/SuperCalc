@@ -80,18 +80,33 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		ret->args[i] = Value_eval(arglist->args[i], ctx);
+		Value* result = Value_eval(arglist->args[i], ctx);
+		if(result->type == VAL_ERR) {
+			/* An error occurred */
+			Error_raise(result->err);
+			
+			Value_free(result);
+			ArgList_free(ret);
+			
+			return NULL;
+		}
+		
+		ret->args[i] = result;
 	}
 	
 	return ret;
 }
 
 double* ArgList_toReals(ArgList* arglist, Context* ctx) {
+	ArgList* evaluated = ArgList_eval(arglist, ctx);
+	if(evaluated == NULL)
+		return NULL;
+	
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		double real = Value_asReal(arglist->args[i]);
+		double real = Value_asReal(evaluated->args[i]);
 		if(isnan(real)) {
 			free(ret);
 			return NULL;
@@ -99,6 +114,8 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 		
 		ret[i] = real;
 	}
+	
+	ArgList_free(evaluated);
 	
 	return ret;
 }
@@ -126,8 +143,8 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	memcpy(ret->args, args, count * sizeof(*args));
 	
 	free(args);
-    
-    (*expr)++;
+	
+	(*expr)++;
 	
 	return ret;
 }

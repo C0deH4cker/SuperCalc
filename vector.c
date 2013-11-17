@@ -1,210 +1,398 @@
-//
-//  vector.c
-//  SuperCalc
-//
-//  Created by Silas Schwarz on 11/16/13.
-//  Copyright (c) 2013 Silas Schwarz. All rights reserved.
-//
+/*
+  vector.c
+  SuperCalc
 
-#include <stdio.h>
+  Created by Silas Schwarz on 11/16/13.
+  Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
+*/
+
 #include "vector.h"
-#include "generic.h"
+#include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 
-#define type_chk(value, _type) if (value->type != _type) { RAISE(typeError("Input type %d.", ""));
-#define chk_end }
+#include "generic.h"
+#include "error.h"
 
-Value *Vector_new(Value *count, Value **args) {
-    type_chk(count, VAL_INT) return NULL; chk_end // count must be an integer.
-    Vector *vector_ret = fmalloc(sizeof(*vector_ret));
-    vector_ret->vals->count = (unsigned)count->ival;
-    Value_free(count); // I said it would be consumed
-    if (!args) { // account for null 'args'
-        Value *zero = ValInt(0);
-        for (long long i = 0; i < count->ival; i++) {
-            vector_ret->vals->args[i] = Value_copy(zero); // copy args so that they can be changed independently
-        }
-    } else {
-        vector_ret->vals->args = args; // I said they would be consumed
-    }
-    Value *value_ret = fmalloc(sizeof(*value_ret)); // wrap the vector in a 'Value'
-    value_ret->type = VAL_VEC;
-    value_ret->vec = vector_ret;
-    return value_ret;
+
+Vector* Vector_new(ArgList* vals) {
+	Vector* ret = fmalloc(sizeof(*ret));
+	
+	ret->vals = vals;
+	
+	return ret;
 }
 
-Value *Vector_copy(Value *vector) {
-    Vector *new_vector = fmalloc(sizeof(*vector));
-    new_vector->vals->count = vector->vec->vals->count;
-    new_vector->vals->args = fmalloc(sizeof(Value)*new_vector->vals->count);
-    for (int i = 0; i < new_vector->vals->count; i++) {
-        new_vector->vals->args[i] = Value_copy(vector->vec->vals->args[i]);
-    }
-    Value *ret = fmalloc(sizeof(*ret));
-    ret->type = VAL_VEC;
-    ret->vec = new_vector;
-    return ret;
+void Vector_free(Vector* vec) {
+	ArgList_free(vec->vals);
+	
+	free(vec);
 }
 
-void Vector_free(Vector *vector) {
-    for (long long i = 0; i < vector->vals->count; i++) {
-        Value_free(vector->vals->args[i]); // free all args
-    }
-    free(vector); // free the vector itself
+Vector* Vector_copy(Vector* vec) {
+	return Vector_new(ArgList_copy(vec->vals));
 }
 
-Value* eval_dot(Context* ctx, ArgList* arglist) {
-	if(arglist->count != 2) {
-		return ValErr(builtinArgs("dot", 2, arglist->count)); // two vectors are required for dot product
+Value* Vector_parse(const char** expr) {
+	ArgList* vals = ArgList_parse(expr, ',', '>');
+	
+	if(vals->count < 2) {
+		ArgList_free(vals);
+		return ValErr(syntaxError("Vector must have at least 2 components."));
 	}
-    Value *vector1 = Value_eval(arglist->args[0], ctx);
-    Value *vector2 = Value_eval(arglist->args[1], ctx);
-    type_chk(vector1, VAL_VEC) return NULL; chk_end // vectors are required
-    type_chk(vector2, VAL_VEC) return NULL; chk_end
-    if (vector1->vec->vals->count != vector2->vec->vals->count) { // check number of count
-        return ValErr(mathError("Vectors must have the same number of count for dot product: %d != %d.", vector1->vec->vals->count, vector2->vec->vals->count));
-    }
-    Value *total = ValInt(0); // store the total value of the dot product
-    for (long long i = 0; i < vector1->vec->vals->count; i++) {
-        BinOp *mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[i]), Value_copy(vector2->vec->vals->args[i])); // multiply v1.x and v2.x
-        Value *part = BinOp_eval(mul, ctx);
-        BinOp *add = BinOp_new(BIN_ADD, part, total); // add v1.x*v2.x to the total dot product
-        total = BinOp_eval(add, ctx);
-    }
-	return total;
+	
+	return ValVec(Vector_new(vals));
 }
-Value* eval_cross(Context* ctx, ArgList* arglist) {
-	if(arglist->count != 2) {
-		return ValErr(builtinArgs("cross", 2, arglist->count)); // two vectors are required for cross product
+
+Value* Vector_eval(Vector* vec, Context* ctx) {
+	return ValVec(Vector_new(ArgList_eval(vec->vals, ctx)));
+}
+
+static Value* vecScalarOp(Vector* vec, Value* scalar, Context *ctx, BINTYPE bin) {
+	ArgList* newv = ArgList_new(vec->vals->count);
+	
+	unsigned i;
+	for(i = 0; i < vec->vals->count; i++) {
+		/* Perform operation */
+		BinOp* op = BinOp_new(bin, Value_copy(vec->vals->args[i]), Value_copy(scalar));
+		Value* result = BinOp_eval(op, ctx);
+		BinOp_free(op);
+		
+		/* Error checking */
+		if(result->type == VAL_ERR) {
+			ArgList_free(newv);
+			return result;
+		}
+		
+		/* Store result */
+		newv->args[i] = result;
 	}
-    Value *vector1 = Value_eval(arglist->args[0], ctx);
-    Value *vector2 = Value_eval(arglist->args[1], ctx);
-    type_chk(vector1, VAL_VEC) return NULL; chk_end // vectors are required
-    type_chk(vector2, VAL_VEC) return NULL; chk_end;
-    if (vector1->vec->vals->count != vector2->vec->vals->count) { // check number of count
-        return ValErr(mathError("Vectors must have the same number of count for cross product: %d != %d.", vector1->vec->vals->count, vector2->vec->vals->count));
-    }
-    if (vector1->vec->vals->count != 3) {
-        return ValErr(mathError("Vectors must have three count for cross product. %d != 3", vector1->vec->vals->count));
-    }
-    BinOp *i_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[2]));
-    BinOp *i_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[1]));
-    Value *i_pos = BinOp_eval(i_pos_op, ctx);
-    Value *i_neg = BinOp_eval(i_neg_op, ctx);
-    BinOp_free(i_pos_op);
-    BinOp_free(i_neg_op);
-    BinOp *i_op = BinOp_new(BIN_SUB, i_pos, i_neg);
-    Value *i = BinOp_eval(i_op, ctx);
-    BinOp_free(i_op);
-    
-    BinOp *j_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[2]));
-    BinOp *j_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[0]));
-    Value *j_pos = BinOp_eval(j_pos_op, ctx);
-    Value *j_neg = BinOp_eval(j_neg_op, ctx);
-    BinOp_free(j_pos_op);
-    BinOp_free(j_neg_op);
-    BinOp *j_op = BinOp_new(BIN_SUB, j_pos, j_neg);
-    Value *j = BinOp_eval(j_op, ctx);
-    BinOp_free(j_op);
-    
-    BinOp *k_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[1]));
-    BinOp *k_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[0]));
-    Value *k_pos = BinOp_eval(k_pos_op, ctx);
-    Value *k_neg = BinOp_eval(k_neg_op, ctx);
-    BinOp_free(k_pos_op);
-    BinOp_free(k_neg_op);
-    BinOp *k_op = BinOp_new(BIN_SUB, k_pos, k_neg);
-    Value *k = BinOp_eval(k_op, ctx);
-    BinOp_free(k_op);
-    
-    Value **args = fmalloc(sizeof(*args)*3);
-    args[0] = i;
-    args[1] = j;
-    args[2] = k;
-    Value *cross = Vector_new(ValInt(3), args);
-	return cross;
+	
+	return ValVec(Vector_new(newv));
 }
-static const char* math_names[] = {
-	"dot", "cross"
-};
-static builtin_eval_t math_funcs[] = {
-	&eval_dot, &eval_cross
-};
-// This is just a copy of register_math remade for vectors
-void Vector_register(Context *ctx) {
-    unsigned count = sizeof(math_names) / sizeof(math_names[0]);
+
+static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
+	ArgList* newv = ArgList_new(vec->vals->count);
+	
+	unsigned i;
+	for(i = 0; i < vec->vals->count; i++) {
+		/* Perform reverse operation */
+		BinOp* op = BinOp_new(bin, Value_copy(scalar), Value_copy(vec->vals->args[i]));
+		Value* result = BinOp_eval(op, ctx);
+		BinOp_free(op);
+		
+		/* Error checking */
+		if(result->type == VAL_ERR) {
+			ArgList_free(newv);
+			return result;
+		}
+		
+		/* Store result */
+		newv->args[i] = result;
+	}
+	
+	return ValVec(Vector_new(newv));
+}
+
+static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin) {
+	unsigned count = vector1->vals->count;
+	if(count != vector2->vals->count) {
+		return ValErr(mathError("Cannot %s vectors of different sizes.", binop_verb[bin]));
+	}
+	
+	ArgList* newv = ArgList_new(count);
+	for (long long i = 0; i < count; i++) {
+		/* Perform the specified operation on each matching component */
+		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(vector2->vals->args[i]));
+		Value* result = BinOp_eval(op, ctx);
+		BinOp_free(op);
+		
+		/* Error checking */
+		if(result->type == VAL_ERR) {
+			ArgList_free(newv);
+			return result;
+		}
+		
+		/* Store result */
+		newv->args[i] = result;
+	}
+	
+	return ValVec(Vector_new(newv));
+}
+
+Value* Vector_add(Vector* vec, Value* other, Context* ctx) {
+	if(other->type == VAL_VEC) {
+		return vecCompOp(vec, other->vec, ctx, BIN_ADD);
+	}
+	
+	return vecScalarOp(vec, other, ctx, BIN_ADD);
+}
+
+Value* Vector_sub(Vector* vec, Value* other, Context* ctx) {
+	if(other->type == VAL_VEC) {
+		return vecCompOp(vec, other->vec, ctx, BIN_SUB);
+	}
+	
+	return vecScalarOp(vec, other, ctx, BIN_SUB);
+}
+
+Value* Vector_rsub(Vector* vec, Value* scalar, Context* ctx) {
+	return vecScalarOpRev(vec, scalar, ctx, BIN_SUB);
+}
+
+Value* Vector_mul(Vector* vec, Value* other, Context* ctx) {
+	if(other->type == VAL_VEC) {
+		return vecCompOp(vec, other->vec, ctx, BIN_MUL);
+	}
+	
+	return vecScalarOp(vec, other, ctx, BIN_MUL);
+}
+
+Value* Vector_div(Vector* vec, Value* other, Context* ctx) {
+	if(other->type == VAL_VEC) {
+		return vecCompOp(vec, other->vec, ctx, BIN_DIV);
+	}
+	
+	return vecScalarOp(vec, other, ctx, BIN_DIV);
+}
+
+Value* Vector_rdiv(Vector* vec, Value* scalar, Context* ctx) {
+	return vecScalarOpRev(vec, scalar, ctx, BIN_DIV);
+}
+
+Value* Vector_pow(Vector* vec, Value* other, Context* ctx) {
+	if(other->type == VAL_VEC) {
+		return vecCompOp(vec, other->vec, ctx, BIN_POW);
+	}
+	
+	return vecScalarOp(vec, other, ctx, BIN_POW);
+}
+
+Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx) {
+	return vecScalarOpRev(vec, scalar, ctx, BIN_POW);
+}
+
+static Value* eval_dot(Context* ctx, ArgList* arglist) {
+	if(arglist->count != 2) {
+		/* Two vectors are required for a dot product */
+		return ValErr(builtinArgs("dot", 2, arglist->count));
+	}
+	
+	Value* vector1 = Value_eval(arglist->args[0], ctx);
+	if(vector1->type == VAL_ERR) {
+		return vector1;
+	}
+	
+	Value* vector2 = Value_eval(arglist->args[1], ctx);
+	if(vector2->type == VAL_ERR) {
+		Value_free(vector1);
+		return vector2;
+	}
+	
+	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
+		/* Both values must be vectors */
+		return ValErr(typeError("Builtin dot expects two vectors."));
+	}
+	
+	unsigned count = vector1->vec->vals->count;
+	if(count != vector2->vec->vals->count) {
+		/* Both vectors must have the same number of values */
+		return ValErr(mathError("Vectors must have the same dimensions for dot product."));
+	}
+	
+	Value* total = ValInt(0); // store the total value of the dot product
+	
 	unsigned i;
 	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(math_names[i], math_funcs[i]);
+		/* Multiply v1[i] and v2[i] */
+		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[i]), Value_copy(vector2->vec->vals->args[i]));
+		
+		Value* part = BinOp_eval(mul, ctx);
+		BinOp_free(mul);
+		
+		/* Accumulate the sum for all products */
+		BinOp* add = BinOp_new(BIN_ADD, part, total);
+		total = BinOp_eval(add, ctx);
+		BinOp_free(add);
+	}
+	
+	return total;
+}
+
+static Value* eval_cross(Context* ctx, ArgList* arglist) {
+	if(arglist->count != 2) {
+		/* Two vectors are required for a cross product */
+		return ValErr(builtinArgs("cross", 2, arglist->count));
+	}
+	
+	Value* vector1 = Value_eval(arglist->args[0], ctx);
+	if(vector1->type == VAL_ERR) {
+		return vector1;
+	}
+	
+	Value* vector2 = Value_eval(arglist->args[1], ctx);
+	if(vector2->type == VAL_ERR) {
+		Value_free(vector1);
+		return vector2;
+	}
+	
+	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
+		/* Both values must be vectors */
+		return ValErr(typeError("Builtin dot expects two vectors."));
+	}
+	
+	if(vector1->vec->vals->count != 3) {
+		/* Vectors must each have a size of 3 */
+		return ValErr(mathError("Vectors must each have a size of 3 for cross product."));
+	}
+	
+	/* First cross multiplication */
+	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[2]));
+	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[1]));
+	
+	/* Evaluate multiplications */
+	Value* i_pos = BinOp_eval(i_pos_op, ctx);
+	Value* i_neg = BinOp_eval(i_neg_op, ctx);
+	
+	BinOp_free(i_pos_op);
+	BinOp_free(i_neg_op);
+	
+	/* Error checking */
+	if(i_pos->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(i_neg);
+		return i_pos;
+	}
+	if(i_neg->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(i_pos);
+		return i_neg;
+	}
+	
+	/* Subtract products */
+	BinOp* i_op = BinOp_new(BIN_SUB, i_pos, i_neg);
+	Value* i_val = BinOp_eval(i_op, ctx);
+	BinOp_free(i_op);
+	
+	if(i_val->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		return i_val;
+	}
+	
+	/* Part 2 */
+	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[2]));
+	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[0]));
+	
+	Value* j_pos = BinOp_eval(j_pos_op, ctx);
+	Value* j_neg = BinOp_eval(j_neg_op, ctx);
+	
+	BinOp_free(j_pos_op);
+	BinOp_free(j_neg_op);
+	
+	if(j_pos->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(j_neg);
+		return j_pos;
+	}
+	if(j_neg->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(j_pos);
+		return j_neg;
+	}
+	
+	BinOp* j_op = BinOp_new(BIN_SUB, j_pos, j_neg);
+	Value* j_val = BinOp_eval(j_op, ctx);
+	BinOp_free(j_op);
+	
+	if(j_val->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		return j_val;
+	}
+	
+	/* Part 3 */
+	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[1]));
+	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[0]));
+	
+	Value* k_pos = BinOp_eval(k_pos_op, ctx);
+	Value* k_neg = BinOp_eval(k_neg_op, ctx);
+	
+	BinOp_free(k_pos_op);
+	BinOp_free(k_neg_op);
+	
+	if(k_pos->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(k_neg);
+		return k_pos;
+	}
+	if(k_neg->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		Value_free(k_pos);
+		return k_neg;
+	}
+	
+	BinOp* k_op = BinOp_new(BIN_SUB, k_pos, k_neg);
+	Value* k_val = BinOp_eval(k_op, ctx);
+	BinOp_free(k_op);
+	
+	if(k_val->type == VAL_ERR) {
+		Value_free(vector1);
+		Value_free(vector2);
+		return k_val;
+	}
+	
+	ArgList* args = ArgList_create(3, i_val, j_val, k_val);
+	return ValVec(Vector_new(args));
+}
+
+
+static const char* vector_names[] = {
+	"dot", "cross"
+};
+static builtin_eval_t vector_funcs[] = {
+	&eval_dot, &eval_cross
+};
+
+/* This is just a copy of register_math remade for vectors */
+void Vector_register(Context *ctx) {
+	unsigned count = sizeof(vector_names) / sizeof(vector_names[0]);
+	unsigned i;
+	for(i = 0; i < count; i++) {
+		Builtin* blt = Builtin_new(vector_names[i], vector_funcs[i]);
 		Builtin_register(blt, ctx);
 	}
 }
 
-Value *Vector_eval(Value *vector, Context *ctx) {
-    Value **new_args = fmalloc((sizeof(*new_args)*vector->vec->vals->count));
-    for (long long i = 0; i < vector->vec->vals->count; i++) {
-        new_args[i] = Value_eval(vector->vec->vals->args[i], ctx);
-    }
-    Value *new = Vector_new(ValInt(vector->vec->vals->count), new_args);
-    if (!new) {
-        return vector;
-    }
-    return new;
+char* Vector_verbose(Vector* vec, int indent) {
+	char* ret;
+	
+	char* current = spaces(indent);
+	char* vals = ArgList_verbose(vec->vals, indent + IWIDTH);
+	
+	asprintf(&ret, "Vector <\n%s%s>",
+			 vals,
+			 current);
+	
+	free(current);
+	free(vals);
+	
+	return ret;
 }
 
-char *Vector_repr(Value *vector) {
-    type_chk(vector, VAL_VEC) RAISE(typeError("Vector required to print vector.")); return NULL; chk_end
-    char *out = fmalloc((sizeof(*out)*(vector->vec->vals->count*20)));
-    char *temp = out;
-    temp += sprintf(temp, "<");
-    for (long long i = 0; i < vector->vec->vals->count; i++) {
-        temp += sprintf(temp, (vector->vec->vals->count==(i+1) ? "%s" : "%s,"), Value_repr(vector->vec->vals->args[i]));
-    }
-    temp += sprintf(temp, ">");
-    *temp = '\0';
-    return out;
+char* Vector_repr(Vector* vec) {
+	char* ret;
+	
+	char* vals = ArgList_repr(vec->vals);
+	asprintf(&ret, "<%s>", vals);
+	free(vals);
+	
+	return ret;
 }
 
-Value *_Vector_scalar_op(Value *vector, Value *scalar, Context *ctx, BINTYPE op_type) {
-    type_chk(vector, VAL_VEC) return NULL; chk_end
-    Value **args = fmalloc((sizeof(*args)*vector->vec->vals->count));
-    for (long long i = 0; i < vector->vec->vals->count; i++) {
-        BinOp *op = BinOp_new(op_type, Value_copy(vector->vec->vals->args[i]), Value_copy(scalar));
-        args[i] = BinOp_eval(op, ctx);
-        BinOp_free(op);
-    }
-    Value_free(scalar);
-    return Vector_new(ValInt(vector->vec->vals->count), args);
-}
-Value *Vector_scalar_multiply(Value *vector, Value *scalar, Context *ctx) {
-    return _Vector_scalar_op(Value_eval(vector, ctx), Value_eval(scalar, ctx), ctx, BIN_MUL);
-}
-Value *Vector_scalar_divide(Value *vector, Value *scalar, Context *ctx) {
-    return _Vector_scalar_op(Value_eval(vector, ctx), Value_eval(scalar, ctx), ctx, BIN_DIV);
-}
-Value *_Vector_comp_op(Value *vector1, Value *vector2, Context *ctx, BINTYPE op_type) {
-    type_chk(vector1, VAL_VEC) return NULL; chk_end
-    type_chk(vector1, VAL_VEC) return NULL; chk_end
-    if (vector1->vec->vals->count != vector2->vec->vals->count) {
-        return ValErr(mathError("Component operations must operate on vectors of the same number of count."));
-    }
-    Value **args = fmalloc((sizeof(*args)*vector1->vec->vals->count));
-    for (long long i = 0; i < vector1->vec->vals->count; i++) { // perform the operation on each matching component.
-        BinOp *comp_add = BinOp_new(op_type, Value_copy(vector1->vec->vals->args[i]), Value_copy(vector2->vec->vals->args[i]));
-        args[i] = BinOp_eval(comp_add, ctx);
-        BinOp_free(comp_add);
-    }
-    return Vector_new(ValInt(vector1->vec->vals->count), args);
-}
-Value *Vector_comp_add(Value *vector1, Value *vector2, Context *ctx) {
-    return _Vector_comp_op(vector1, vector2, ctx, BIN_ADD);
-}
-Value *Vector_comp_subtract(Value *vector1, Value *vector2, Context *ctx) {
-    return _Vector_comp_op(vector1, vector2, ctx, BIN_SUB);
-}
-Value *Vector_comp_multiply(Value *vector1, Value *vector2, Context *ctx) {
-    return _Vector_comp_op(vector1, vector2, ctx, BIN_MUL);
-}
-Value *Vector_comp_divide(Value *vector1, Value *vector2, Context *ctx) {
-    return _Vector_comp_op(vector1, vector2, ctx, BIN_DIV);
-}

@@ -19,8 +19,8 @@
 #include "context.h"
 #include "value.h"
 #include "fraction.h"
-
 #include "vector.h"
+
 
 /* Operator comparison table */
 static const int _op_cmp[6][6] = {
@@ -30,6 +30,10 @@ static const int _op_cmp[6][6] = {
 	{1, 1,  0,  0,  0, -1}, /* DIV */
 	{1, 1,  0,  0,  0, -1}, /* MOD */
 	{1, 1,  1,  1,  0, -1}  /* POW */
+};
+
+const char* binop_verb[] = {
+	"add", "subtract", "multiply", "divide", "modulo", "exponentiate"
 };
 
 
@@ -51,14 +55,15 @@ static Value* val_ipow(long long base, long long exp) {
 static Value* binop_add(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if (a->type == VAL_VEC) {
-        // both must be vectors if one is
-        (b->type == VAL_VEC) ? (ret = Vector_comp_add(a, b, ctx)) : (ret = ValErr(badOpType("right", b->type)));
-    }
-    else if (b->type == VAL_VEC) {
-        (a->type == VAL_VEC) ? (ret = Vector_comp_add(a, b, ctx)) : (ret = ValErr(badOpType("left", b->type)));
-    }
-    else if(a->type == VAL_FRAC) {
+	if(a->type == VAL_VEC) {
+		/* Let the vector class handle the operation */
+		ret = Vector_add(a->vec, b, ctx);
+	}
+	else if(b->type == VAL_VEC) {
+		ret = Vector_add(b->vec, a, ctx);
+	}
+	else if(a->type == VAL_FRAC) {
+		/* Let the fraction class handle the operation */
 		ret = Fraction_add(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -96,14 +101,13 @@ static Value* binop_add(Context* ctx, Value* a, Value* b) {
 static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if (a->type == VAL_VEC) {
-        // both must be vectors if one is
-        (b->type == VAL_VEC) ? (ret = Vector_comp_subtract(a, b, ctx)) : (ret = ValErr(badOpType("right", b->type)));
-    }
-    else if (b->type == VAL_VEC) {
-        (a->type == VAL_VEC) ? (ret = Vector_comp_subtract(a, b, ctx)) : (ret = ValErr(badOpType("left", b->type)));
-    }
-    else if(a->type == VAL_FRAC) {
+	if(a->type == VAL_VEC) {
+		ret = Vector_sub(a->vec, b, ctx);
+	}
+	else if(b->type == VAL_VEC) {
+		ret = Vector_rsub(b->vec, a, ctx);
+	}
+	else if(a->type == VAL_FRAC) {
 		ret = Fraction_sub(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -145,37 +149,13 @@ static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if (a->type == VAL_VEC) {
-        switch (b->type) {
-            case VAL_VEC:
-                ret = Vector_comp_multiply(a, b, ctx);
-                break;
-            case VAL_FRAC:
-            case VAL_INT:
-            case VAL_REAL:
-                ret = Vector_scalar_multiply(a, b, ctx);
-                break;
-            default:
-                ret = ValErr(badOpType("right", b->type));
-                break;
-        }
-    }
-    else if (b->type == VAL_VEC) {
-        switch (a->type) {
-            case VAL_VEC:
-                ret = Vector_comp_multiply(b, a, ctx);
-                break;
-            case VAL_FRAC:
-            case VAL_INT:
-            case VAL_REAL:
-                ret = Vector_scalar_multiply(b, a, ctx);
-                break;
-            default:
-                ret = ValErr(badOpType("left", a->type));
-                break;
-        }
-    }
-    else if(a->type == VAL_FRAC) {
+	if(a->type == VAL_VEC) {
+		ret = Vector_mul(a->vec, b, ctx);
+	}
+	else if(b->type == VAL_VEC) {
+		ret = Vector_mul(b->vec, a, ctx);
+	}
+	else if(a->type == VAL_FRAC) {
 		ret = Fraction_mul(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -213,37 +193,13 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 static Value* binop_div(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if (a->type == VAL_VEC) {
-        switch (b->type) {
-            case VAL_VEC:
-                ret = Vector_comp_divide(a, b, ctx);
-                break;
-            case VAL_FRAC:
-            case VAL_INT:
-            case VAL_REAL:
-                ret = Vector_scalar_divide(a, b, ctx);
-                break;
-            default:
-                ret = ValErr(badOpType("right", b->type));
-                break;
-        }
-    }
-    else if (b->type == VAL_VEC) {
-        switch (a->type) {
-            case VAL_VEC:
-                ret = Vector_comp_divide(b, a, ctx);
-                break;
-            case VAL_FRAC:
-            case VAL_INT:
-            case VAL_REAL:
-                ret = Vector_scalar_divide(b, a, ctx);
-                break;
-            default:
-                ret = ValErr(badOpType("left", a->type));
-                break;
-        }
-    }
-    else if(a->type == VAL_FRAC) {
+	if(a->type == VAL_VEC) {
+		ret = Vector_div(a->vec, b, ctx);
+	}
+	else if(b->type == VAL_VEC) {
+		ret = Vector_rdiv(b->vec, a, ctx);
+	}
+	else if(a->type == VAL_FRAC) {
 		ret = Fraction_div(a->frac, b);
 	}
 	else if(b->type == VAL_FRAC) {
@@ -298,7 +254,18 @@ static Value* binop_div(Context* ctx, Value* a, Value* b) {
 static Value* binop_mod(Context* ctx, Value* a, Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_FRAC) {
+	if(a->type == VAL_VEC || b->type == VAL_VEC) {
+		ret = ValErr(typeError("Modulus is not supported for vectors."));
+	}
+	else if(a->type == VAL_INT && b->type == VAL_INT) {
+		if(b->ival == 0) {
+			ret = ValErr(zeroModError());
+		}
+		else {
+			ret = ValInt(a->ival % b->ival);
+		}
+	}
+	else if(a->type == VAL_FRAC) {
 		ret = Fraction_mod(a->frac, b);
 	}
 	else if(a->type == VAL_INT && b->type == VAL_FRAC) {
@@ -308,14 +275,6 @@ static Value* binop_mod(Context* ctx, Value* a, Value* b) {
 		ret = Fraction_mod(f, b);
 		
 		Fraction_free(f);
-	}
-	else if(a->type == VAL_INT && b->type == VAL_INT) {
-		if(b->ival == 0) {
-			ret = ValErr(zeroDivError());
-		}
-		else {
-			ret = ValInt(a->ival % b->ival);
-		}
 	}
 	else {
 		double n, d;
@@ -352,6 +311,12 @@ static Value* binop_pow(Context* ctx, Value* a, Value* b) {
 	
 	if(a->type == VAL_INT && b->type == VAL_INT) {
 		ret = val_ipow(a->ival, b->ival);
+	}
+	else if(a->type == VAL_VEC) {
+		ret = Vector_pow(a->vec, b, ctx);
+	}
+	else if(b->type == VAL_VEC) {
+		ret = Vector_rpow(b->vec, a, ctx);
 	}
 	else if(a->type == VAL_FRAC) {
 		ret = Fraction_pow(a->frac, b);
@@ -477,7 +442,7 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
 		
 		default:
 			/* This handles cases like 2sqrt(5) -> 2 * sqrt(5) */
-			if(**expr == '(' || isalpha(**expr)) {
+			if(**expr == '(' || **expr == '<' || isalpha(**expr)) {
 				return BIN_MUL;
 			}
 			
