@@ -347,8 +347,8 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
-			/* Skip the separator or end character */
-			if(**expr == sep || **expr == end)
+			/* Skip the separator, but don't do this for the end character */
+			if(**expr == sep)
 				(*expr)++;
 			
 			/* If there was only one value, return it */
@@ -501,11 +501,27 @@ Value* Value_next(const char** expr, char end) {
 	}
 	else if(**expr == '(') {
 		(*expr)++;
-		ret = Value_parse(expr, 0, ')');
+		ret = Value_parse(expr, 0, 0);
+		
+		/* Skip closing parenthesis if it exists */
+		if(**expr == ')')
+			(*expr)++;
 	}
 	else if(**expr == '<') {
 		(*expr)++;
 		ret = Vector_parse(expr);
+	}
+	else if(**expr == '|') {
+		(*expr)++;
+		ArgList* args = ArgList_new(1);
+		args->args[0] = Value_parse(expr, 0, '|');
+		/* check for error */
+		if (args->args[0]->type == VAL_ERR)
+			return args->args[0];
+		/* use built in absolute value function */
+		FuncCall* abs = FuncCall_new("abs", args);
+		ret = ValCall(abs);
+		(*expr)++;
 	}
 	else {
 		ret = parseToken(expr);
