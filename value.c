@@ -27,7 +27,7 @@
 
 static Value* allocValue(VALTYPE type);
 static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val);
-static Value* parseNum(const char** expr);
+Value* parseNum(const char** expr);
 static Value* parseToken(const char** expr);
 
 
@@ -411,7 +411,7 @@ static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val) {
 	*prev = next;
 }
 
-static Value* parseNum(const char** expr) {
+Value* parseNum(const char** expr) {
 	Value* ret;
 	
 	char* end1;
@@ -546,6 +546,24 @@ Value* Value_next(const char** expr, char end) {
 		
 		/* Move past the ']' character */
 		(*expr)++;
+	}
+	
+	if (**expr == '.') {
+		/* Move past the '.' character */
+		(*expr)++;
+		
+		/* Parse inside of brackets */
+		Value* index = Vector_parseProperty(expr);
+		if (index->type == VAL_ERR) {
+			return index;
+		}
+		
+		/* Use buit in function from vector.c */
+		ArgList* args = ArgList_new(2);
+		args->args[0] = ret;
+		args->args[1] = index;
+		FuncCall* vval = FuncCall_new("vval", args);
+		ret = ValCall(vval);
 	}
 	
 	/* Check if a parse error occurred */

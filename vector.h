@@ -52,6 +52,7 @@ void Vector_register(Context* ctx);
 
 /* Access Values */
 Value* Vector_value(Vector* vec, Value* index, Context* ctx);
+Value* Vector_parseProperty(const char **expr);
 
 /* Printing */
 char* Vector_verbose(Vector* vec, int indent);

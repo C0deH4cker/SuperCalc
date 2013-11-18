@@ -496,6 +496,34 @@ Value* Vector_value(Vector* vec, Value* index, Context* ctx) {
 	}
 	return Value_copy(vec->vals->args[index->ival]);
 }
+/* Value* parseNum(const char** expr); */
+Value* Vector_parseProperty(const char **expr) {
+	switch (**expr) {
+		case 'x':
+			(*expr)++;
+			return ValInt(0);
+		case 'y':
+			(*expr)++;
+			return ValInt(1);
+		case 'z':
+			(*expr)++;
+			return ValInt(2);
+/*		case 'v':
+			(*expr)++;
+			Value* ret = parseNum(expr);
+			while (isnumber(**expr) || **expr == '.') {
+				(*expr)++;
+			}
+			if (ret->type != VAL_INT) {
+				return ValErr(syntaxError("Vector values can only be accesed by integers."));
+			}
+			ret->ival --;
+			return ret; */
+		default:
+			return ValErr(syntaxError("Could not parse property name."));
+			break;
+	}
+}
 
 char* Vector_verbose(Vector* vec, int indent) {
 	char* ret;
