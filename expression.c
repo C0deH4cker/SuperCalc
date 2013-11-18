@@ -31,6 +31,26 @@ void Expression_free(Expression* expr) {
 	free(expr);
 }
 
+static Expression* parseExpr(const char** expr) {
+	Variable* var;
+	Value* val = Value_parse(expr, 0, 0);
+	
+	if(val->type == VAL_END) {
+		var = VarErr(ignoreError());
+	}
+	else if(val->type == VAL_ERR) {
+		Error* err = Error_copy(val->err);
+		var = VarErr(err);
+	}
+	else {
+		var = VarValue(NULL, Value_copy(val));
+	}
+	
+	Value_free(val);
+	
+	return Expression_new(var);
+}
+
 Expression* Expression_parse(const char** expr) {
 	Expression* ret = NULL;
 	Variable* var;
@@ -40,181 +60,167 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		val = Value_parse(expr, 0, 0);
-		
-		if(val->type == VAL_END) {
-			Value_free(val);
-			var = VarErr(ignoreError());
-		}
-		else if(val->type == VAL_ERR) {
-			var = VarErr(Error_copy(val->err));
-			Value_free(val);
-		}
-		else
-			var = VarValue(NULL, val);
-		
-		ret = Expression_new(var);
+		return parseExpr(expr);
 	}
-	else {
-		/* There is an assignment */
-		/* First, parse the right side of the assignment */
-		equals++;
-		val = Value_parse(&equals, 0, 0);
+	
+	/* There is an assignment */
+	/* First, parse the right side of the assignment */
+	equals++;
+	val = Value_parse(&equals, 0, 0);
+	
+	if(val->type == VAL_ERR) {
+		/* A parse error occurred */
+		var = VarErr(Error_copy(val->err));
+		Value_free(val);
+		return Expression_new(var);
+	}
+	
+	if(val->type == VAL_END) {
+		/* Empty input */
+		Value_free(val);
+		var = VarErr(earlyEnd());
+		return Expression_new(var);
+	}
+	
+	/* Now parse the left side */
+	char* name = nextToken(expr);
+	if(name == NULL) {
+		Value_free(val);
+		var = VarErr(syntaxError("No variable to assign to."));
+		return Expression_new(var);
+	}
+	
+	trimSpaces(expr);
+	
+	if(**expr == '(') {
+		/* Defining a function */
+		(*expr)++;
 		
-		if(val->type == VAL_ERR) {
-			/* A parse error occurred */
-			var = VarErr(Error_copy(val->err));
-			Value_free(val);
-			return Expression_new(var);
-		}
+		/* Array of argument names */
+		unsigned size = 2;
+		char** args = fmalloc(size * sizeof(*args));
+		unsigned len = 0;
 		
-		if(val->type == VAL_END) {
-			/* Empty input */
-			Value_free(val);
-			var = VarErr(earlyEnd());
-			return Expression_new(var);
-		}
+		/* Add each argument name to the array */
+		char* arg = nextToken(expr);
 		
-		/* Now parse the left side */
-		char* name = nextToken(expr);
-		if(name == NULL) {
+		if(arg == NULL && **expr != ')') {
+			/* Invalid character */
 			Value_free(val);
-			var = VarErr(syntaxError("No variable to assign to."));
+			free(args);
+			free(name);
+			
+			var = VarErr(badChar(**expr));
 			return Expression_new(var);
 		}
 		
 		trimSpaces(expr);
 		
-		if(**expr == '(') {
-			/* Defining a function */
-			(*expr)++;
-			
-			/* Array of argument names */
-			unsigned size = 2;
-			char** args = fmalloc(size * sizeof(*args));
-			unsigned len = 0;
-			
-			/* Add each argument name to the array */
-			char* arg = nextToken(expr);
-			
-			if(arg == NULL && **expr != ')') {
-				/* Invalid character */
-				Value_free(val);
-				free(args);
-				free(name);
-				
-				var = VarErr(badChar(**expr));
-				return Expression_new(var);
-			}
-			
-			trimSpaces(expr);
-			
-			if(arg == NULL) {
-				/* Empty parameter list means function with no args */
-				free(args);
-				args = NULL;
-				len = 0;
-			}
-			else {
-				/* Loop through each argument in the list */
-				while(**expr == ',' || **expr == ')') {
-					args[len++] = arg;
-					
-					if(**expr == ')')
-						break;
-					
-					(*expr)++;
-					
-					/* Expand argument array if it's too small */
-					if(len >= size) {
-						size *= 2;
-						args = frealloc(args, size * sizeof(*args));
-					}
-					
-					arg = nextToken(expr);
-					if(arg == NULL) {
-						/* Invalid character */
-						Value_free(val);
-						free(name);
-						/* Free argument names and return */
-						unsigned i;
-						for(i = 0; i < len; i++) {
-							free(args[i]);
-						}
-						free(args);
-						
-						var = VarErr(badChar(**expr));
-						return Expression_new(var);
-					}
-					
-					trimSpaces(expr);
-				}
-			}
-			
-			if(**expr != ')') {
-				/* Invalid character inside argument name list */
-				Value_free(val);
-				free(name);
-				
-				/* Free argument names and return */
-				unsigned i;
-				for(i = 0; i < len; i++) {
-					free(args[i]);
-				}
-				free(args);
-				
-				var = VarErr(badChar(**expr));
-				return Expression_new(var);
-			}
-			
-			/* Skip closing parenthesis */
-			(*expr)++;
-			trimSpaces(expr);
-			
-			if(**expr != '=') {
-				Value_free(val);
-				free(name);
-				
-				unsigned i;
-				for(i = 0; i < len; i++) {
-					free(args[i]);
-				}
-				free(args);
-				
-				var = VarErr(badChar(**expr));
-				return Expression_new(var);
-			}
-			
-			/* Construct function and return it */
-			Function* func = Function_new(len, args, val);
-			var = VarFunc(name, func);
-			free(name);
-			
-			ret = Expression_new(var);
+		if(arg == NULL) {
+			/* Empty parameter list means function with no args */
+			free(args);
+			args = NULL;
+			len = 0;
 		}
 		else {
-			/* Defining a variable */
-			if(**expr != '=') {
-				/* In-place manipulation */
-				BINTYPE bin = BinOp_nextType(expr, 0, 0);
+			/* Loop through each argument in the list */
+			while(**expr == ',' || **expr == ')') {
+				args[len++] = arg;
 				
-				/* Still not an equals sign means invalid character */
-				if(**expr != '=') {
+				if(**expr == ')')
+					break;
+				
+				(*expr)++;
+				
+				/* Expand argument array if it's too small */
+				if(len >= size) {
+					size *= 2;
+					args = frealloc(args, size * sizeof(*args));
+				}
+				
+				arg = nextToken(expr);
+				if(arg == NULL) {
+					/* Invalid character */
 					Value_free(val);
 					free(name);
+					/* Free argument names and return */
+					unsigned i;
+					for(i = 0; i < len; i++) {
+						free(args[i]);
+					}
+					free(args);
 					
 					var = VarErr(badChar(**expr));
 					return Expression_new(var);
 				}
 				
-				val = ValExpr(BinOp_new(bin, ValVar(name), val));
+				trimSpaces(expr);
 			}
-			
-			var = VarValue(name, val);
+		}
+		
+		if(**expr != ')') {
+			/* Invalid character inside argument name list */
+			Value_free(val);
 			free(name);
 			
-			ret = Expression_new(var);
+			/* Free argument names and return */
+			unsigned i;
+			for(i = 0; i < len; i++) {
+				free(args[i]);
+			}
+			free(args);
+			
+			var = VarErr(badChar(**expr));
+			return Expression_new(var);
 		}
+		
+		/* Skip closing parenthesis */
+		(*expr)++;
+		trimSpaces(expr);
+		
+		if(**expr != '=') {
+			Value_free(val);
+			free(name);
+			
+			unsigned i;
+			for(i = 0; i < len; i++) {
+				free(args[i]);
+			}
+			free(args);
+			
+			var = VarErr(badChar(**expr));
+			return Expression_new(var);
+		}
+		
+		/* Construct function and return it */
+		Function* func = Function_new(len, args, val);
+		var = VarFunc(name, func);
+		free(name);
+		
+		ret = Expression_new(var);
+	}
+	else {
+		/* Defining a variable */
+		if(**expr != '=') {
+			/* In-place manipulation */
+			BINTYPE bin = BinOp_nextType(expr, 0, 0);
+			
+			/* Still not an equals sign means invalid character */
+			if(**expr != '=') {
+				Value_free(val);
+				free(name);
+				
+				var = VarErr(badChar(**expr));
+				return Expression_new(var);
+			}
+			
+			val = ValExpr(BinOp_new(bin, ValVar(name), val));
+		}
+		
+		var = VarValue(name, val);
+		free(name);
+		
+		ret = Expression_new(var);
 	}
 	
 	return ret;
@@ -236,15 +242,20 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 		if(ret->type == VAL_VAR) {
 			/* This means ret must be a function */
 			Variable* func = Variable_get(ctx, ret->name);
-			if(func == NULL)
-				return ValErr(varNotFound(ret->name));
+			if(func == NULL) {
+				Value* err = ValErr(varNotFound(ret->name));
+				Value_free(ret);
+				return err;
+			}
 			
 			if(func->type == VAR_BUILTIN) {
+				Value_free(ret);
 				return ValErr(typeError("Cannot assign a variable to a builtin value."));
 			}
 			
-			if(var->name != NULL)
+			if(var->name != NULL) {
 				Context_setGlobal(ctx, var->name, Variable_copy(func));
+			}
 		}
 		else {
 			/* This means ret must be a Value */

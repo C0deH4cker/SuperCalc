@@ -398,8 +398,10 @@ Value* BinOp_eval(BinOp* node, Context* ctx) {
 		return a;
 	
 	Value* b = Value_eval(node->b, ctx);
-	if(b->type == VAL_ERR)
+	if(b->type == VAL_ERR) {
+		Value_free(a);
 		return b;
+	}
 	
 	Value* ret = binop_table[node->type](ctx, a, b);
 	

@@ -35,6 +35,8 @@ Vector* Vector_copy(Vector* vec) {
 
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
+	if(vals == NULL)
+		return ValErr(ignoreError());
 	
 	if(vals->count < 1) {
 		ArgList_free(vals);

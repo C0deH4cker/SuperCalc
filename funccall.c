@@ -32,10 +32,11 @@ FuncCall* FuncCall_new(const char* name, ArgList* arglist) {
 void FuncCall_free(FuncCall* call) {
 	free(call->name);
 	ArgList_free(call->arglist);
+	free(call);
 }
 
 FuncCall* FuncCall_copy(FuncCall* call) {
-	return FuncCall_new(strdup(call->name), ArgList_copy(call->arglist));
+	return FuncCall_new(call->name, ArgList_copy(call->arglist));
 }
 
 Value* FuncCall_eval(FuncCall* call, Context* ctx) {
