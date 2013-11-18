@@ -50,6 +50,9 @@ Value* Vector_magnitude(Vector* vec, Context* ctx);
 /* Builtin registration */
 void Vector_register(Context* ctx);
 
+/* Access Values */
+Value* Vector_value(Vector* vec, Value* index, Context* ctx);
+
 /* Printing */
 char* Vector_verbose(Vector* vec, int indent);
 char* Vector_repr(Vector* vec);

@@ -448,12 +448,33 @@ static Value* eval_map(Context* ctx, ArgList* arglist) {
 	return ValVec(Vector_new(mapping));
 }
 
+static Value* eval_vval(Context* ctx, ArgList* arglist) {
+	if (arglist->count != 2) {
+		return ValErr(builtinArgs("vval", 2, arglist->count));
+	}
+	/* Get evaluated values */
+	Value *vector = Value_eval(arglist->args[0], ctx);
+	Value *index = Value_eval(arglist->args[1], ctx);
+	
+	/* Check vector type */
+	if (vector->type != VAL_VEC) {
+		return ValErr(typeError("Unexpected type: %d", vector->type));
+	}
+	
+	/* Get actual value */
+	Value *ret = Vector_value(vector->vec, index, ctx);
+	
+	/* Free allocated memory */
+	Value_free(vector);
+	Value_free(index);
+	return ret;
+}
 
 static const char* vector_names[] = {
-	"dot", "cross", "map"
+	"dot", "cross", "map", "vval"
 };
 static builtin_eval_t vector_funcs[] = {
-	&eval_dot, &eval_cross, &eval_map
+	&eval_dot, &eval_cross, &eval_map, &eval_vval
 };
 
 /* This is just a copy of register_math remade for vectors */
@@ -464,6 +485,16 @@ void Vector_register(Context *ctx) {
 		Builtin* blt = Builtin_new(vector_names[i], vector_funcs[i]);
 		Builtin_register(blt, ctx);
 	}
+}
+
+Value* Vector_value(Vector* vec, Value* index, Context* ctx) {
+	if (index->type != VAL_INT) {
+		return ValErr(typeError("Unexpected type: %d", index->type));
+	}
+	if (index->ival >= vec->vals->count) {
+		return ValErr(mathError("Index %d is out of range: 0-%d", index->ival, vec->vals->count));
+	}
+	return Value_copy(vec->vals->args[index->ival]);
 }
 
 char* Vector_verbose(Vector* vec, int indent) {

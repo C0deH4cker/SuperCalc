@@ -527,6 +527,27 @@ Value* Value_next(const char** expr, char end) {
 		ret = parseToken(expr);
 	}
 	
+	if (**expr == '[') {
+		/* Move past the '[' character */
+		(*expr)++;
+		
+		/* Parse inside of brackets */
+		Value* index = Value_parse(expr, 0, ']');
+		if (index->type == VAL_ERR) {
+			return index;
+		}
+		
+		/* Use buit in function from vector.c */
+		ArgList* args = ArgList_new(2);
+		args->args[0] = ret;
+		args->args[1] = index;
+		FuncCall* vval = FuncCall_new("vval", args);
+		ret = ValCall(vval);
+		
+		/* Move past the ']' character */
+		(*expr)++;
+	}
+	
 	/* Check if a parse error occurred */
 	if(ret->type == VAL_ERR)
 		return ret;
