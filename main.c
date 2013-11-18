@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
 		char* end;
 		if((end = strchr(line, '\n')) != NULL) *end = '\0';
 		if((end = strchr(line, '\r')) != NULL) *end = '\0';
+		if((end = strchr(line, '#')) != NULL) *end = '\0';
 		
 		const char* p = line;
 		
