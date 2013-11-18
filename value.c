@@ -318,7 +318,8 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		
 		/* Special case: negative value */
 		if(val->type == VAL_NEG) {
-			/* XXX: Is this right? */
+			Value_free(val);
+			
 			BinOp* cur = BinOp_new(BIN_MUL, ValInt(-1), NULL);
 			
 			if(!tree) {
@@ -340,7 +341,6 @@ Value* Value_parse(const char** expr, char sep, char end) {
 			/* Exit gracefully and return error */
 			if(tree) BinOp_free(tree);
 			
-			/* XXX: Should val be freed here or not? */
 			Value_free(val);
 			
 			return ValErr(badChar(**expr));
@@ -471,6 +471,12 @@ static Value* parseToken(const char** expr) {
 	if(**expr == '(') {
 		(*expr)++;
 		ArgList* arglist = ArgList_parse(expr, ',', ')');
+		if(arglist == NULL) {
+			/* Error occurred and was already printed */
+			free(token);
+			return ValErr(ignoreError());
+		}
+		
 		FuncCall* call = FuncCall_new(token, arglist);
 		
 		ret = ValCall(call);
@@ -488,7 +494,7 @@ Value* Value_next(const char** expr, char end) {
 	Value* ret;
 	
 	trimSpaces(expr);
-	if(**expr == end)
+	if(**expr == end || **expr == '\0')
 		return ValEnd();
 	
 	if(getSign(expr) == -1)

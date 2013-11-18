@@ -32,6 +32,7 @@ FuncCall* FuncCall_new(const char* name, ArgList* arglist) {
 void FuncCall_free(FuncCall* call) {
 	free(call->name);
 	ArgList_free(call->arglist);
+	free(call);
 }
 
 FuncCall* FuncCall_copy(FuncCall* call) {
