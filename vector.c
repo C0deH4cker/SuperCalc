@@ -103,7 +103,8 @@ static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE 
 	}
 	
 	ArgList* newv = ArgList_new(count);
-	for (long long i = 0; i < count; i++) {
+	long long i;
+	for (i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
 		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(vector2->vals->args[i]));
 		Value* result = BinOp_eval(op, ctx);
