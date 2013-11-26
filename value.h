@@ -20,6 +20,7 @@ typedef struct Value Value;
 #include "context.h"
 #include "error.h"
 #include "vector.h"
+#include "supercalc.h"
 
 
 typedef enum {
@@ -74,6 +75,7 @@ Value* Value_copy(Value* val);
 
 /* Evaluation */
 Value* Value_eval(Value* expr, Context* ctx);
+Value* Value_coerce(Value* val, Context* ctx);
 
 /* Conversion */
 double Value_asReal(Value* val);
@@ -85,7 +87,6 @@ Value* Value_next(const char** expr, char end);
 /* Printing */
 char* Value_verbose(Value* val, int indent);
 char* Value_repr(Value* val);
-void Value_fprint(FILE* fp, Value* val, Context* ctx);
-void Value_print(Value* val, Context* ctx);
+void Value_print(Value* val, SuperCalc* sc);
 
 #endif

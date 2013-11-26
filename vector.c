@@ -1,15 +1,16 @@
 /*
- vector.c
- SuperCalc
- 
- Created by Silas Schwarz on 11/16/13.
- Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
- */
+  vector.c
+  SuperCalc
+
+  Created by Silas Schwarz on 11/16/13.
+  Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
+*/
 
 #include "vector.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "generic.h"
 #include "error.h"
@@ -36,16 +37,25 @@ Vector* Vector_copy(Vector* vec) {
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
 	
+	if(vals == NULL) {
+		/* Error occurred and has already been raised */
+		return ValErr(ignoreError());
+	}
+	
 	if(vals->count < 1) {
 		ArgList_free(vals);
-		return ValErr(syntaxError("Vector must have at least 2 components."));
+		return ValErr(syntaxError("Vector must have at least 1 component."));
 	}
 	
 	return ValVec(Vector_new(vals));
 }
 
 Value* Vector_eval(Vector* vec, Context* ctx) {
-	return ValVec(Vector_new(ArgList_eval(vec->vals, ctx)));
+	ArgList* args = ArgList_eval(vec->vals, ctx);
+	if(args == NULL) {
+		return ValErr(ignoreError());
+	}
+	return ValVec(Vector_new(args));
 }
 
 static Value* vecScalarOp(Vector* vec, Value* scalar, Context *ctx, BINTYPE bin) {
@@ -83,6 +93,8 @@ static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
 	/* Calculate scalar factor */
 	BinOp* newDivOld = BinOp_new(BIN_DIV, newMag, mag);
 	Value* scalFact = BinOp_eval(newDivOld, ctx);
+	BinOp_free(newDivOld);
+	/* Both newMag and mag are freed with newDivOld */
 	
 	/* Calculate new vector */
 	return vecScalarOp(vec, scalFact, ctx, BIN_MUL);
@@ -118,9 +130,17 @@ static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE 
 	}
 	
 	ArgList* newv = ArgList_new(count);
-	for (long long i = 0; i < count; i++) {
+	
+	unsigned i;
+	for (i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
-		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy((vector2->vals->count == 1 ? vector2->vals->args[0] : vector2->vals->args[i])));
+		Value* val2;
+		if(vector2->vals->count == 1)
+			val2 = vector2->vals->args[0];
+		else
+			val2 = vector2->vals->args[i];
+		
+		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(val2));
 		Value* result = BinOp_eval(op, ctx);
 		BinOp_free(op);
 		
@@ -141,6 +161,7 @@ Value* Vector_add(Vector* vec, Value* other, Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_ADD);
 	}
+	
 	return vecMagOp(vec, other, ctx, BIN_ADD);
 }
 
@@ -188,19 +209,26 @@ Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx) {
 	return vecScalarOpRev(vec, scalar, ctx, BIN_POW);
 }
 
-static Value* Vector_dot(Value* vector1, Value* vector2, Context* ctx) {
-	unsigned count = vector1->vec->vals->count;
-	if(count != vector2->vec->vals->count && vector2->vec->vals->count != 1) {
+Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
+	unsigned count = vector1->vals->count;
+	if(count != vector2->vals->count && vector2->vals->count != 1) {
 		/* Both vectors must have the same number of values */
 		return ValErr(mathError("Vectors must have the same dimensions for dot product."));
 	}
 	
-	Value* total = ValInt(0); /* store the total value of the dot product */
+	/* Store the total value of the dot product */
+	Value* total = ValInt(0);
 	
 	unsigned i;
 	for(i = 0; i < count; i++) {
+		Value* val2;
+		if(vector2->vals->count == 1)
+			val2 = vector2->vals->args[0];
+		else
+			val2 = vector2->vals->args[i];
+		
 		/* Multiply v1[i] and v2[i] */
-		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[i]), Value_copy((vector2->vec->vals->count == 1 ? vector2->vec->vals->args[0] : vector2->vec->vals->args[i])));
+		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vals->args[i]), Value_copy(val2));
 		
 		Value* part = BinOp_eval(mul, ctx);
 		BinOp_free(mul);
@@ -211,41 +239,60 @@ static Value* Vector_dot(Value* vector1, Value* vector2, Context* ctx) {
 		BinOp_free(add);
 	}
 	
-	Value_free(vector1);
-	Value_free(vector2);
-	
 	return total;
 }
 
 Value* Vector_magnitude(Vector* vec, Context* ctx) {
 	/* |v|^2 = dot(v,v) */
-	Vector* value1 = Vector_copy(vec);
-	Vector* value2 = Vector_copy(vec);
-	Value* v1 = ValVec(value1);
-	Value* v2 = ValVec(value2);
-	Value* magSqu = Vector_dot(v1, v2, ctx);
+	Value* magSquared = Vector_dot(vec, vec, ctx);
 	
 	/* Calculate actual magnitude */
-	ArgList* args = ArgList_new(1);
-	args->args[0] = magSqu;
-	FuncCall *sqr = FuncCall_new("sqrt", args);
-	Value* mag = FuncCall_eval(sqr, ctx);
-	FuncCall_free(sqr);
+	ArgList* arg = ArgList_create(1, magSquared);
+	FuncCall* root = FuncCall_create("@sqrt", arg);
+	
+	Value* mag = FuncCall_eval(root, ctx);
+	
+	FuncCall_free(root);
+	
 	return mag;
 }
 
-static Value* eval_dot(Context* ctx, ArgList* arglist) {
+Value* Vector_elem(Vector* vec, Value* index, Context* ctx) {
+	if(index->type != VAL_INT) {
+		return ValErr(typeError("Subscript index must be an integer."));
+	}
+	
+	if(index->ival < 0) {
+		return ValErr(mathError("Subscript index cannot be negative."));
+	}
+	
+	if(index->ival > UINT_MAX) {
+		return ValErr(mathError("Subscript index %lld is too large.", index->ival));
+	}
+	
+	unsigned idx = (unsigned)index->ival;
+	
+	if(idx >= vec->vals->count) {
+		return ValErr(mathError("Index %u is out of range: [0-%u]", idx, vec->vals->count - 1));
+	}
+	
+	return Value_copy(vec->vals->args[index->ival]);
+}
+
+static Value* eval_dot(Context* ctx, ArgList* arglist, bool internal) {
+	Value* ret;
+	
 	if(arglist->count != 2) {
 		/* Two vectors are required for a dot product */
 		return ValErr(builtinArgs("dot", 2, arglist->count));
 	}
 	
-	Value* vector1 = Value_eval(arglist->args[0], ctx);
+	Value* vector1 = Value_coerce(arglist->args[0], ctx);
 	if(vector1->type == VAL_ERR) {
 		return vector1;
 	}
 	
-	Value* vector2 = Value_eval(arglist->args[1], ctx);
+	Value* vector2 = Value_coerce(arglist->args[1], ctx);
 	if(vector2->type == VAL_ERR) {
 		Value_free(vector1);
 		return vector2;
@@ -253,24 +300,30 @@ static Value* eval_dot(Context* ctx, ArgList* arglist) {
 	
 	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
 		/* Both values must be vectors */
-		return ValErr(typeError("Builtin dot expects two vectors."));
+		ret = ValErr(typeError("Builtin 'dot' expects two vectors."));
+	}
+	else {
+		ret = Vector_dot(vector1->vec, vector2->vec, ctx);
 	}
 	
-	return Vector_dot(vector1, vector2, ctx);
+	Value_free(vector1);
+	Value_free(vector2);
+	
+	return ret;
 }
 
-static Value* eval_cross(Context* ctx, ArgList* arglist) {
+static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 2) {
 		/* Two vectors are required for a cross product */
 		return ValErr(builtinArgs("cross", 2, arglist->count));
 	}
 	
-	Value* vector1 = Value_eval(arglist->args[0], ctx);
+	Value* vector1 = Value_coerce(arglist->args[0], ctx);
 	if(vector1->type == VAL_ERR) {
 		return vector1;
 	}
 	
-	Value* vector2 = Value_eval(arglist->args[1], ctx);
+	Value* vector2 = Value_coerce(arglist->args[1], ctx);
 	if(vector2->type == VAL_ERR) {
 		Value_free(vector1);
 		return vector2;
@@ -278,17 +331,24 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	
 	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
 		/* Both values must be vectors */
-		return ValErr(typeError("Builtin dot expects two vectors."));
+		Value_free(vector1);
+		Value_free(vector2);
+		return ValErr(typeError("Builtin 'cross' expects two vectors."));
 	}
 	
 	if(vector1->vec->vals->count != 3) {
 		/* Vectors must each have a size of 3 */
+		Value_free(vector1);
+		Value_free(vector2);
 		return ValErr(mathError("Vectors must each have a size of 3 for cross product."));
 	}
 	
+	ArgList* v1 = vector1->vec->vals;
+	ArgList* v2 = vector2->vec->vals;
+	
 	/* First cross multiplication */
-	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[2]));
-	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[1]));
+	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[2]));
+	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[1]));
 	
 	/* Evaluate multiplications */
 	Value* i_pos = BinOp_eval(i_pos_op, ctx);
@@ -323,8 +383,8 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	}
 	
 	/* Part 2 */
-	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[2]));
-	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[2]), Value_copy(vector2->vec->vals->args[0]));
+	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
+	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
 	
 	Value* j_pos = BinOp_eval(j_pos_op, ctx);
 	Value* j_neg = BinOp_eval(j_neg_op, ctx);
@@ -356,8 +416,8 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	}
 	
 	/* Part 3 */
-	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[0]), Value_copy(vector2->vec->vals->args[1]));
-	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(vector1->vec->vals->args[1]), Value_copy(vector2->vec->vals->args[0]));
+	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[1]));
+	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[0]));
 	
 	Value* k_pos = BinOp_eval(k_pos_op, ctx);
 	Value* k_neg = BinOp_eval(k_neg_op, ctx);
@@ -392,7 +452,7 @@ static Value* eval_cross(Context* ctx, ArgList* arglist) {
 	return ValVec(Vector_new(args));
 }
 
-static Value* eval_map(Context* ctx, ArgList* arglist) {
+static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("map", 2, arglist->count));
 	}
@@ -413,16 +473,10 @@ static Value* eval_map(Context* ctx, ArgList* arglist) {
 		func = val;
 	}
 	
-	Value* vec = Value_eval(arglist->args[1], ctx);
+	Value* vec = Value_coerce(arglist->args[1], ctx);
 	if(vec->type == VAL_ERR) {
 		Value_free(func);
 		return vec;
-	}
-	
-	if(func->type != VAL_VAR) {
-		Value_free(func);
-		Value_free(vec);
-		return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
 	}
 	
 	if(vec->type != VAL_VEC) {
@@ -437,7 +491,7 @@ static Value* eval_map(Context* ctx, ArgList* arglist) {
 	unsigned i;
 	for(i = 0; i < mapping->count; i++) {
 		ArgList* arg = ArgList_create(1, Value_copy(vec->vec->vals->args[i]));
-		Value* call = ValCall(FuncCall_new(func->name, arg));
+		Value* call = ValCall(FuncCall_create(func->name, arg));
 		
 		mapping->args[i] = call;
 	}
@@ -448,33 +502,36 @@ static Value* eval_map(Context* ctx, ArgList* arglist) {
 	return ValVec(Vector_new(mapping));
 }
 
-static Value* eval_vval(Context* ctx, ArgList* arglist) {
+static Value* eval_elem(Context* ctx, ArgList* arglist, bool internal) {
 	if (arglist->count != 2) {
-		return ValErr(builtinArgs("vval", 2, arglist->count));
+		return ValErr(builtinArgs("elem", 2, arglist->count));
 	}
+	
 	/* Get evaluated values */
-	Value *vector = Value_eval(arglist->args[0], ctx);
-	Value *index = Value_eval(arglist->args[1], ctx);
+	Value* vec = Value_coerce(arglist->args[0], ctx);
+	Value* index = Value_coerce(arglist->args[1], ctx);
 	
 	/* Check vector type */
-	if (vector->type != VAL_VEC) {
-		return ValErr(typeError("Unexpected type: %d", vector->type));
+	if(vec->type != VAL_VEC) {
+		return ValErr(typeError("Only vectors are subscriptable."));
 	}
 	
 	/* Get actual value */
-	Value *ret = Vector_value(vector->vec, index, ctx);
+	Value* ret = Vector_elem(vec->vec, index, ctx);
 	
 	/* Free allocated memory */
-	Value_free(vector);
+	Value_free(vec);
 	Value_free(index);
 	return ret;
 }
 
 static const char* vector_names[] = {
-	"dot", "cross", "map", "vval"
+	"dot", "cross", "map",
+	"elem"
 };
 static builtin_eval_t vector_funcs[] = {
-	&eval_dot, &eval_cross, &eval_map, &eval_vval
+	&eval_dot, &eval_cross, &eval_map,
+	&eval_elem
 };
 
 /* This is just a copy of register_math remade for vectors */
@@ -485,16 +542,6 @@ void Vector_register(Context *ctx) {
 		Builtin* blt = Builtin_new(vector_names[i], vector_funcs[i]);
 		Builtin_register(blt, ctx);
 	}
-}
-
-Value* Vector_value(Vector* vec, Value* index, Context* ctx) {
-	if (index->type != VAL_INT) {
-		return ValErr(typeError("Unexpected type: %d", index->type));
-	}
-	if (index->ival >= vec->vals->count) {
-		return ValErr(mathError("Index %d is out of range: 0-%d", index->ival, vec->vals->count));
-	}
-	return Value_copy(vec->vals->args[index->ival]);
 }
 
 char* Vector_verbose(Vector* vec, int indent) {

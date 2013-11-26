@@ -80,7 +80,7 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* result = Value_eval(arglist->args[i], ctx);
+		Value* result = Value_coerce(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
 			/* An error occurred */
 			Error_raise(result->err);
@@ -98,15 +98,11 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 }
 
 double* ArgList_toReals(ArgList* arglist, Context* ctx) {
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
-	if(evaluated == NULL)
-		return NULL;
-	
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		double real = Value_asReal(evaluated->args[i]);
+		double real = Value_asReal(arglist->args[i]);
 		if(isnan(real)) {
 			free(ret);
 			return NULL;
@@ -114,8 +110,6 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 		
 		ret[i] = real;
 	}
-	
-	ArgList_free(evaluated);
 	
 	return ret;
 }
@@ -128,6 +122,8 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	Value** args = fmalloc(size * sizeof(*args));
 	
 	Value* arg = Value_parse(expr, sep, end);
+	trimSpaces(expr);
+	
 	while(arg->type != VAL_END && arg->type != VAL_ERR) {
 		if(count >= size) {
 			size *= 2;
@@ -136,7 +132,25 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		
 		args[count++] = arg;
 		
+		trimSpaces(expr);
+		if(**expr != sep)
+			break;
+		
+		(*expr)++;
+		
 		arg = Value_parse(expr, sep, end);
+	}
+	
+	if(**expr && **expr != end) {
+		/* Not NUL and not end means invalid char */
+		unsigned i;
+		for(i = 0; i < count; i++) {
+			free(args[i]);
+		}
+		free(args);
+		
+		RAISE(badChar(**expr));
+		return NULL;
 	}
 	
 	ArgList* ret = ArgList_new(count);
@@ -144,7 +158,8 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	
 	free(args);
 	
-	(*expr)++;
+	if(**expr == end)
+		(*expr)++;
 	
 	return ret;
 }

@@ -11,13 +11,47 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "supercalc.h"
 
 
-char* nextLine(void) {
-	printf(">>> ");
-	fgets(line, sizeof(line), stdin);
+bool prettyPrint = false;
+
+
+void nextLine(FILE* fp) {
+	if(isInteractive(fp)) {
+		printf(">>> ");
+	}
 	
-	return line;
+	fgets(line, sizeof(line), fp);
+}
+
+bool isInteractive(FILE* fp) {
+	if(isatty(fileno(fp)))
+		return true;
+	
+	return false;
+}
+
+static const char* _ugly_str[] = {
+	"sqrt", "pi", "phi"
+};
+static const char* _pretty_str[] = {
+	"√", "π", "φ"
+};
+const char* getPretty(const char* name) {
+	if(name == NULL)
+		return NULL;
+	
+	/* More: "∞≠π∑ß∂ƒ∆÷≥≤∫√≈±∏Ø" */
+	unsigned i;
+	for(i = 0; i < sizeof(_ugly_str) / sizeof(_ugly_str[0]); i++) {
+		if(strcmp(name, _ugly_str[i]) == 0)
+			return _pretty_str[i];
+	}
+	
+	return name;
 }
 
 void trimSpaces(const char** str) {
@@ -34,12 +68,12 @@ char* spaces(int n) {
 	return ret;
 }
 
-const char null_str[] = "NULL";
 char* strNULL(void) {
-	char* ret = fmalloc(sizeof(null_str));
-	
-	strcpy(ret, null_str);
-	return ret;
+	return strdup("NULL");
+}
+
+char* strERR(void) {
+	return strdup("ERR");
 }
 
 long long ipow(long long base, long long exp) {

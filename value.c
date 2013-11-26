@@ -23,11 +23,16 @@
 #include "binop.h"
 #include "function.h"
 #include "arglist.h"
+#include "vector.h"
+#include "supercalc.h"
+#include "variable.h"
 
 
 static Value* allocValue(VALTYPE type);
 static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val);
 static Value* parseNum(const char** expr);
+static Value* subscriptVector(Value* val, const char** expr);
+static Value* callFunc(Value* val, const char** expr);
 static Value* parseToken(const char** expr);
 
 
@@ -221,6 +226,7 @@ Value* Value_eval(Value* val, Context* ctx) {
 	if(val == NULL) return ValErr(nullError());
 	
 	Value* ret;
+	Variable* var;
 	
 	switch(val->type) {
 		/* These can be evaluated to a simpler form */
@@ -242,7 +248,11 @@ Value* Value_eval(Value* val, Context* ctx) {
 			break;
 		
 		case VAL_VAR:
-			ret = Variable_eval(val->name, ctx);
+			var = Variable_get(ctx, val->name);
+			if(var == NULL)
+				ret = ValErr(varNotFound(val->name));
+			else
+				ret = Variable_eval(var, ctx);
 			break;
 		
 		case VAL_VEC:
@@ -260,6 +270,25 @@ Value* Value_eval(Value* val, Context* ctx) {
 		default:
 			/* Shouldn't be reached */
 			badValType(val->type);
+	}
+	
+	return ret;
+}
+
+Value* Value_coerce(Value* val, Context* ctx) {
+	Value* ret = Value_eval(val, ctx);
+	
+	if(ret->type == VAL_VAR) {
+		Variable* var = Variable_get(ctx, ret->name);
+		
+		if(var == NULL) {
+			Value* tmp = ValErr(varNotFound(ret->name));
+			Value_free(ret);
+			ret = tmp;
+		}
+		else {
+			ret = Variable_coerce(var, ctx);
+		}
 	}
 	
 	return ret;
@@ -347,8 +376,8 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		}
 		/* End of the expression? */
 		else if(op == BIN_END) {
-			/* Skip the separator, but don't do this for the end character */
-			if(**expr == sep)
+			/* Only skip end character if there's only one value to parse */
+			if(!sep && **expr && **expr == end)
 				(*expr)++;
 			
 			/* If there was only one value, return it */
@@ -458,6 +487,34 @@ static Value* parseNum(const char** expr) {
 	return ret;
 }
 
+static Value* subscriptVector(Value* val, const char** expr) {
+	/* Move past the '[' character */
+	(*expr)++;
+	
+	/* Parse inside of brackets */
+	Value* index = Value_parse(expr, 0, ']');
+	
+	if(index->type == VAL_ERR)
+		return index;
+	
+	/* Use builtin function from vector.c */
+	ArgList* args = ArgList_create(2, val, index);
+	FuncCall* elem = FuncCall_create("@elem", args);
+	val = ValCall(elem);
+	
+	return val;
+}
+
+static Value* callFunc(Value* val, const char** expr) {
+	/* Move past the opening parenthesis */
+	(*expr)++;
+	
+	ArgList* args = ArgList_parse(expr, ',', ')');
+	FuncCall* call = FuncCall_new(val, args);
+	
+	return ValCall(call);
+}
+
 static Value* parseToken(const char** expr) {
 	Value* ret;
 	
@@ -471,7 +528,13 @@ static Value* parseToken(const char** expr) {
 	if(**expr == '(') {
 		(*expr)++;
 		ArgList* arglist = ArgList_parse(expr, ',', ')');
-		FuncCall* call = FuncCall_new(token, arglist);
+		if(arglist == NULL) {
+			/* Parse error occurred and has already been raised */
+			free(token);
+			return ValErr(ignoreError());
+		}
+		
+		FuncCall* call = FuncCall_create(token, arglist);
 		
 		ret = ValCall(call);
 	}
@@ -496,16 +559,13 @@ Value* Value_next(const char** expr, char end) {
 	
 	trimSpaces(expr);
 	
+	
 	if(isdigit(**expr) || **expr == '.') {
 		ret = parseNum(expr);
 	}
 	else if(**expr == '(') {
 		(*expr)++;
-		ret = Value_parse(expr, 0, 0);
-		
-		/* Skip closing parenthesis if it exists */
-		if(**expr == ')')
-			(*expr)++;
+		ret = Value_parse(expr, 0, ')');
 	}
 	else if(**expr == '<') {
 		(*expr)++;
@@ -513,39 +573,36 @@ Value* Value_next(const char** expr, char end) {
 	}
 	else if(**expr == '|') {
 		(*expr)++;
-		ArgList* args = ArgList_new(1);
-		args->args[0] = Value_parse(expr, 0, '|');
-		/* check for error */
-		if (args->args[0]->type == VAL_ERR)
-			return args->args[0];
-		/* use built in absolute value function */
-		FuncCall* abs = FuncCall_new("abs", args);
-		ret = ValCall(abs);
-		(*expr)++;
+		Value* val = Value_parse(expr, 0, '|');
+		
+		/* Error checking */
+		if(val->type == VAL_ERR)
+			return val;
+		
+		/* Use absolute value builtin */
+		ret = ValCall(FuncCall_create("@abs", ArgList_create(1, val)));
 	}
 	else {
 		ret = parseToken(expr);
 	}
 	
-	if (**expr == '[') {
-		/* Move past the '[' character */
-		(*expr)++;
-		
-		/* Parse inside of brackets */
-		Value* index = Value_parse(expr, 0, ']');
-		if (index->type == VAL_ERR) {
-			return index;
+	trimSpaces(expr);
+	
+	bool again = true;
+	while(again) {
+		switch(**expr) {
+			case '[':
+				ret = subscriptVector(ret, expr);
+				break;
+			
+			case '(':
+				ret = callFunc(ret, expr);
+				break;
+			
+			default:
+				again = false;
+				break;
 		}
-		
-		/* Use buit in function from vector.c */
-		ArgList* args = ArgList_new(2);
-		args->args[0] = ret;
-		args->args[1] = index;
-		FuncCall* vval = FuncCall_new("vval", args);
-		ret = ValCall(vval);
-		
-		/* Move past the ']' character */
-		(*expr)++;
 	}
 	
 	/* Check if a parse error occurred */
@@ -645,7 +702,10 @@ char* Value_repr(Value* val) {
 			break;
 		
 		case VAL_VAR:
-			ret = strdup(val->name);
+			if(prettyPrint)
+				ret = strdup(getPretty(val->name));
+			else
+				ret = strdup(val->name);
 			break;
 		
 		case VAL_VEC:
@@ -660,17 +720,7 @@ char* Value_repr(Value* val) {
 	return ret;
 }
 
-void Value_fprint(FILE* fp, Value* val, Context* ctx) {
-	if(val->type == VAL_VAR) {
-		Variable* var = Variable_get(ctx, val->name);
-		
-		/* Don't try to evaluate a function */
-		if(var->type == VAR_FUNC)
-			return;
-		
-		val = Variable_eval(val->name, ctx);
-	}
-	
+void Value_print(Value* val, SuperCalc* sc) {
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
 		Error_raise(val->err);
@@ -680,19 +730,15 @@ void Value_fprint(FILE* fp, Value* val, Context* ctx) {
 	/* Print the value */
 	char* valString = Value_repr(val);
 	if(valString) {
-		fprintf(fp, "%s", valString);
+		fprintf(sc->fout, "%s", valString);
 		free(valString);
 	}
 	
 	/* If the result is a fraction, also print out the floating point representation */
 	if(val->type == VAL_FRAC) {
-		fprintf(fp, " (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
+		fprintf(sc->fout, " (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
 	}
 	
-	fputc('\n', fp);
-}
-
-void Value_print(Value* val, Context* ctx) {
-	Value_fprint(stdout, val, ctx);
+	fputc('\n', sc->fout);
 }
 

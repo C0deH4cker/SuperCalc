@@ -73,7 +73,7 @@ UnOp* UnOp_copy(UnOp* term) {
 Value* UnOp_eval(UnOp* term, Context* ctx) {
 	if(!term) return ValErr(nullError());
 	
-	Value* a = Value_eval(term->a, ctx);
+	Value* a = Value_coerce(term->a, ctx);
 	if(a->type == VAL_ERR)
 		return a;
 	

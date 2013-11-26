@@ -291,7 +291,6 @@ char* Expression_verbose(Expression* expr, Context* ctx) {
 }
 
 char* Expression_repr(Expression* expr, Context* ctx) {
-	/* And another crazy if statement!!! */
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
@@ -306,7 +305,7 @@ char* Expression_repr(Expression* expr, Context* ctx) {
 	return Variable_repr(expr->var);
 }
 
-void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) {
+void Expression_print(Expression* expr, SuperCalc* sc, int verbosity) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
 		Error_raise(expr->var->err);
@@ -315,20 +314,16 @@ void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) 
 	
 	if(verbosity >= 2) {
 		/* Dump expression tree */
-		char* tree = Expression_verbose(expr, ctx);
-		fprintf(fp, "%s\n", tree);
+		char* tree = Expression_verbose(expr, sc->ctx);
+		fprintf(sc->fout, "%s\n", tree);
 		free(tree);
 	}
 	
 	if(verbosity >= 1) {
 		/* Print parenthesized expression */
-		char* reprinted = Expression_repr(expr, ctx);
-		fprintf(fp, "%s\n", reprinted);
+		char* reprinted = Expression_repr(expr, sc->ctx);
+		fprintf(sc->fout, "%s\n", reprinted);
 		free(reprinted);
 	}
-}
-
-void Expression_print(Expression* expr, Context* ctx, int verbosity) {
-	Expression_fprint(stdout, expr, ctx, verbosity);
 }
 

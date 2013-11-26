@@ -11,7 +11,10 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "error.h"
+
 
 #define ABS(x) ({ \
 	__typeof__(x) _x = (x); \
@@ -34,6 +37,8 @@
 #define EPSILON 1e-12
 
 char line[1024];
+/* Hacky, I know */
+bool prettyPrint;
 
 /* Tokenization */
 void trimSpaces(const char** str);
@@ -42,11 +47,14 @@ char* copyUntilClose(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
-char* nextLine(void);
+void nextLine(FILE* fp);
+bool isInteractive(FILE* fp);
+const char* getPretty(const char* name);
 
 /* Verbose printing */
 char* spaces(int n);
 char* strNULL(void);
+char* strERR(void);
 
 /* Math */
 long long ipow(long long base, long long exp);

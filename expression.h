@@ -14,6 +14,7 @@
 typedef struct Expression Expression;
 #include "variable.h"
 #include "value.h"
+#include "supercalc.h"
 
 struct Expression {
 	Variable* var;
@@ -43,7 +44,6 @@ Value* Expression_eval(Expression* expr, Context* ctx);
 /* Printing */
 char* Expression_verbose(Expression* expr, Context* ctx);
 char* Expression_repr(Expression* expr, Context* ctx);
-void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity);
-void Expression_print(Expression* expr, Context* ctx, int verbosity);
+void Expression_print(Expression* expr, SuperCalc* sc, int verbosity);
 
 #endif

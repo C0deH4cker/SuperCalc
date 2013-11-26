@@ -182,6 +182,15 @@ Vector functions:
 	>>> dot(a, b)
 	25
 
+Function calls and vector subscripting is recursive:
+
+	>>> getVec() = <1, 2, 3, <4, 5>>
+	>>> getVec()[3][1]
+	5
+	>>> getFunc() = getVec
+	>>> getFunc()()[3][0]
+	4
+
 Examples using `map`:
 
 	>>> a = <3, 4, 5>
@@ -254,9 +263,9 @@ Error messages attempt to be clear:
 	>>> 3 / (1 - 1)
 	Math Error: Division by zero.
 	>>> sqrt()
-	Type Error: Builtin 'sqrt' takes 1 argument, not 0.
+	Type Error: Builtin 'sqrt' accepts 1 argument, not 0.
 	>>> sqrt(4, 3)
-	Type Error: Builtin 'sqrt' takes 1 argument, not 2.
+	Type Error: Builtin 'sqrt' accepts 1 argument, not 2.
 	>>> sqrt(-1)
 	Math Error: Builtin function 'sqrt' returned an invalid value.
 	>>> a
