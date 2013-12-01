@@ -44,7 +44,7 @@ Expression* Expression_parse(const char** expr) {
 		
 		if(val->type == VAL_END) {
 			Value_free(val);
-			var = VarErr(ignoreError());
+			var = VarErr(earlyEnd());
 		}
 		else if(val->type == VAL_ERR) {
 			var = VarErr(Error_copy(val->err));
@@ -260,7 +260,7 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 				
 				Context_setGlobal(ctx, var->name, Variable_copy(func));
 			}
-			else {
+			else if(verbose == 0 || func->type != VAR_FUNC) {
 				/* Coerce the variable to a Value */
 				Value* val = Variable_coerce(func, ctx);
 				Value_free(ret);

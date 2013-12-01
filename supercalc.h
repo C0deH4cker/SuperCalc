@@ -25,6 +25,6 @@ struct SuperCalc {
 SuperCalc* SC_new(FILE* fout);
 void SC_free(SuperCalc* sc);
 Value* SC_runFile(SuperCalc* sc, FILE* fp);
-Value* SC_runString(SuperCalc* sc, const char* statement);
+Value* SC_runString(SuperCalc* sc, const char* str);
 
 #endif

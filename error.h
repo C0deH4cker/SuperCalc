@@ -38,13 +38,13 @@ struct Error {
 } while(0)
 
 /* Convenience constructors */
-#define mathError(fmt, args...)		Error_new(ERR_MATH, fmt, ##args)
-#define syntaxError(fmt, args...)	Error_new(ERR_SYNTAX, fmt, ##args)
-#define fatalError(fmt, args...)	Error_new(ERR_FATAL, fmt, ##args)
-#define nameError(fmt, args...)		Error_new(ERR_NAME, fmt, ##args)
-#define typeError(fmt, args...)		Error_new(ERR_TYPE, fmt, ##args)
-#define unknownError(fmt, args...)	Error_new(ERR_UNK, fmt, ##args)
-#define ignoreError()				Error_new(ERR_IGN, "")
+#define mathError(fmt, args...)     Error_new(ERR_MATH, fmt, ##args)
+#define syntaxError(fmt, args...)   Error_new(ERR_SYNTAX, fmt, ##args)
+#define fatalError(fmt, args...)    Error_new(ERR_FATAL, fmt, ##args)
+#define nameError(fmt, args...)     Error_new(ERR_NAME, fmt, ##args)
+#define typeError(fmt, args...)     Error_new(ERR_TYPE, fmt, ##args)
+#define unknownError(fmt, args...)  Error_new(ERR_UNK, fmt, ##args)
+#define ignoreError()               Error_new(ERR_IGN, "")
 
 const char* kNullErrStr;
 const char* kDivByZeroStr;
@@ -61,22 +61,22 @@ const char* kAllocErrStr;
 const char* kBadValStr;
 const char* kBadVarStr;
 
-#define nullError()					unknownError(kNullErrStr)
-#define zeroDivError()				mathError(kDivByZeroStr)
-#define zeroModError()				mathError(kModByZeroStr)
-#define varNotFound(name)			nameError(kVarNotFoundStr, (name))
-#define badOpType(op, type)			typeError(kBadOpTypeStr, (op), (type))
-#define badChar(ch)					(ch ? syntaxError(kBadCharStr, (ch)) : syntaxError(kEarlyEndStr))
-#define builtinArgs(name, n1, n2)	typeError(kBuiltinArgsStr, (name), (n1), (n1) == 1 ? "" : "s", (n2))
-#define builtinNotFunc(name)		typeError(kBuiltinNotFuncStr, (name))
-#define badConversion(name)			typeError(kBadConversionStr, (name))
-#define earlyEnd()					syntaxError(kEarlyEndStr)
+#define nullError()                 unknownError(kNullErrStr)
+#define zeroDivError()              mathError(kDivByZeroStr)
+#define zeroModError()              mathError(kModByZeroStr)
+#define varNotFound(name)           nameError(kVarNotFoundStr, (name))
+#define badOpType(op, type)         typeError(kBadOpTypeStr, (op), (type))
+#define badChar(ch)                 (ch ? syntaxError(kBadCharStr, (ch)) : syntaxError(kEarlyEndStr))
+#define builtinArgs(name, n1, n2)   typeError(kBuiltinArgsStr, (name), (n1), (n1) == 1 ? "" : "s", (n2))
+#define builtinNotFunc(name)        typeError(kBuiltinNotFuncStr, (name))
+#define badConversion(name)         typeError(kBadConversionStr, (name))
+#define earlyEnd()                  syntaxError(kEarlyEndStr)
 
 /* Death macros */
 #define DIE(args...)                die(__FILE__, __FUNCTION__, __LINE__, ##args)
-#define allocError()				DIE(kAllocErrStr)
-#define badValType(type)			DIE(kBadValStr, (type))
-#define badVarType(type)			DIE(kBadVarStr, (type))
+#define allocError()                DIE(kAllocErrStr)
+#define badValType(type)            DIE(kBadValStr, (type))
+#define badVarType(type)            DIE(kBadVarStr, (type))
 
 /* Constructors */
 Error* Error_new(ERRTYPE type, const char* fmt, ...);

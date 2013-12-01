@@ -36,9 +36,10 @@
 #define IWIDTH 2
 #define EPSILON 1e-12
 
-char line[1024];
 /* Hacky, I know */
+char line[1024];
 bool prettyPrint;
+int verbose;
 
 /* Tokenization */
 void trimSpaces(const char** str);

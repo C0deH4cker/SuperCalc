@@ -71,7 +71,7 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	const char* p = code;
 	
 	/* Get verbosity level */
-	int verbose = 0;
+	verbose = 0;
 	while(p[0] == '?') {
 		verbose++;
 		p++;
@@ -105,7 +105,14 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 			return NULL;
 		}
 		
+		Context_del(sc->ctx, name);
+		
 		free(name);
+		free(code);
+		return NULL;
+	}
+	
+	if(*p == '\0') {
 		free(code);
 		return NULL;
 	}

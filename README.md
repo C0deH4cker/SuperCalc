@@ -62,9 +62,9 @@ SuperCalc likes to be as precise as it knows how, so floating point values are a
 Example of using fractions:
 
 	>>> (2 / 7) ^ 2
-	4/49 (0.081632653061224)
+	4/49 (0.0816326530612245)
 	>>> -(3 + 4!/7)^3
-	-91125/343 (-265.670553935860084)
+	-91125/343 (-265.67055393586)
 
 Variables are supported:
 
@@ -225,13 +225,13 @@ Vectors even support scalar operations:
 	>>> a = <4, 7, -3>
 	<4, 7, -3>
 	>>> a + 2
-	<6, 9, -1>
+	<4.92998110995055, 8.62746694241347, -3.69748583246292>
 	>>> ans / 3
-	<2, 3, -1/3>
+	<1.64332703665018, 2.87582231413782, -1.23249527748764>
 	>>> ans ^ 2
-	<4, 9, 1/9>
+	<2.70052374938548, 8.27035398249302, 1.51904460902933>
 	>>> 2 / ans
-	<1/2, 2/9, 18>
+	<0.740597078790777, 0.241827617564335, 1.31661702896138>
 
 Variables can be deleted using `~`:
 
@@ -263,9 +263,9 @@ Error messages attempt to be clear:
 	>>> 3 / (1 - 1)
 	Math Error: Division by zero.
 	>>> sqrt()
-	Type Error: Builtin 'sqrt' accepts 1 argument, not 0.
+	Type Error: Builtin 'sqrt' expects 1 argument, not 0.
 	>>> sqrt(4, 3)
-	Type Error: Builtin 'sqrt' accepts 1 argument, not 2.
+	Type Error: Builtin 'sqrt' expects 1 argument, not 2.
 	>>> sqrt(-1)
 	Math Error: Builtin function 'sqrt' returned an invalid value.
 	>>> a

@@ -569,6 +569,7 @@ Value* Value_next(const char** expr, char end) {
 	}
 	else if(**expr == '(') {
 		(*expr)++;
+		/* FIXME: Failing case: 3(4)^2 */
 		ret = Value_parse(expr, 0, ')');
 	}
 	else if(**expr == '<') {
