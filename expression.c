@@ -242,9 +242,8 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 		if(ret->type == VAL_ERR)
 			return ret;
 		
-		/* Variable assignment? */
+		/* Expression result is a variable? */
 		if(ret->type == VAL_VAR) {
-			/* This means ret must be a function */
 			Variable* func = Variable_get(ctx, ret->name);
 			if(func == NULL) {
 				Error* err = varNotFound(ret->name);
@@ -253,12 +252,19 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 			}
 			
 			if(var->name != NULL) {
+				/* Assign the variable */
 				if(func->type == VAR_BUILTIN) {
 					Value_free(ret);
 					return ValErr(typeError("Cannot assign a variable to a builtin."));
 				}
 				
 				Context_setGlobal(ctx, var->name, Variable_copy(func));
+			}
+			else {
+				/* Coerce the variable to a Value */
+				Value* val = Variable_coerce(func, ctx);
+				Value_free(ret);
+				ret = val;
 			}
 		}
 		else {
