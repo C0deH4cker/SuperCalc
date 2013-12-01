@@ -35,10 +35,22 @@ bool isInteractive(FILE* fp) {
 }
 
 static const char* _ugly_str[] = {
-	"sqrt", "pi", "phi"
+	"sqrt",
+	"alpha", "beta", "gamma", "delta",
+	"epsilon", "zeta", "eta", "theta",
+	"iota", "kappa", "lambda", "mu",
+	"nu", "xi", "omicron", "pi",
+	"rho", "sigma", "tau", "upsilon",
+	"phi", "chi", "psi", "omega"
 };
 static const char* _pretty_str[] = {
-	"√", "π", "φ"
+	"√",
+	"α", "β", "γ", "δ",
+	"ε", "ζ", "η", "θ",
+	"ι", "κ", "λ", "μ",
+	"ν", "ξ", "ο", "π",
+	"ρ", "σ", "τ", "υ",
+	"φ", "χ", "ψ", "ω"
 };
 const char* getPretty(const char* name) {
 	if(name == NULL)
@@ -107,6 +119,7 @@ char* nextToken(const char** expr) {
 	while(isalnum(p[len]) || p[len] == '_')
 		len++;
 	
+	/* TODO: See if this is the same as ret = strndup(*expr, len); */
 	char* ret = fmalloc((len + 1) * sizeof(*ret));
 	
 	strncpy(ret, *expr, len);

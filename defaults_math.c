@@ -89,7 +89,7 @@ Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 			if(internal)
 				return Vector_magnitude(val->vec, ctx);
 			else
-				return ValCall(FuncCall_create("map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
+				return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
 		
 		default:
 			badValType(val->type);

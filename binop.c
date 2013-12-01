@@ -466,25 +466,10 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 }
 
 static const char* _op_pretty[] = {
-	"+",
-	"-",
-	"×",
-	"÷",
-	"%",
-	"^",
-	"$",
-	"?"
+	"+", "-", "×", "÷", "%", "^", "$", "?"
 };
-
 static const char* _op_repr[] = {
-	"+",
-	"-",
-	"*",
-	"/",
-	"%",
-	"^",
-	"$",
-	"?"
+	"+", "-", "*", "/", "%", "^", "$", "?"
 };
 
 char* BinOp_verbose(BinOp* op, int indent) {

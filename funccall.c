@@ -84,6 +84,7 @@ static Value* callVar(Context* ctx, const char* name, ArgList* args) {
 				ret = BinOp_eval(mul, ctx);
 				BinOp_free(mul);
 			}
+			break;
 		
 		default:
 			badVarType(var->type);
@@ -202,15 +203,10 @@ static char* reprFunc(const char* name, ArgList* arglist) {
 	char* ret;
 	char* argstr = ArgList_repr(arglist);
 	
-	char* disp;
-	if(prettyPrint)
-		disp = strdup(getPretty(name));
-	else
-		disp = strdup(name);
+	const char* disp = prettyPrint ? getPretty(name) : name;
 	
-	asprintf(&ret, "%s(%s)", name, argstr);
+	asprintf(&ret, "%s(%s)", disp, argstr);
 	
-	free(disp);
 	free(argstr);
 	
 	return ret;

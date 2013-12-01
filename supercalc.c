@@ -44,8 +44,7 @@ Value* SC_runFile(SuperCalc* sc, FILE* fp) {
 		prettyPrint = true;
 	
 	for(nextLine(fp); !feof(fp); nextLine(fp)) {
-		if(ret)
-			Value_free(ret);
+		if(ret) Value_free(ret);
 		
 		ret = SC_runString(sc, line);
 		if(ret && ret->type != VAL_VAR)
@@ -112,6 +111,7 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	
 	/* Parse the user's input */
 	Expression* expr = Expression_parse(&p);
+	free(code);
 	
 	/* Print expression depending on verbosity */
 	Expression_print(expr, sc, verbose);
@@ -119,7 +119,6 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	/* Error? Go to next loop iteration */
 	if(Expression_didError(expr)) {
 		Expression_free(expr);
-		free(code);
 		return NULL;
 	}
 	

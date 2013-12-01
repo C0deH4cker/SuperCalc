@@ -347,7 +347,7 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		
 		/* Special case: negative value */
 		if(val->type == VAL_NEG) {
-			/* XXX: Is this right? */
+			Value_free(val);
 			BinOp* cur = BinOp_new(BIN_MUL, ValInt(-1), NULL);
 			
 			if(!tree) {
@@ -368,8 +368,6 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		if(op == BIN_UNK) {
 			/* Exit gracefully and return error */
 			if(tree) BinOp_free(tree);
-			
-			/* XXX: Should val be freed here or not? */
 			Value_free(val);
 			
 			return ValErr(badChar(**expr));
@@ -494,8 +492,10 @@ static Value* subscriptVector(Value* val, const char** expr) {
 	/* Parse inside of brackets */
 	Value* index = Value_parse(expr, 0, ']');
 	
-	if(index->type == VAL_ERR)
+	if(index->type == VAL_ERR) {
+		Value_free(val);
 		return index;
+	}
 	
 	/* Use builtin function from vector.c */
 	ArgList* args = ArgList_create(2, val, index);
@@ -510,6 +510,11 @@ static Value* callFunc(Value* val, const char** expr) {
 	(*expr)++;
 	
 	ArgList* args = ArgList_parse(expr, ',', ')');
+	if(args == NULL) {
+		Value_free(val);
+		return ValErr(ignoreError());
+	}
+	
 	FuncCall* call = FuncCall_new(val, args);
 	
 	return ValCall(call);
@@ -524,7 +529,6 @@ static Value* parseToken(const char** expr) {
 	if(token == NULL)
 		return ValErr(badChar(**expr));
 	
-	/* TODO: Handle nested calls like getFunc()(4) */
 	if(**expr == '(') {
 		(*expr)++;
 		ArgList* arglist = ArgList_parse(expr, ',', ')');
@@ -586,31 +590,38 @@ Value* Value_next(const char** expr, char end) {
 		ret = parseToken(expr);
 	}
 	
-	trimSpaces(expr);
+	/* Check if a parse error occurred */
+	if(ret->type == VAL_ERR)
+		return ret;
 	
-	bool again = true;
-	while(again) {
+	while(1) {
+		bool again = true;
+		Value* tmp = NULL;
+		
+		trimSpaces(expr);
 		switch(**expr) {
 			case '[':
-				ret = subscriptVector(ret, expr);
+				tmp = subscriptVector(ret, expr);
 				break;
 			
 			case '(':
-				ret = callFunc(ret, expr);
+				tmp = callFunc(ret, expr);
 				break;
 			
 			default:
 				again = false;
 				break;
 		}
+		
+		if(!again) break;
+		
+		if(tmp->type == VAL_ERR)
+			return tmp;
+		
+		ret = tmp;
 	}
 	
-	/* Check if a parse error occurred */
-	if(ret->type == VAL_ERR)
-		return ret;
-	
-	/* Check for unary sign(s) afterwards */
-	trimSpaces(expr);
+	/* Check for unary signs afterwards */
 	while(**expr == '!') {
 		(*expr)++;
 		trimSpaces(expr);

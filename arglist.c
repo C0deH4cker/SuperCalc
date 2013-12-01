@@ -118,6 +118,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
+	unsigned i;
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
@@ -131,6 +132,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		}
 		
 		args[count++] = arg;
+		arg = NULL;
 		
 		trimSpaces(expr);
 		if(**expr != sep)
@@ -141,9 +143,21 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		arg = Value_parse(expr, sep, end);
 	}
 	
+	if(arg && arg->type == VAL_ERR) {
+		for(i = 0; i < count; i++) {
+			free(args[i]);
+		}
+		free(args);
+		
+		Error_raise(arg->err);
+		Value_free(arg);
+		return NULL;
+	}
+	
+	if(arg) Value_free(arg);
+	
 	if(**expr && **expr != end) {
 		/* Not NUL and not end means invalid char */
-		unsigned i;
 		for(i = 0; i < count; i++) {
 			free(args[i]);
 		}
