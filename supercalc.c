@@ -66,6 +66,7 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	char* end;
 	if((end = strchr(code, '\n')) != NULL) *end = '\0';
 	if((end = strchr(code, '\r')) != NULL) *end = '\0';
+	if((end = strchr(code, '#')) != NULL) *end = '\0';
 	
 	const char* p = code;
 	
