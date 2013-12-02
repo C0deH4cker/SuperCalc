@@ -19,7 +19,7 @@
 #include "vector.h"
 
 
-#define EVAL_CONST(name, val) Value* eval_ ## name(Context* ctx, ArgList* arglist) { \
+#define EVAL_CONST(name, val) Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
 	if(arglist->count > 1) { \
 		return ValErr(builtinNotFunc(#name)); \
 	} \
@@ -35,21 +35,26 @@ EVAL_CONST(e, M_E);
 EVAL_CONST(phi, PHI);
 
 
-#define EVAL_FUNC(name, func, nargs) Value* eval_ ## name(Context* ctx, ArgList* arglist) { \
+#define EVAL_FUNC(name, func, nargs) Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
 	if(arglist->count != (nargs)) { \
 		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
 	} \
-	double* a = ArgList_toReals(arglist, ctx); \
+	ArgList* e = ArgList_eval(arglist, ctx); \
+	if(!e) { \
+		return ValErr(ignoreError()); \
+	} \
+	double* a = ArgList_toReals(e, ctx); \
 	if(!a) { \
 		return ValErr(badConversion(#name)); \
 	} \
+	ArgList_free(e); \
 	Value* ret = ValReal((func)); \
 	free(a); \
 	return ret; \
 }
 
 
-Value* eval_sqrt(Context* ctx, ArgList* arglist) {
+Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
@@ -60,12 +65,15 @@ Value* eval_sqrt(Context* ctx, ArgList* arglist) {
 	return ValExpr(sqrt_pow);
 }
 
-Value* eval_abs(Context* ctx, ArgList* arglist) {
+Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
 	
-	Value* val = Value_eval(arglist->args[0], ctx);
+	Value* val = Value_coerce(arglist->args[0], ctx);
+	
+	if(val->type == VAL_ERR)
+		return val;
 	
 	switch(val->type) {
 		case VAL_INT:
@@ -78,7 +86,10 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 			return ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
 			
 		case VAL_VEC:
-			return Vector_magnitude(val->vec, ctx);
+			if(internal)
+				return Vector_magnitude(val->vec, ctx);
+			else
+				return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
 		
 		default:
 			badValType(val->type);
@@ -87,7 +98,7 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 	Value_free(val);
 }
 
-Value* eval_exp(Context* ctx, ArgList* arglist) {
+Value* eval_exp(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}

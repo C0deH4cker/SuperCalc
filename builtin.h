@@ -9,13 +9,14 @@
 #ifndef _SC_BUILTIN_H_
 #define _SC_BUILTIN_H_
 
+#include <stdbool.h>
 
 typedef struct Builtin Builtin;
 #include "context.h"
 #include "arglist.h"
 #include "value.h"
 
-typedef Value* (*builtin_eval_t)(Context*, ArgList*);
+typedef Value* (*builtin_eval_t)(Context*, ArgList*, bool);
 
 struct Builtin {
 	char* name;
@@ -35,7 +36,7 @@ Builtin* Builtin_copy(Builtin* blt);
 void Builtin_register(Builtin* blt, Context* ctx);
 
 /* Evaluation */
-Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist);
+Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist, bool internal);
 
 /* Printing */
 char* Builtin_verbose(Builtin* blt, int indent);

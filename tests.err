@@ -1,0 +1,12 @@
+Name Error: No variable named 'a' found.
+Name Error: No variable named 'f' found.
+Name Error: No variable named 'a' found.
+Name Error: No variable named 'f' found.
+Math Error: Division by zero.
+Type Error: Builtin 'sqrt' expects 1 argument, not 0.
+Type Error: Builtin 'sqrt' expects 1 argument, not 2.
+Math Error: Builtin function 'sqrt' returned an invalid value.
+Name Error: No variable named 'a' found.
+Syntax Error: Unexpected character: '$'.
+Syntax Error: Premature end of input.
+Type Error: Builtin 'pi' is not a function.

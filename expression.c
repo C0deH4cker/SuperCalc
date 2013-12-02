@@ -60,7 +60,20 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		return parseExpr(expr);
+		val = Value_parse(expr, 0, 0);
+		
+		if(val->type == VAL_END) {
+			Value_free(val);
+			var = VarErr(earlyEnd());
+		}
+		else if(val->type == VAL_ERR) {
+			var = VarErr(Error_copy(val->err));
+			Value_free(val);
+		}
+		else
+			var = VarValue(NULL, val);
+		
+		return Expression_new(var);
 	}
 	
 	/* There is an assignment */
@@ -94,6 +107,10 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(**expr == '(') {
 		/* Defining a function */
+		/*
+		 TODO: Consider utilizing ArgList_parse for this and
+		 just check to make sure all args are VAL_VAR
+		*/
 		(*expr)++;
 		
 		/* Array of argument names */
@@ -126,6 +143,7 @@ Expression* Expression_parse(const char** expr) {
 			/* Loop through each argument in the list */
 			while(**expr == ',' || **expr == ')') {
 				args[len++] = arg;
+				arg = NULL;
 				
 				if(**expr == ')')
 					break;
@@ -158,15 +176,20 @@ Expression* Expression_parse(const char** expr) {
 			}
 		}
 		
+		if(arg) free(arg);
+		
 		if(**expr != ')') {
 			/* Invalid character inside argument name list */
 			Value_free(val);
 			free(name);
 			
-			/* Free argument names and return */
-			unsigned i;
-			for(i = 0; i < len; i++) {
-				free(args[i]);
+			if(args) {
+				/* Free argument names and return */
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
 			}
 			free(args);
 			
@@ -182,11 +205,13 @@ Expression* Expression_parse(const char** expr) {
 			Value_free(val);
 			free(name);
 			
-			unsigned i;
-			for(i = 0; i < len; i++) {
-				free(args[i]);
+			if(args) {
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
 			}
-			free(args);
 			
 			var = VarErr(badChar(**expr));
 			return Expression_new(var);
@@ -238,23 +263,29 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 		if(ret->type == VAL_ERR)
 			return ret;
 		
-		/* Variable assignment? */
+		/* Expression result is a variable? */
 		if(ret->type == VAL_VAR) {
-			/* This means ret must be a function */
 			Variable* func = Variable_get(ctx, ret->name);
 			if(func == NULL) {
-				Value* err = ValErr(varNotFound(ret->name));
+				Error* err = varNotFound(ret->name);
 				Value_free(ret);
-				return err;
-			}
-			
-			if(func->type == VAR_BUILTIN) {
-				Value_free(ret);
-				return ValErr(typeError("Cannot assign a variable to a builtin value."));
+				return ValErr(err);
 			}
 			
 			if(var->name != NULL) {
+				/* Assign the variable */
+				if(func->type == VAR_BUILTIN) {
+					Value_free(ret);
+					return ValErr(typeError("Cannot assign a variable to a builtin."));
+				}
+				
 				Context_setGlobal(ctx, var->name, Variable_copy(func));
+			}
+			else if(verbose == 0 || func->type != VAR_FUNC) {
+				/* Coerce the variable to a Value */
+				Value* val = Variable_coerce(func, ctx);
+				Value_free(ret);
+				ret = val;
 			}
 		}
 		else {
@@ -302,7 +333,6 @@ char* Expression_verbose(Expression* expr, Context* ctx) {
 }
 
 char* Expression_repr(Expression* expr, Context* ctx) {
-	/* And another crazy if statement!!! */
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
@@ -317,7 +347,7 @@ char* Expression_repr(Expression* expr, Context* ctx) {
 	return Variable_repr(expr->var);
 }
 
-void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) {
+void Expression_print(Expression* expr, SuperCalc* sc, int verbosity) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
 		Error_raise(expr->var->err);
@@ -326,20 +356,16 @@ void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) 
 	
 	if(verbosity >= 2) {
 		/* Dump expression tree */
-		char* tree = Expression_verbose(expr, ctx);
-		fprintf(fp, "%s\n", tree);
+		char* tree = Expression_verbose(expr, sc->ctx);
+		fprintf(sc->fout, "%s\n", tree);
 		free(tree);
 	}
 	
 	if(verbosity >= 1) {
 		/* Print parenthesized expression */
-		char* reprinted = Expression_repr(expr, ctx);
-		fprintf(fp, "%s\n", reprinted);
+		char* reprinted = Expression_repr(expr, sc->ctx);
+		fprintf(sc->fout, "%s\n", reprinted);
 		free(reprinted);
 	}
-}
-
-void Expression_print(Expression* expr, Context* ctx, int verbosity) {
-	Expression_fprint(stdout, expr, ctx, verbosity);
 }
 

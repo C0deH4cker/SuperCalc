@@ -51,7 +51,8 @@ void Variable_free(Variable* var);
 Variable* Variable_copy(Variable* var);
 
 /* Evaluation */
-Value* Variable_eval(const char* name, Context* ctx);
+Value* Variable_eval(Variable* var, Context* ctx);
+Value* Variable_coerce(Variable* var, Context* ctx);
 
 /* Variable accessing */
 Variable* Variable_get(Context* ctx, const char* name);

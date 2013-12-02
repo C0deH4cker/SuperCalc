@@ -50,7 +50,7 @@ Function* Function_copy(Function* func) {
 
 Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 	if(func->argcount != arglist->count) {
-		return ValErr(typeError("Function expects %u arguments, not %u.", func->argcount, arglist->count));
+		return ValErr(typeError("Function expects %u argument%s, not %u.", func->argcount, func->argcount == 1 ? "" : "s", arglist->count));
 	}
 	
 	ArgList* evaluated = ArgList_eval(arglist, ctx);
