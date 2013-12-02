@@ -21,20 +21,27 @@
 ArgList* ArgList_new(unsigned count) {
 	ArgList* ret = fmalloc(sizeof(*ret));
 	
-	size_t len = count * sizeof(*ret->args);
-	
 	ret->count = count;
-	ret->args = fmalloc(len);
-	
-	memset(ret->args, 0, len);
+	if(count > 0) {
+		size_t len = count * sizeof(*ret->args);
+		ret->args = fmalloc(len);
+		memset(ret->args, 0, len);
+	}
+	else {
+		ret->args = NULL;
+	}
 	
 	return ret;
 }
 
 void ArgList_free(ArgList* arglist) {
-	unsigned i;
-	for(i = 0; i < arglist->count; i++) {
-		Value_free(arglist->args[i]);
+	if(arglist->count > 0) {
+		unsigned i;
+		for(i = 0; i < arglist->count; i++) {
+			Value_free(arglist->args[i]);
+		}
+		
+		free(arglist->args);
 	}
 	
 	free(arglist);

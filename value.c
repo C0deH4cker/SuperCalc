@@ -438,7 +438,7 @@ static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val) {
 	*prev = next;
 }
 
-static Value* parseNum(const char** expr) {
+Value* parseNum(const char** expr) {
 	Value* ret;
 	
 	char* end1;
@@ -555,7 +555,7 @@ Value* Value_next(const char** expr, char end) {
 	Value* ret;
 	
 	trimSpaces(expr);
-	if(**expr == end)
+	if(**expr == end || **expr == '\0')
 		return ValEnd();
 	
 	if(getSign(expr) == -1)

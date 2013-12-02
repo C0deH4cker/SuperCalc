@@ -31,6 +31,26 @@ void Expression_free(Expression* expr) {
 	free(expr);
 }
 
+static Expression* parseExpr(const char** expr) {
+	Variable* var;
+	Value* val = Value_parse(expr, 0, 0);
+	
+	if(val->type == VAL_END) {
+		var = VarErr(ignoreError());
+	}
+	else if(val->type == VAL_ERR) {
+		Error* err = Error_copy(val->err);
+		var = VarErr(err);
+	}
+	else {
+		var = VarValue(NULL, Value_copy(val));
+	}
+	
+	Value_free(val);
+	
+	return Expression_new(var);
+}
+
 Expression* Expression_parse(const char** expr) {
 	Expression* ret = NULL;
 	Variable* var;
@@ -171,6 +191,7 @@ Expression* Expression_parse(const char** expr) {
 				}
 				free(args);
 			}
+			free(args);
 			
 			var = VarErr(badChar(**expr));
 			return Expression_new(var);

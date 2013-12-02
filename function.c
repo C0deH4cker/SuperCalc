@@ -61,7 +61,7 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 	Context_pushLocals(ctx);
 	
 	unsigned i;
-	for(i = 0; i < arglist->count; i++) {
+	for(i = 0; i < evaluated->count; i++) {
 		Value* val = Value_copy(evaluated->args[i]);
 		Variable* arg;
 		

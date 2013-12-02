@@ -36,6 +36,8 @@ Vector* Vector_copy(Vector* vec) {
 
 Value* Vector_parse(const char** expr) {
 	ArgList* vals = ArgList_parse(expr, ',', '>');
+	if(vals == NULL)
+		return ValErr(ignoreError());
 	
 	if(vals == NULL) {
 		/* Error occurred and has already been raised */
@@ -383,8 +385,8 @@ static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
 	}
 	
 	/* Part 2 */
-	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
-	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
+	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
+	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
 	
 	Value* j_pos = BinOp_eval(j_pos_op, ctx);
 	Value* j_neg = BinOp_eval(j_neg_op, ctx);
