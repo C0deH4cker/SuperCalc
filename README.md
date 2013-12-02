@@ -27,10 +27,10 @@ As well as the following mathematical functions:
 * `sqrt(x)`
 * `abs(x)`
 * `exp(x)`
-* `log(x)` (base 10)
-* `log2(x)` (base 2)
-* `ln(x)` (base e)
-* `logbase(x, b)` -> log_b(x)
+* `log(x)` -> log<sub>10</sub>(x)
+* `log2(x)` -> log<sub>2</sub>(x)
+* `ln(x)` -> log<sub>e</sub>(x)
+* `logbase(x, b)` -> log<sub>b</sub>(x)
 * `sin(x)`
 * `cos(x)`
 * `tan(x)`
