@@ -393,11 +393,11 @@ BinOp* BinOp_copy(BinOp* node) {
 Value* BinOp_eval(BinOp* node, Context* ctx) {
 	if(node == NULL) return ValErr(nullError());
 	
-	Value* a = Value_eval(node->a, ctx);
+	Value* a = Value_coerce(node->a, ctx);
 	if(a->type == VAL_ERR)
 		return a;
 	
-	Value* b = Value_eval(node->b, ctx);
+	Value* b = Value_coerce(node->b, ctx);
 	if(b->type == VAL_ERR) {
 		Value_free(a);
 		return b;
@@ -465,29 +465,12 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 	return _op_cmp[a][b];
 }
 
-static char BinOp_getChar(BINTYPE type) {
-	switch(type) {
-		case BIN_ADD:
-			return '+';
-		case BIN_SUB:
-			return '-';
-		case BIN_MUL:
-			return '*';
-		case BIN_DIV:
-			return '/';
-		case BIN_MOD:
-			return '%';
-		case BIN_POW:
-			return '^';
-		
-		/* Probably not needed, but whatever */
-		case BIN_END:
-			return '$';
-		
-		default:
-			return '?';
-	}
-}
+static const char* _op_pretty[] = {
+	"+", "-", "×", "÷", "%", "^", "$", "?"
+};
+static const char* _op_repr[] = {
+	"+", "-", "*", "/", "%", "^", "$", "?"
+};
 
 char* BinOp_verbose(BinOp* op, int indent) {
 	char* ret;
@@ -501,8 +484,8 @@ char* BinOp_verbose(BinOp* op, int indent) {
 	char* a = Value_verbose(op->a, indent + IWIDTH);
 	char* b = Value_verbose(op->b, indent + IWIDTH);
 	
-	asprintf(&ret, "%c (\n%s[a] %s\n%s[b] %s\n%s)",
-			 BinOp_getChar(op->type),
+	asprintf(&ret, "%s (\n%s[a] %s\n%s[b] %s\n%s)",
+			 _op_repr[op->type],
 			 spacing, a,
 			 spacing, b,
 			 current);
@@ -524,7 +507,9 @@ char* BinOp_repr(BinOp* node) {
 	char* a = Value_repr(node->a);
 	char* b = Value_repr(node->b);
 	
-	asprintf(&ret, "%s %c %s", a, BinOp_getChar(node->type), b);
+	const char* opstr = (prettyPrint ? _op_pretty : _op_repr)[node->type];
+	
+	asprintf(&ret, "%s %s %s", a, opstr, b);
 	
 	free(a);
 	free(b);

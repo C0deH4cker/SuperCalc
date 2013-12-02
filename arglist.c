@@ -87,7 +87,7 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* result = Value_eval(arglist->args[i], ctx);
+		Value* result = Value_coerce(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
 			/* An error occurred */
 			Error_raise(result->err);
@@ -105,15 +105,11 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 }
 
 double* ArgList_toReals(ArgList* arglist, Context* ctx) {
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
-	if(evaluated == NULL)
-		return NULL;
-	
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		double real = Value_asReal(evaluated->args[i]);
+		double real = Value_asReal(arglist->args[i]);
 		if(isnan(real)) {
 			free(ret);
 			return NULL;
@@ -122,8 +118,6 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 		ret[i] = real;
 	}
 	
-	ArgList_free(evaluated);
-	
 	return ret;
 }
 
@@ -131,10 +125,13 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
+	unsigned i;
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
 	Value* arg = Value_parse(expr, sep, end);
+	trimSpaces(expr);
+	
 	while(arg->type != VAL_END && arg->type != VAL_ERR) {
 		if(count >= size) {
 			size *= 2;
@@ -142,33 +139,48 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		}
 		
 		args[count++] = arg;
+		arg = NULL;
+		
+		trimSpaces(expr);
+		if(**expr != sep)
+			break;
+		
+		(*expr)++;
 		
 		arg = Value_parse(expr, sep, end);
 	}
 	
-	if(arg->type == VAL_ERR) {
-		/* Error parsing one of the args */
-		Error_raise(arg->err);
-		Value_free(arg);
-		
-		unsigned i;
+	if(arg && arg->type == VAL_ERR) {
 		for(i = 0; i < count; i++) {
-			Value_free(args[i]);
+			free(args[i]);
 		}
-		
 		free(args);
 		
+		Error_raise(arg->err);
+		Value_free(arg);
 		return NULL;
 	}
 	
-	Value_free(arg);
+	if(arg) Value_free(arg);
+	
+	if(**expr && **expr != end) {
+		/* Not NUL and not end means invalid char */
+		for(i = 0; i < count; i++) {
+			free(args[i]);
+		}
+		free(args);
+		
+		RAISE(badChar(**expr));
+		return NULL;
+	}
 	
 	ArgList* ret = ArgList_new(count);
 	memcpy(ret->args, args, count * sizeof(*args));
 	
 	free(args);
 	
-	(*expr)++;
+	if(**expr == end)
+		(*expr)++;
 	
 	return ret;
 }

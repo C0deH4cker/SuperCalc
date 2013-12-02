@@ -19,14 +19,16 @@ typedef struct FuncCall FuncCall;
 
 
 struct FuncCall {
-	char* name;
+	Value* func;
 	ArgList* arglist;
 };
 
 
 /* Constructor */
-/* This method consumes the `arglist` argument */
-FuncCall* FuncCall_new(const char* name, ArgList* arglist);
+/* This method consumes both the `func` and `arglist` arguments */
+FuncCall* FuncCall_new(Value* func, ArgList* arglist);
+/* Used to create specific calls like "sqrt". `arglist` is consumed */
+FuncCall* FuncCall_create(const char* name, ArgList* arglist);
 
 /* Destructor */
 void FuncCall_free(FuncCall* call);

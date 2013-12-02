@@ -42,9 +42,9 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 	Context_addGlobal(ctx, var);
 }
 
-Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist) {
+Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
-	Value* tmp = blt->evaluator(ctx, arglist);
+	Value* tmp = blt->evaluator(ctx, arglist, internal);
 	
 	/* Simplify result */
 	Value* ret = Value_eval(tmp, ctx);
