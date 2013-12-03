@@ -277,7 +277,7 @@ Error messages attempt to be clear:
 	>>> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
-For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree.
+For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree. Verbosity >= 3 will force pretty printing (with unicode characters).
 
 Examples of verbose printing:
 
