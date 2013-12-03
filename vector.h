@@ -9,7 +9,6 @@
 #ifndef _SC_VECTOR_H_
 #define _SC_VECTOR_H_
 
-
 typedef struct Vector Vector;
 #include "value.h"
 #include "arglist.h"

@@ -9,7 +9,6 @@
 #ifndef _SC_FRACTION_H_
 #define _SC_FRACTION_H_
 
-/* value.h needs Fraction */
 typedef struct Fraction Fraction;
 #include "value.h"
 
@@ -46,6 +45,6 @@ Value* Fraction_cmp(Fraction* a, Value* b);
 double Fraction_asReal(Fraction* frac);
 
 /* Printing */
-char* Fraction_repr(Fraction* frac);
+char* Fraction_repr(Fraction* frac, bool pretty);
 
 #endif

@@ -8,6 +8,7 @@
 
 #include "defaults.h"
 #include <math.h>
+#include <stdbool.h>
 
 #include "generic.h"
 #include "error.h"
@@ -17,9 +18,11 @@
 #include "value.h"
 #include "binop.h"
 #include "vector.h"
+#include "fraction.h"
+#include "funccall.h"
 
 
-#define EVAL_CONST(name, val) Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+#define EVAL_CONST(name, val) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
 	if(arglist->count > 1) { \
 		return ValErr(builtinNotFunc(#name)); \
 	} \
@@ -35,7 +38,7 @@ EVAL_CONST(e, M_E);
 EVAL_CONST(phi, PHI);
 
 
-#define EVAL_FUNC(name, func, nargs) Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+#define EVAL_FUNC(name, func, nargs) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
 	if(arglist->count != (nargs)) { \
 		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
 	} \
@@ -54,7 +57,7 @@ EVAL_CONST(phi, PHI);
 }
 
 
-Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
@@ -65,7 +68,7 @@ Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {
 	return ValExpr(sqrt_pow);
 }
 
-Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
@@ -98,7 +101,7 @@ Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 	Value_free(val);
 }
 
-Value* eval_exp(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_exp(Context* ctx, ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}
@@ -148,7 +151,7 @@ EVAL_FUNC(ln, log(a[0]), 1);
 EVAL_FUNC(logbase, log(a[0]) / log(a[1]), 2);
 
 
-static const char* math_names[] = {
+static const char* _math_names[] = {
 	"pi", "e", "phi",
 	"sqrt", "abs", "exp",
 	"sin", "cos", "tan",
@@ -163,7 +166,7 @@ static const char* math_names[] = {
 	"logbase", "atan2"
 };
 
-static builtin_eval_t math_funcs[] = {
+static builtin_eval_t _math_funcs[] = {
 	&eval_pi, &eval_e, &eval_phi,
 	&eval_sqrt, &eval_abs, &eval_exp,
 	&eval_sin, &eval_cos, &eval_tan,
@@ -178,14 +181,16 @@ static builtin_eval_t math_funcs[] = {
 	&eval_logbase, &eval_atan2
 };
 
+
 void register_math(Context* ctx) {
 	Vector_register(ctx);
 	
-	unsigned count = sizeof(math_names) / sizeof(math_names[0]);
+	unsigned count = sizeof(_math_names) / sizeof(_math_names[0]);
 	
 	unsigned i;
 	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(math_names[i], math_funcs[i]);
+		Builtin* blt = Builtin_new(_math_names[i], _math_funcs[i]);
 		Builtin_register(blt, ctx);
 	}
 }
+

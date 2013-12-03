@@ -9,12 +9,12 @@
 #ifndef _SC_FUNCCALL_H_
 #define _SC_FUNCCALL_H_
 
+#include <stdbool.h>
 
 typedef struct FuncCall FuncCall;
 
 #include "context.h"
 #include "value.h"
-#include "variable.h"
 #include "arglist.h"
 
 
@@ -41,6 +41,6 @@ Value* FuncCall_eval(FuncCall* call, Context* ctx);
 
 /* Printing */
 char* FuncCall_verbose(FuncCall* call, int indent);
-char* FuncCall_repr(FuncCall* call);
+char* FuncCall_repr(FuncCall* call, bool pretty);
 
 #endif

@@ -9,15 +9,17 @@
 #ifndef _SUPERCALC_H_
 #define _SUPERCALC_H_
 
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct SuperCalc SuperCalc;
 #include "value.h"
 #include "context.h"
+#include "generic.h"
 
 struct SuperCalc {
 	Context* ctx;
+	bool interactive;
 	FILE* fin;
 	FILE* fout;
 };
@@ -25,6 +27,7 @@ struct SuperCalc {
 SuperCalc* SC_new(FILE* fout);
 void SC_free(SuperCalc* sc);
 Value* SC_runFile(SuperCalc* sc, FILE* fp);
-Value* SC_runString(SuperCalc* sc, const char* str);
+Value* SC_runInteractive(SuperCalc* sc, FILE* fp);
+Value* SC_runString(SuperCalc* sc, const char* str, VERBOSITY v);
 
 #endif

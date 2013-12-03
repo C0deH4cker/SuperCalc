@@ -40,7 +40,7 @@ Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist, bool internal)
 
 /* Printing */
 char* Builtin_verbose(Builtin* blt, int indent);
-char* Builtin_repr(Builtin* blt);
+char* Builtin_repr(Builtin* blt, bool pretty);
 
 
 #endif

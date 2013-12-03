@@ -9,6 +9,7 @@
 #ifndef _SC_VARIABLE_H_
 #define _SC_VARIABLE_H_
 
+#include <stdbool.h>
 
 typedef struct Variable Variable;
 #include "context.h"
@@ -67,6 +68,6 @@ void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */
 char* Variable_verbose(Variable* var);
-char* Variable_repr(Variable* var);
+char* Variable_repr(Variable* var, bool pretty);
 
 #endif

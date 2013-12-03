@@ -18,7 +18,8 @@
 #include "context.h"
 #include "function.h"
 #include "builtin.h"
-#include "value.h"
+#include "variable.h"
+#include "arglist.h"
 
 
 static Variable* allocVar(VARTYPE type, const char* name) {
@@ -257,20 +258,20 @@ char* Variable_verbose(Variable* var) {
 	return ret;
 }
 
-char* Variable_repr(Variable* var) {
+char* Variable_repr(Variable* var, bool pretty) {
 	char* ret;
 	
 	const char* name = var->name;
-	if(prettyPrint)
+	if(pretty)
 		name = getPretty(name);
 	
 	if(var->type == VAR_FUNC) {
-		char* func = Function_repr(var->func);
+		char* func = Function_repr(var->func, pretty);
 		asprintf(&ret, "%s%s", name, func);
 		free(func);
 	}
 	else if(var->type == VAR_BUILTIN) {
-		char* blt = Builtin_repr(var->blt);
+		char* blt = Builtin_repr(var->blt, pretty);
 		if(name == NULL) {
 			ret = blt;
 		}
@@ -280,7 +281,7 @@ char* Variable_repr(Variable* var) {
 		}
 	}
 	else {
-		char* val = Value_repr(var->val);
+		char* val = Value_repr(var->val, pretty);
 		if(name == NULL) {
 			ret = val;
 		}

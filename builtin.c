@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "error.h"
@@ -17,6 +18,7 @@
 #include "value.h"
 #include "context.h"
 #include "arglist.h"
+#include "variable.h"
 
 
 Builtin* Builtin_new(const char* name, builtin_eval_t evaluator) {
@@ -66,7 +68,10 @@ char* Builtin_verbose(Builtin* blt, int indent) {
 	return ret;
 }
 
-char* Builtin_repr(Builtin* blt) {
+char* Builtin_repr(Builtin* blt, bool pretty) {
+	if(pretty)
+		return strdup(getPretty(blt->name));
+	
 	return strdup(blt->name);
 }
 

@@ -10,6 +10,7 @@
 #define _SC_VALUE_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct Value Value;
 #include "fraction.h"
@@ -19,6 +20,7 @@ typedef struct Value Value;
 #include "variable.h"
 #include "context.h"
 #include "error.h"
+#include "generic.h"
 #include "vector.h"
 #include "supercalc.h"
 
@@ -86,7 +88,7 @@ Value* Value_next(const char** expr, char end);
 
 /* Printing */
 char* Value_verbose(Value* val, int indent);
-char* Value_repr(Value* val);
-void Value_print(Value* val, SuperCalc* sc);
+char* Value_repr(Value* val, bool pretty);
+void Value_print(Value* val, SuperCalc* sc, VERBOSITY v);
 
 #endif

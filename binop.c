@@ -9,10 +9,10 @@
 #include "binop.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
-#include <stdbool.h>
 
 #include "error.h"
 #include "generic.h"
@@ -21,15 +21,41 @@
 #include "fraction.h"
 #include "vector.h"
 
+typedef Value* (*binop_t)(Context*, Value*, Value*);
+
+static Value* val_ipow(long long base, long long exp);
+static Value* binop_add(Context* ctx, Value* a, Value* b);
+static Value* binop_sub(Context* ctx, Value* a, Value* b);
+static Value* binop_mul(Context* ctx, Value* a, Value* b);
+static Value* binop_div(Context* ctx, Value* a, Value* b);
+static Value* binop_mod(Context* ctx, Value* a, Value* b);
+static Value* binop_pow(Context* ctx, Value* a, Value* b);
+static BINTYPE nextSpecialOp(const char** expr);
+
+static binop_t _binop_table[] = {
+	&binop_add,
+	&binop_sub,
+	&binop_mul,
+	&binop_div,
+	&binop_mod,
+	&binop_pow
+};
 
 /* Operator comparison table */
-static const int _op_cmp[6][6] = {
+static const int _binop_cmp[6][6] = {
 	{0, 0, -1, -1, -1, -1}, /* ADD */
 	{0, 0, -1, -1, -1, -1}, /* SUB */
 	{1, 1,  0,  0,  0, -1}, /* MUL */
 	{1, 1,  0,  0,  0, -1}, /* DIV */
 	{1, 1,  0,  0,  0, -1}, /* MOD */
 	{1, 1,  1,  1,  0, -1}  /* POW */
+};
+
+static const char* _binop_pretty[] = {
+	"+", "-", "×", "÷", "%", "^", "$", "?"
+};
+static const char* _binop_repr[] = {
+	"+", "-", "*", "/", "%", "^", "$", "?"
 };
 
 const char* binop_verb[] = {
@@ -352,17 +378,6 @@ static Value* binop_pow(Context* ctx, Value* a, Value* b) {
 	return ret;
 }
 
-typedef Value* (*binop_t)(Context*, Value*, Value*);
-static binop_t binop_table[] = {
-	&binop_add,
-	&binop_sub,
-	&binop_mul,
-	&binop_div,
-	&binop_mod,
-	&binop_pow
-};
-
-
 BinOp* BinOp_new(BINTYPE type, Value* a, Value* b) {
 	BinOp* ret = fmalloc(sizeof(*ret));
 	
@@ -403,12 +418,27 @@ Value* BinOp_eval(BinOp* node, Context* ctx) {
 		return b;
 	}
 	
-	Value* ret = binop_table[node->type](ctx, a, b);
+	Value* ret = _binop_table[node->type](ctx, a, b);
 	
 	Value_free(a);
 	Value_free(b);
 	
 	return ret;
+}
+
+/* Like Rambo */
+static BINTYPE nextSpecialOp(const char** expr) {
+	unsigned i;
+	for(i = 0; i < sizeof(_binop_pretty) / sizeof(_binop_pretty[0]); i++) {
+		size_t len = strlen(_binop_pretty[i]);
+		
+		if(strncmp(_binop_pretty[i], *expr, len) == 0) {
+			*expr += len;
+			return i;
+		}
+	}
+	
+	return BIN_UNK;
 }
 
 BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
@@ -448,7 +478,7 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
 				return BIN_MUL;
 			}
 			
-			return BIN_UNK;
+			return nextSpecialOp(expr);
 	}
 	
 	(*expr)++;
@@ -462,15 +492,8 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
  both a and b have equal precedence.
 */
 int BinOp_cmp(BINTYPE a, BINTYPE b) {
-	return _op_cmp[a][b];
+	return _binop_cmp[a][b];
 }
-
-static const char* _op_pretty[] = {
-	"+", "-", "×", "÷", "%", "^", "$", "?"
-};
-static const char* _op_repr[] = {
-	"+", "-", "*", "/", "%", "^", "$", "?"
-};
 
 char* BinOp_verbose(BinOp* op, int indent) {
 	char* ret;
@@ -485,7 +508,7 @@ char* BinOp_verbose(BinOp* op, int indent) {
 	char* b = Value_verbose(op->b, indent + IWIDTH);
 	
 	asprintf(&ret, "%s (\n%s[a] %s\n%s[b] %s\n%s)",
-			 _op_repr[op->type],
+			 _binop_repr[op->type],
 			 spacing, a,
 			 spacing, b,
 			 current);
@@ -498,16 +521,16 @@ char* BinOp_verbose(BinOp* op, int indent) {
 	return ret;
 }
 
-char* BinOp_repr(BinOp* node) {
+char* BinOp_repr(BinOp* node, bool pretty) {
 	char* ret;
 	
 	if(node == NULL)
 		return strNULL();
 	
-	char* a = Value_repr(node->a);
-	char* b = Value_repr(node->b);
+	char* a = Value_repr(node->a, pretty);
+	char* b = Value_repr(node->b, pretty);
 	
-	const char* opstr = (prettyPrint ? _op_pretty : _op_repr)[node->type];
+	const char* opstr = (pretty ? _binop_pretty : _binop_repr)[node->type];
 	
 	asprintf(&ret, "%s %s %s", a, opstr, b);
 	

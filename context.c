@@ -35,11 +35,11 @@ static void freeVars(struct VarNode* vars);
 static void freeStack(struct ContextStack* stack);
 static struct VarNode* copyVars(struct VarNode* src);
 static struct ContextStack* copyStack(struct ContextStack* stack);
-void addVar(struct VarNode** vars, Variable* var);
+static void addVar(struct VarNode** vars, Variable* var);
 static struct VarNode* findPrev(struct VarNode* cur, const char* name);
 static bool isFirst(struct VarNode* cur, const char* name);
-struct VarNode* findNode(struct VarNode* cur, const char* name);
-Variable* findVar(struct VarNode* cur, const char* name);
+static struct VarNode* findNode(struct VarNode* cur, const char* name);
+static Variable* findVar(struct VarNode* cur, const char* name);
 
 
 Context* Context_new(void) {
@@ -151,7 +151,7 @@ Context* Context_copy(Context* ctx) {
 	return ret;
 }
 
-void addVar(struct VarNode** vars, Variable* var) {
+static void addVar(struct VarNode** vars, Variable* var) {
 	struct VarNode* elem = fmalloc(sizeof(*elem));
 	
 	elem->var = var;
@@ -300,7 +300,7 @@ void Context_del(Context* ctx, const char* name) {
 	free(cur);
 }
 
-struct VarNode* findNode(struct VarNode* cur, const char* name) {
+static struct VarNode* findNode(struct VarNode* cur, const char* name) {
 	while(cur) {
 		if(strcmp(cur->var->name, name) == 0) {
 			return cur;
@@ -312,7 +312,7 @@ struct VarNode* findNode(struct VarNode* cur, const char* name) {
 	return NULL;
 }
 
-Variable* findVar(struct VarNode* cur, const char* name) {
+static Variable* findVar(struct VarNode* cur, const char* name) {
 	struct VarNode* node = findNode(cur, name);
 	
 	return node ? node->var : NULL;
@@ -339,5 +339,4 @@ Variable* Context_getAbove(Context* ctx, const char* name) {
 	
 	return ret ?: findVar(ctx->globals, name);
 }
-
 

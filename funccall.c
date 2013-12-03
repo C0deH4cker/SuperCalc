@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "error.h"
 #include "generic.h"
@@ -18,6 +19,15 @@
 #include "variable.h"
 #include "arglist.h"
 #include "function.h"
+#include "builtin.h"
+#include "binop.h"
+
+
+static Value* callVar(Context* ctx, const char* name, ArgList* args);
+static char* verboseFunc(const char* name, ArgList* arglist, int indent);
+static char* specialVerbose(const char* name, ArgList* arglist, int indent);
+static char* reprFunc(const char* name, ArgList* arglist, bool pretty);
+static char* specialRepr(const char* name, ArgList* arglist, bool pretty);
 
 
 FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
@@ -199,11 +209,11 @@ char* FuncCall_verbose(FuncCall* call, int indent) {
 	return ret;
 }
 
-static char* reprFunc(const char* name, ArgList* arglist) {
+static char* reprFunc(const char* name, ArgList* arglist, bool pretty) {
 	char* ret;
-	char* argstr = ArgList_repr(arglist);
+	char* argstr = ArgList_repr(arglist, pretty);
 	
-	const char* disp = prettyPrint ? getPretty(name) : name;
+	const char* disp = pretty ? getPretty(name) : name;
 	
 	asprintf(&ret, "%s(%s)", disp, argstr);
 	
@@ -212,16 +222,17 @@ static char* reprFunc(const char* name, ArgList* arglist) {
 	return ret;
 }
 
-static char* specialRepr(const char* name, ArgList* arglist) {
+static char* specialRepr(const char* name, ArgList* arglist, bool pretty) {
 	char* ret;
 	
+	/* TODO: Consider removing special printing for abs in repr */
 	if(strcmp(name, "abs") == 0) {
 		if(arglist->count != 1) {
 			/* Shouldn't ever happen */
 			return strERR();
 		}
 		
-		char* args = ArgList_repr(arglist);
+		char* args = ArgList_repr(arglist, pretty);
 		asprintf(&ret, "|%s|", args);
 		free(args);
 	}
@@ -231,8 +242,8 @@ static char* specialRepr(const char* name, ArgList* arglist) {
 			return strERR();
 		}
 		
-		char* vec = Value_repr(arglist->args[0]);
-		char* index = Value_repr(arglist->args[1]);
+		char* vec = Value_repr(arglist->args[0], pretty);
+		char* index = Value_repr(arglist->args[1], pretty);
 		
 		asprintf(&ret, "%s[%s]", vec, index);
 		
@@ -241,24 +252,25 @@ static char* specialRepr(const char* name, ArgList* arglist) {
 	}
 	else {
 		/* Just default to printing the function */
-		ret = reprFunc(name, arglist);
+		ret = reprFunc(name, arglist, pretty);
 	}
 	
 	return ret;
 }
 
-char* FuncCall_repr(FuncCall* call) {
+char* FuncCall_repr(FuncCall* call, bool pretty) {
 	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
 		/* Internal call */
-		return specialRepr(call->func->name + 1, call->arglist);
+		return specialRepr(call->func->name + 1, call->arglist, pretty);
 	}
 	
 	char* ret;
 	
-	char* callable = Value_repr(call->func);
-	ret = reprFunc(callable, call->arglist);
+	char* callable = Value_repr(call->func, pretty);
+	ret = reprFunc(callable, call->arglist, pretty);
 	
 	free(callable);
 	
 	return ret;
 }
+

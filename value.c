@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <errno.h>
@@ -19,13 +18,15 @@
 
 #include "error.h"
 #include "generic.h"
-#include "unop.h"
 #include "binop.h"
-#include "function.h"
-#include "arglist.h"
+#include "fraction.h"
+#include "unop.h"
+#include "funccall.h"
 #include "vector.h"
-#include "supercalc.h"
+#include "context.h"
 #include "variable.h"
+#include "arglist.h"
+#include "supercalc.h"
 
 
 static Value* allocValue(VALTYPE type);
@@ -645,7 +646,7 @@ char* Value_verbose(Value* val, int indent) {
 			break;
 		
 		case VAL_FRAC:
-			ret = Fraction_repr(val->frac);
+			ret = Fraction_repr(val->frac, false);
 			break;
 		
 		case VAL_UNARY:
@@ -675,7 +676,7 @@ char* Value_verbose(Value* val, int indent) {
 	return ret;
 }
 
-char* Value_repr(Value* val) {
+char* Value_repr(Value* val, bool pretty) {
 	char* ret;
 	char* str;
 	
@@ -694,27 +695,27 @@ char* Value_repr(Value* val) {
 			break;
 		
 		case VAL_FRAC:
-			ret = Fraction_repr(val->frac);
+			ret = Fraction_repr(val->frac, pretty);
 			break;
 		
 		case VAL_UNARY:
-			str = UnOp_repr(val->term);
+			str = UnOp_repr(val->term, pretty);
 			asprintf(&ret, "(%s)", str);
 			free(str);
 			break;
 		
 		case VAL_EXPR:
-			str = BinOp_repr(val->expr);
+			str = BinOp_repr(val->expr, pretty);
 			asprintf(&ret, "(%s)", str);
 			free(str);
 			break;
 		
 		case VAL_CALL:
-			ret = FuncCall_repr(val->call);
+			ret = FuncCall_repr(val->call, pretty);
 			break;
 		
 		case VAL_VAR:
-			if(prettyPrint)
+			if(pretty)
 				ret = strdup(getPretty(val->name));
 			else
 				ret = strdup(val->name);
@@ -732,7 +733,7 @@ char* Value_repr(Value* val) {
 	return ret;
 }
 
-void Value_print(Value* val, SuperCalc* sc) {
+void Value_print(Value* val, SuperCalc* sc, VERBOSITY v) {
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
 		Error_raise(val->err);
@@ -740,15 +741,10 @@ void Value_print(Value* val, SuperCalc* sc) {
 	}
 	
 	/* Print the value */
-	char* valString = Value_repr(val);
+	char* valString = Value_repr(val, v & V_PRETTY);
 	if(valString) {
 		fprintf(sc->fout, "%s", valString);
 		free(valString);
-	}
-	
-	/* If the result is a fraction, also print out the floating point representation */
-	if(val->type == VAL_FRAC) {
-		fprintf(sc->fout, " (%.*g)", DBL_DIG, Fraction_asReal(val->frac));
 	}
 	
 	fputc('\n', sc->fout);

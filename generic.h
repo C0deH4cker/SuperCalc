@@ -9,9 +9,9 @@
 #ifndef _SC_GENERIC_H_
 #define _SC_GENERIC_H_
 
-#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "error.h"
 
@@ -36,23 +36,31 @@
 #define IWIDTH 2
 #define EPSILON 1e-12
 
+typedef enum {
+	V_REPR   = 1,
+	V_TREE   = 1<<1,
+	V_PRETTY = 1<<2
+} VERBOSITY;
+#define V_ALL (V_REPR|V_TREE|V_PRETTY)
+
 /* Hacky, I know */
 char line[1024];
-bool prettyPrint;
-int verbose;
 
 /* Tokenization */
 void trimSpaces(const char** str);
+char* nextSpecial(const char** expr);
 char* nextToken(const char** expr);
 char* copyUntilClose(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
 void nextLine(FILE* fp);
+void readLine(FILE* fp);
 bool isInteractive(FILE* fp);
-const char* getPretty(const char* name);
+VERBOSITY getVerbosity(const char** str);
 
 /* Verbose printing */
+const char* getPretty(const char* name);
 char* spaces(int n);
 char* strNULL(void);
 char* strERR(void);

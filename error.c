@@ -8,12 +8,12 @@
 
 #include "error.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
 
 #include "generic.h"
-
 
 
 const char* kNullErrStr         = "NULL pointer value.";
@@ -121,5 +121,4 @@ void die(const char* file, const char* function, int line, const char* fmt, ...)
 	
 	__builtin_unreachable();
 }
-
 

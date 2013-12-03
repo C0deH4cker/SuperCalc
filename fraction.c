@@ -11,11 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
+#include <float.h>
 
 #include "error.h"
 #include "generic.h"
-
+#include "value.h"
 
 
 static Value* fracAdd(Fraction* a, Fraction* b);
@@ -285,7 +285,11 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 		ret = ValFrac(Fraction_new(n, d));
 	}
 	else {
-		/* Not a simple integral power. Just treat as a real for now */
+		/*
+		 Not a simple integral power. Just treat as a real for now
+		 TODO: Perform prime factorization on the base to determine if
+		 the power has an integral result.
+		*/
 		ret = ValReal(pow(Fraction_asReal(base), Fraction_asReal(exp)));
 	}
 	
@@ -382,8 +386,14 @@ double Fraction_asReal(Fraction* frac) {
 	return (double)frac->n / (double)frac->d;
 }
 
-char* Fraction_repr(Fraction* f) {
+char* Fraction_repr(Fraction* f, bool pretty) {
 	char* ret;
-	asprintf(&ret, "%lld/%lld", f->n, f->d);
+	
+	if(pretty)
+		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
+	else
+		asprintf(&ret, "%lld/%lld", f->n, f->d);
+	
 	return ret;
 }
+

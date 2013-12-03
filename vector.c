@@ -8,12 +8,26 @@
 
 #include "vector.h"
 #include <stdio.h>
-#include <ctype.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
 #include <limits.h>
 
 #include "generic.h"
 #include "error.h"
+#include "arglist.h"
+#include "value.h"
+#include "context.h"
+#include "binop.h"
+#include "funccall.h"
+#include "builtin.h"
+
+
+static Value* vecScalarOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
+static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
+static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
+static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin);
+
 
 
 Vector* Vector_new(ArgList* vals) {
@@ -58,7 +72,7 @@ Value* Vector_eval(Vector* vec, Context* ctx) {
 	return ValVec(Vector_new(args));
 }
 
-static Value* vecScalarOp(Vector* vec, Value* scalar, Context *ctx, BINTYPE bin) {
+static Value* vecScalarOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
 	ArgList* newv = ArgList_new(vec->vals->count);
 	
 	unsigned i;
@@ -132,7 +146,7 @@ static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE 
 	ArgList* newv = ArgList_new(count);
 	
 	unsigned i;
-	for (i = 0; i < count; i++) {
+	for(i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
 		Value* val2;
 		if(vector2->vals->count == 1)
@@ -525,21 +539,21 @@ static Value* eval_elem(Context* ctx, ArgList* arglist, bool internal) {
 	return ret;
 }
 
-static const char* vector_names[] = {
+static const char* _vector_names[] = {
 	"dot", "cross", "map",
 	"elem"
 };
-static builtin_eval_t vector_funcs[] = {
+static builtin_eval_t _vector_funcs[] = {
 	&eval_dot, &eval_cross, &eval_map,
 	&eval_elem
 };
 
 /* This is just a copy of register_math remade for vectors */
-void Vector_register(Context *ctx) {
-	unsigned count = sizeof(vector_names) / sizeof(vector_names[0]);
+void Vector_register(Context* ctx) {
+	unsigned count = sizeof(_vector_names) / sizeof(_vector_names[0]);
 	unsigned i;
 	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(vector_names[i], vector_funcs[i]);
+		Builtin* blt = Builtin_new(_vector_names[i], _vector_funcs[i]);
 		Builtin_register(blt, ctx);
 	}
 }
@@ -563,7 +577,7 @@ char* Vector_verbose(Vector* vec, int indent) {
 char* Vector_repr(Vector* vec) {
 	char* ret;
 	
-	char* vals = ArgList_repr(vec->vals);
+	char* vals = ArgList_repr(vec->vals, false);
 	asprintf(&ret, "<%s>", vals);
 	free(vals);
 	

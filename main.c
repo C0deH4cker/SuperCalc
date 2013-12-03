@@ -7,11 +7,12 @@
 */
 
 #include "supercalc.h"
+#include <stdio.h>
 
 
 int main(int argc, char* argv[]) {
 	SuperCalc* sc = SC_new(stdout);
-	SC_runFile(sc, stdin);
+	SC_runInteractive(sc, stdin);
 	SC_free(sc);
 	
 	return 0;

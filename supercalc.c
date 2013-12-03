@@ -8,6 +8,7 @@
 
 #include "supercalc.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -40,26 +41,38 @@ void SC_free(SuperCalc* sc) {
 Value* SC_runFile(SuperCalc* sc, FILE* fp) {
 	Value* ret = NULL;
 	
-	if(isInteractive(fp))
-		prettyPrint = true;
-	
 	for(nextLine(fp); !feof(fp); nextLine(fp)) {
 		if(ret) Value_free(ret);
 		
-		ret = SC_runString(sc, line);
+		const char* p = line;
+		VERBOSITY v = getVerbosity(&p);
+		
+		ret = SC_runString(sc, p, v);
 		if(ret && ret->type != VAL_VAR)
-			Value_print(ret, sc);
+			Value_print(ret, sc, v);
 	}
-	
-	if(prettyPrint)
-		printf("\n");
-	
-	prettyPrint = false;
 	
 	return ret;
 }
 
-Value* SC_runString(SuperCalc* sc, const char* str) {
+Value* SC_runInteractive(SuperCalc* sc, FILE* fp) {
+	Value* ret = NULL;
+	
+	for(readLine(fp); !feof(fp); readLine(fp)) {
+		if(ret) Value_free(ret);
+		
+		const char* p = line;
+		VERBOSITY v = getVerbosity(&p) | V_PRETTY;
+		
+		ret = SC_runString(sc, p, v);
+		if(ret && ret->type != VAL_VAR)
+			Value_print(ret, sc, v);
+	}
+	
+	return ret;
+}
+
+Value* SC_runString(SuperCalc* sc, const char* str, VERBOSITY v) {
 	char* code = strdup(str);
 	
 	/* Strip trailing newline */
@@ -69,13 +82,6 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	if((end = strchr(code, '#')) != NULL) *end = '\0';
 	
 	const char* p = code;
-	
-	/* Get verbosity level */
-	verbose = 0;
-	while(p[0] == '?') {
-		verbose++;
-		p++;
-	}
 	trimSpaces(&p);
 	
 	if(*p == '~') {
@@ -122,7 +128,7 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	free(code);
 	
 	/* Print expression depending on verbosity */
-	Expression_print(expr, sc, verbose);
+	Expression_print(expr, sc, v);
 	
 	/* Error? Go to next loop iteration */
 	if(Expression_didError(expr)) {
@@ -131,7 +137,7 @@ Value* SC_runString(SuperCalc* sc, const char* str) {
 	}
 	
 	/* Evaluate expression */
-	Value* result = Expression_eval(expr, sc->ctx);
+	Value* result = Expression_eval(expr, sc->ctx, v);
 	Expression_free(expr);
 	
 	return result;

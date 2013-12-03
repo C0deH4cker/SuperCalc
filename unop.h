@@ -9,11 +9,13 @@
 #ifndef _SC_UNOP_H_
 #define _SC_UNOP_H_
 
+#include <stdbool.h>
 
 typedef struct UnOp UnOp;
 
 #include "context.h"
 #include "value.h"
+#include "generic.h"
 
 
 typedef enum {
@@ -41,6 +43,6 @@ Value* UnOp_eval(UnOp* term, Context* ctx);
 
 /* Printing */
 char* UnOp_verbose(UnOp* term, int indent);
-char* UnOp_repr(UnOp* term);
+char* UnOp_repr(UnOp* term, bool pretty);
 
 #endif

@@ -11,9 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "generic.h"
+#include "error.h"
 #include "value.h"
 #include "context.h"
 
@@ -216,7 +218,7 @@ char* ArgList_verbose(ArgList* arglist, int indent) {
 	return ret;
 }
 
-char* ArgList_repr(ArgList* arglist) {
+char* ArgList_repr(ArgList* arglist, bool pretty) {
 	char* ret;
 	
 	size_t size = 32;
@@ -228,7 +230,7 @@ char* ArgList_repr(ArgList* arglist) {
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		Value* arg = arglist->args[i];
-		char* argstr = Value_repr(arg);
+		char* argstr = Value_repr(arg, pretty);
 		
 		/* Double the string size if it's too short */
 		size_t newlen = strlen(ret) + 2 + strlen(argstr);

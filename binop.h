@@ -9,6 +9,7 @@
 #ifndef _SC_BINOP_H_
 #define _SC_BINOP_H_
 
+#include <stdbool.h>
 
 typedef struct BinOp BinOp;
 
@@ -57,7 +58,7 @@ int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
 char* BinOp_verbose(BinOp* node, int indent);
-char* BinOp_repr(BinOp* node);
+char* BinOp_repr(BinOp* node, bool pretty);
 
 
 #endif

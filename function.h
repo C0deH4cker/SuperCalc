@@ -9,6 +9,7 @@
 #ifndef _SC_FUNCTION_H_
 #define _SC_FUNCTION_H_
 
+#include <stdbool.h>
 
 typedef struct Function Function;
 
@@ -38,7 +39,7 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist);
 
 /* Printing */
 char* Function_verbose(Function* func);
-char* Function_repr(Function* func);
+char* Function_repr(Function* func, bool pretty);
 
 
 #endif

@@ -10,10 +10,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "error.h"
 #include "generic.h"
 #include "context.h"
+#include "value.h"
+#include "arglist.h"
+#include "variable.h"
+
+
+static char* argsVerbose(Function* func);
 
 
 Function* Function_new(unsigned argcount, char** argnames, Value* body) {
@@ -147,11 +154,11 @@ char* Function_verbose(Function* func) {
 	return ret;
 }
 
-char* Function_repr(Function* func) {
+char* Function_repr(Function* func, bool pretty) {
 	char* ret;
 	
 	char* args = argsVerbose(func);
-	char* body = Value_repr(func->body);
+	char* body = Value_repr(func->body, pretty);
 	
 	asprintf(&ret, "(%s) = %s", args, body);
 	
@@ -160,3 +167,4 @@ char* Function_repr(Function* func) {
 	
 	return ret;
 }
+

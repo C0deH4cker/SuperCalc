@@ -10,6 +10,7 @@
 #define _SC_ARGLIST_H_
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 typedef struct ArgList ArgList;
 #include "value.h"
@@ -42,7 +43,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end);
 
 /* Printing */
 char* ArgList_verbose(ArgList* arglist, int indent);
-char* ArgList_repr(ArgList* arglist);
+char* ArgList_repr(ArgList* arglist, bool pretty);
 
 
 #endif

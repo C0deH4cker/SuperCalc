@@ -7,23 +7,23 @@
 */
 
 #include "generic.h"
-#include <ctype.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
+#include <string.h>
+#include <ctype.h>
+#include <stddef.h>
 
 #include "supercalc.h"
 
 
-bool prettyPrint = false;
-
-
 void nextLine(FILE* fp) {
-	if(isInteractive(fp)) {
-		printf(">>> ");
-	}
-	
+	fgets(line, sizeof(line), fp);
+}
+
+void readLine(FILE* fp) {
+	printf(">>> ");
 	fgets(line, sizeof(line), fp);
 }
 
@@ -34,20 +34,31 @@ bool isInteractive(FILE* fp) {
 	return false;
 }
 
-static const char* _ugly_str[] = {
+VERBOSITY getVerbosity(const char** str) {
+	VERBOSITY ret = 0;
+	
+	while(**str == '?') {
+		ret = (ret << 1) | 1;
+		(*str)++;
+	}
+	
+	return ret & V_ALL;
+}
+
+static const char* _repr_tok[] = {
 	"sqrt",
 	"alpha", "beta", "gamma", "delta",
 	"epsilon", "zeta", "eta", "theta",
-	"iota", "kappa", "lambda", "mu",
+	"iota", "kappa", "lambda", "mu", "mu",
 	"nu", "xi", "omicron", "pi",
 	"rho", "sigma", "tau", "upsilon",
 	"phi", "chi", "psi", "omega"
 };
-static const char* _pretty_str[] = {
+static const char* _pretty_tok[] = {
 	"√",
 	"α", "β", "γ", "δ",
 	"ε", "ζ", "η", "θ",
-	"ι", "κ", "λ", "μ",
+	"ι", "κ", "λ", "μ", "µ",
 	"ν", "ξ", "ο", "π",
 	"ρ", "σ", "τ", "υ",
 	"φ", "χ", "ψ", "ω"
@@ -56,11 +67,11 @@ const char* getPretty(const char* name) {
 	if(name == NULL)
 		return NULL;
 	
-	/* More: "∞≠π∑ß∂ƒ∆÷≥≤∫√≈±∏Ø" */
+	/* More: "∞≠∑ß∂ƒ∆÷≥≤∫≈±∏Ø" */
 	unsigned i;
-	for(i = 0; i < sizeof(_ugly_str) / sizeof(_ugly_str[0]); i++) {
-		if(strcmp(name, _ugly_str[i]) == 0)
-			return _pretty_str[i];
+	for(i = 0; i < sizeof(_repr_tok) / sizeof(_repr_tok[0]); i++) {
+		if(strcmp(name, _repr_tok[i]) == 0)
+			return _pretty_tok[i];
 	}
 	
 	return name;
@@ -104,10 +115,28 @@ long long gcd(long long a, long long b) {
 	return b == 0 ? a : gcd(b, a % b);
 }
 
+char* nextSpecial(const char** expr) {
+	unsigned i;
+	for(i = 0; i < sizeof(_pretty_tok) / sizeof(_pretty_tok[0]); i++) {
+		size_t len = strlen(_pretty_tok[i]);
+		
+		if(strncmp(_pretty_tok[i], *expr, len) == 0) {
+			*expr += len;
+			return strdup(_repr_tok[i]);
+		}
+	}
+	
+	return NULL;
+}
+
 char* nextToken(const char** expr) {
 	size_t len = 1;
 	
 	trimSpaces(expr);
+	
+	char* special = nextSpecial(expr);
+	if(special)
+		return special;
 	
 	const char* p = *expr;
 	
@@ -119,12 +148,7 @@ char* nextToken(const char** expr) {
 	while(isalnum(p[len]) || p[len] == '_')
 		len++;
 	
-	/* TODO: See if this is the same as ret = strndup(*expr, len); */
-	char* ret = fmalloc((len + 1) * sizeof(*ret));
-	
-	strncpy(ret, *expr, len);
-	ret[len] = '\0';
-	
+	char* ret = strndup(*expr, len);
 	*expr += len;
 	
 	return ret;
@@ -198,5 +222,4 @@ double approx(double real) {
 	
 	return real;
 }
-
 

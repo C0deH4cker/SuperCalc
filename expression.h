@@ -10,11 +10,13 @@
 #define _SC_EXPRESSION_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct Expression Expression;
 #include "variable.h"
 #include "value.h"
 #include "supercalc.h"
+#include "context.h"
 
 struct Expression {
 	Variable* var;
@@ -39,11 +41,11 @@ Expression* Expression_parse(const char** expr);
 bool Expression_didError(Expression* expr);
 
 /* Evaluation */
-Value* Expression_eval(Expression* expr, Context* ctx);
+Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v);
 
 /* Printing */
 char* Expression_verbose(Expression* expr, Context* ctx);
-char* Expression_repr(Expression* expr, Context* ctx);
-void Expression_print(Expression* expr, SuperCalc* sc, int verbosity);
+char* Expression_repr(Expression* expr, Context* ctx, bool pretty);
+void Expression_print(Expression* expr, SuperCalc* sc, VERBOSITY v);
 
 #endif
