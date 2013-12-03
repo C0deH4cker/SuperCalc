@@ -36,8 +36,15 @@
 #define IWIDTH 2
 #define EPSILON 1e-12
 
+/* Change this to 0 to turn off readline. */
+#define READLINE 1
+
 /* Hacky, I know */
+#if READLINE
+extern char *line;
+#else
 char line[1024];
+#endif
 bool prettyPrint;
 int verbose;
 
