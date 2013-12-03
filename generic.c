@@ -13,15 +13,29 @@
 #include <string.h>
 #include <unistd.h>
 
+#if READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+char *line = NULL;
+#else
 #include "supercalc.h"
-
+#endif
 
 bool prettyPrint = false;
 
-
 void nextLine(FILE* fp) {
 	if(isInteractive(fp)) {
+#if READLINE
+		if (line) {
+			/* There has to be a better way. */
+			free(line);
+		}
+		line = readline(">>> ");
+		add_history(line);
+		return;
+#else
 		printf(">>> ");
+#endif
 	}
 	
 	fgets(line, sizeof(line), fp);
