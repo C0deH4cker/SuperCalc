@@ -607,7 +607,13 @@ Value* Value_next(const char** expr, char end) {
 				break;
 			
 			case '(':
-				tmp = callFunc(ret, expr);
+				/* only variables and function calls are functions */
+				if (ret->type == VAL_VAR || ret->type == VAL_CALL) {
+					tmp = callFunc(ret, expr);
+				} else {
+					ret = ValExpr(BinOp_new(BIN_MUL, ret, Value_parse(expr, 0, ')')));
+					again = false;
+				}
 				break;
 			
 			default:
