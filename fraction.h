@@ -37,6 +37,7 @@ Value* Fraction_mul(Fraction* a, Value* b);
 Value* Fraction_div(Fraction* a, Value* b);
 Value* Fraction_mod(Fraction* a, Value* b);
 Value* Fraction_pow(Fraction* base, Value* exp);
+Value* Fraction_rpow(Fraction* exp, Value* base);
 
 /* Comparison */
 Value* Fraction_cmp(Fraction* a, Value* b);

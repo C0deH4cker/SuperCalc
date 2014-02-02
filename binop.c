@@ -347,8 +347,8 @@ static Value* binop_pow(Context* ctx, Value* a, Value* b) {
 	else if(a->type == VAL_FRAC) {
 		ret = Fraction_pow(a->frac, b);
 	}
-	else if(a->type == VAL_INT && b->type == VAL_INT) {
-		ret = ValInt(ipow(a->ival, b->ival));
+	else if(b->type == VAL_FRAC) {
+		ret = Fraction_rpow(b->frac, a);
 	}
 	else {
 		/* Just do a real pow */

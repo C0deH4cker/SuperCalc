@@ -18,11 +18,17 @@
 #include "value.h"
 
 
+typedef struct prime_list {
+	long long prime;
+	long long count;
+} prime_list;
+
 static Value* fracAdd(Fraction* a, Fraction* b);
 static Value* fracSub(Fraction* a, Fraction* b);
 static Value* fracMul(Fraction* a, Fraction* b);
 static Value* fracDiv(Fraction* a, Fraction* b);
 static Value* fracMod(Fraction* a, Fraction* b);
+static prime_list* factor_primes(long long n, unsigned* count);
 static Value* fracPow(Fraction* base, Fraction* exp);
 static int fracCmp(Fraction* a, Fraction* b);
 
@@ -267,6 +273,52 @@ Value* Fraction_mod(Fraction* a, Value* b) {
 	return ret;
 }
 
+static prime_list* factor_primes(long long n, unsigned* count) {
+	unsigned size = 2, len = 0;
+	
+	if(n == 1) {
+		*count = 0;
+		return NULL;
+	}
+	
+	prime_list* ret = fmalloc(size * sizeof(*ret));
+	
+	/* Handle 2 separately so the loop can be more efficient */
+	if((n & 1) == 0) {
+		ret[len].prime = 2;
+		ret[len].count = 0;
+		
+		while((n & 1) == 0) {
+			n >>= 1;
+			ret[len].count++;
+		}
+		
+		len++;
+	}
+	
+	for(int i = 3; n > 1; i += 2) {
+		if(n % i == 0) {
+			if(len >= size) {
+				size *= 2;
+				ret = frealloc(ret, size);
+			}
+			
+			ret[len].prime = i;
+			ret[len].count = 0;
+			
+			while(n % i == 0) {
+				n /= i;
+				ret[len].count++;
+			}
+			
+			len++;
+		}
+	}
+	
+	*count = len;
+	return ret;
+}
+
 static Value* fracPow(Fraction* base, Fraction* exp) {
 	Value* ret;
 	long long n, d;
@@ -286,11 +338,93 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 	}
 	else {
 		/*
-		 Not a simple integral power. Just treat as a real for now
-		 TODO: Perform prime factorization on the base to determine if
-		 the power has an integral result.
+		 (a/b) ^ (c/d) == (a^(c/d)) / (b^(c/d))
 		*/
-		ret = ValReal(pow(Fraction_asReal(base), Fraction_asReal(exp)));
+		unsigned i, n_count, d_count;
+		prime_list* n_primes = factor_primes(base->n, &n_count);
+		prime_list* d_primes = factor_primes(base->d, &d_count);
+		
+		/* Initialize coefficient fraction to 1 */
+		n = d = 1;
+		
+		/* Simplify the base's numerator */
+		for(i = 0; i < n_count; i++) {
+			/* Apply the exponent's numerator to each prime */
+			n_primes[i].count *= exp->n;
+			
+			while(n_primes[i].count >= exp->d) {
+				n *= n_primes[i].prime;
+				n_primes[i].count -= exp->d;
+			}
+		}
+		
+		/* Now simplify the base's denominator */
+		for(i = 0; i < d_count; i++) {
+			/* Apply the exponent's numerator to each prime */
+			d_primes[i].count *= exp->n;
+			
+			while(d_primes[i].count >= exp->d) {
+				d *= d_primes[i].prime;
+				d_primes[i].count -= exp->d;
+			}
+		}
+		
+		/*
+		 All of the possible simplifications have been done.
+		 Now just recombine the prime lists together to form
+		 the new and fully reduced base -- unless it was
+		 reduced completely.
+		*/
+		
+		Value* coef = ValFrac(Fraction_new(n, d));
+		
+		/* Completely reduced? */
+		bool complete = true;
+		long long base_n = 1, base_d = 1;
+		for(i = 0; i < n_count; i++) {
+			if(n_primes[i].count > 0) {
+				complete = false;
+				base_n *= ipow(n_primes[i].prime, n_primes[i].count);
+			}
+		}
+		for(i = 0; i < d_count; i++) {
+			if(d_primes[i].count > 0) {
+				complete = false;
+				base_d *= ipow(d_primes[i].prime, d_primes[i].count);
+			}
+		}
+		
+		if(complete) {
+			/* Completely reduced, so no MUL or POW */
+			ret = coef;
+		}
+		else {
+			/* Not completely reduced */
+			
+			/* Did any reduction even occur? */
+			if(coef->type == VAL_INT && coef->ival == 1) {
+				/* No reduction occurred */
+				ret = ValExpr(BinOp_new(BIN_POW,
+										ValFrac(Fraction_copy(base)),
+										ValFrac(Fraction_copy(exp))
+										));
+			}
+			else {
+				/* 
+				 Partially reduced
+				 coef * base ^ exp == MUL(coef, POW(base, exp))
+				*/
+				ret = ValExpr(BinOp_new(BIN_MUL,
+										coef,
+										ValExpr(BinOp_new(BIN_POW,
+														  ValFrac(Fraction_new(base_n, base_d)),
+														  ValFrac(Fraction_copy(exp))
+														  ))));
+			}
+		}
+		
+		free(n_primes);
+		free(d_primes);
 	}
 	
 	return ret;
@@ -325,6 +459,35 @@ Value* Fraction_pow(Fraction* base, Value* exp) {
 			
 		default:
 			badValType(exp->type);
+			break;
+	}
+	
+	return ret;
+}
+
+Value* Fraction_rpow(Fraction* exp, Value* base) {
+	Value* ret;
+	Fraction* fbase;
+	
+	switch(base->type) {
+		case VAL_FRAC:
+			/* Shouldn't happen, but easy to add */
+			ret = fracPow(base->frac, exp);
+			break;
+			
+		case VAL_INT:
+			/* a^(b/c) */
+			fbase = Fraction_new(base->ival, 1);
+			ret = fracPow(fbase, exp);
+			Fraction_free(fbase);
+			break;
+			
+		case VAL_REAL:
+			ret = ValReal(pow(base->rval, Fraction_asReal(exp)));
+			break;
+			
+		default:
+			badValType(base->type);
 			break;
 	}
 	
@@ -389,9 +552,9 @@ double Fraction_asReal(Fraction* frac) {
 char* Fraction_repr(Fraction* f, bool pretty) {
 	char* ret;
 	
-	if(pretty)
-		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
-	else
+//	if(pretty)
+//		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
+//	else
 		asprintf(&ret, "%lld/%lld", f->n, f->d);
 	
 	return ret;

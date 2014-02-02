@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <limits.h>
 
@@ -36,6 +37,25 @@ Vector* Vector_new(ArgList* vals) {
 	ret->vals = vals;
 	
 	return ret;
+}
+
+Vector* Vector_create(unsigned count, ...) {
+	if(count < 2) {
+		return NULL;
+	}
+	
+	va_list ap;
+	va_start(ap, count);
+	
+	Vector* ret = Vector_vcreate(count, ap);
+	
+	va_end(ap);
+	
+	return ret;
+}
+
+Vector* Vector_vcreate(unsigned count, va_list args) {
+	return Vector_new(ArgList_vcreate(count, args));
 }
 
 void Vector_free(Vector* vec) {
@@ -256,6 +276,97 @@ Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
 	return total;
 }
 
+Value* Vector_cross(Vector* vector1, Vector* vector2, Context* ctx) {
+	ArgList* v1 = vector1->vals;
+	ArgList* v2 = vector2->vals;
+	
+	/* First cross multiplication */
+	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[2]));
+	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[1]));
+	
+	/* Evaluate multiplications */
+	Value* i_pos = BinOp_eval(i_pos_op, ctx);
+	Value* i_neg = BinOp_eval(i_neg_op, ctx);
+	
+	BinOp_free(i_pos_op);
+	BinOp_free(i_neg_op);
+	
+	/* Error checking */
+	if(i_pos->type == VAL_ERR) {
+		Value_free(i_neg);
+		return i_pos;
+	}
+	if(i_neg->type == VAL_ERR) {
+		Value_free(i_pos);
+		return i_neg;
+	}
+	
+	/* Subtract products */
+	BinOp* i_op = BinOp_new(BIN_SUB, i_pos, i_neg);
+	Value* i_val = BinOp_eval(i_op, ctx);
+	BinOp_free(i_op);
+	
+	if(i_val->type == VAL_ERR) {
+		return i_val;
+	}
+	
+	/* Part 2 */
+	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
+	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
+	
+	Value* j_pos = BinOp_eval(j_pos_op, ctx);
+	Value* j_neg = BinOp_eval(j_neg_op, ctx);
+	
+	BinOp_free(j_pos_op);
+	BinOp_free(j_neg_op);
+	
+	if(j_pos->type == VAL_ERR) {
+		Value_free(j_neg);
+		return j_pos;
+	}
+	if(j_neg->type == VAL_ERR) {
+		Value_free(j_pos);
+		return j_neg;
+	}
+	
+	BinOp* j_op = BinOp_new(BIN_SUB, j_pos, j_neg);
+	Value* j_val = BinOp_eval(j_op, ctx);
+	BinOp_free(j_op);
+	
+	if(j_val->type == VAL_ERR) {
+		return j_val;
+	}
+	
+	/* Part 3 */
+	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[1]));
+	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[0]));
+	
+	Value* k_pos = BinOp_eval(k_pos_op, ctx);
+	Value* k_neg = BinOp_eval(k_neg_op, ctx);
+	
+	BinOp_free(k_pos_op);
+	BinOp_free(k_neg_op);
+	
+	if(k_pos->type == VAL_ERR) {
+		Value_free(k_neg);
+		return k_pos;
+	}
+	if(k_neg->type == VAL_ERR) {
+		Value_free(k_pos);
+		return k_neg;
+	}
+	
+	BinOp* k_op = BinOp_new(BIN_SUB, k_pos, k_neg);
+	Value* k_val = BinOp_eval(k_op, ctx);
+	BinOp_free(k_op);
+	
+	if(k_val->type == VAL_ERR) {
+		return k_val;
+	}
+	
+	return ValVec(Vector_create(3, i_val, j_val, k_val));
+}
+
 Value* Vector_magnitude(Vector* vec, Context* ctx) {
 	/* |v|^2 = dot(v,v) */
 	Value* magSquared = Vector_dot(vec, vec, ctx);
@@ -291,271 +402,6 @@ Value* Vector_elem(Vector* vec, Value* index, Context* ctx) {
 	}
 	
 	return Value_copy(vec->vals->args[index->ival]);
-}
-
-static Value* eval_dot(Context* ctx, ArgList* arglist, bool internal) {
-	Value* ret;
-	
-	if(arglist->count != 2) {
-		/* Two vectors are required for a dot product */
-		return ValErr(builtinArgs("dot", 2, arglist->count));
-	}
-	
-	Value* vector1 = Value_coerce(arglist->args[0], ctx);
-	if(vector1->type == VAL_ERR) {
-		return vector1;
-	}
-	
-	Value* vector2 = Value_coerce(arglist->args[1], ctx);
-	if(vector2->type == VAL_ERR) {
-		Value_free(vector1);
-		return vector2;
-	}
-	
-	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
-		/* Both values must be vectors */
-		ret = ValErr(typeError("Builtin 'dot' expects two vectors."));
-	}
-	else {
-		ret = Vector_dot(vector1->vec, vector2->vec, ctx);
-	}
-	
-	Value_free(vector1);
-	Value_free(vector2);
-	
-	return ret;
-}
-
-static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
-	if(arglist->count != 2) {
-		/* Two vectors are required for a cross product */
-		return ValErr(builtinArgs("cross", 2, arglist->count));
-	}
-	
-	Value* vector1 = Value_coerce(arglist->args[0], ctx);
-	if(vector1->type == VAL_ERR) {
-		return vector1;
-	}
-	
-	Value* vector2 = Value_coerce(arglist->args[1], ctx);
-	if(vector2->type == VAL_ERR) {
-		Value_free(vector1);
-		return vector2;
-	}
-	
-	if(vector1->type != VAL_VEC || vector2->type != VAL_VEC) {
-		/* Both values must be vectors */
-		Value_free(vector1);
-		Value_free(vector2);
-		return ValErr(typeError("Builtin 'cross' expects two vectors."));
-	}
-	
-	if(vector1->vec->vals->count != 3) {
-		/* Vectors must each have a size of 3 */
-		Value_free(vector1);
-		Value_free(vector2);
-		return ValErr(mathError("Vectors must each have a size of 3 for cross product."));
-	}
-	
-	ArgList* v1 = vector1->vec->vals;
-	ArgList* v2 = vector2->vec->vals;
-	
-	/* First cross multiplication */
-	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[2]));
-	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[1]));
-	
-	/* Evaluate multiplications */
-	Value* i_pos = BinOp_eval(i_pos_op, ctx);
-	Value* i_neg = BinOp_eval(i_neg_op, ctx);
-	
-	BinOp_free(i_pos_op);
-	BinOp_free(i_neg_op);
-	
-	/* Error checking */
-	if(i_pos->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(i_neg);
-		return i_pos;
-	}
-	if(i_neg->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(i_pos);
-		return i_neg;
-	}
-	
-	/* Subtract products */
-	BinOp* i_op = BinOp_new(BIN_SUB, i_pos, i_neg);
-	Value* i_val = BinOp_eval(i_op, ctx);
-	BinOp_free(i_op);
-	
-	if(i_val->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		return i_val;
-	}
-	
-	/* Part 2 */
-	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
-	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
-	
-	Value* j_pos = BinOp_eval(j_pos_op, ctx);
-	Value* j_neg = BinOp_eval(j_neg_op, ctx);
-	
-	BinOp_free(j_pos_op);
-	BinOp_free(j_neg_op);
-	
-	if(j_pos->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(j_neg);
-		return j_pos;
-	}
-	if(j_neg->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(j_pos);
-		return j_neg;
-	}
-	
-	BinOp* j_op = BinOp_new(BIN_SUB, j_pos, j_neg);
-	Value* j_val = BinOp_eval(j_op, ctx);
-	BinOp_free(j_op);
-	
-	if(j_val->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		return j_val;
-	}
-	
-	/* Part 3 */
-	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[1]));
-	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[0]));
-	
-	Value* k_pos = BinOp_eval(k_pos_op, ctx);
-	Value* k_neg = BinOp_eval(k_neg_op, ctx);
-	
-	BinOp_free(k_pos_op);
-	BinOp_free(k_neg_op);
-	
-	if(k_pos->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(k_neg);
-		return k_pos;
-	}
-	if(k_neg->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		Value_free(k_pos);
-		return k_neg;
-	}
-	
-	BinOp* k_op = BinOp_new(BIN_SUB, k_pos, k_neg);
-	Value* k_val = BinOp_eval(k_op, ctx);
-	BinOp_free(k_op);
-	
-	if(k_val->type == VAL_ERR) {
-		Value_free(vector1);
-		Value_free(vector2);
-		return k_val;
-	}
-	
-	ArgList* args = ArgList_create(3, i_val, j_val, k_val);
-	return ValVec(Vector_new(args));
-}
-
-static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
-	if(arglist->count != 2) {
-		return ValErr(builtinArgs("map", 2, arglist->count));
-	}
-	
-	Value* func = Value_copy(arglist->args[0]);
-	if(func->type != VAL_VAR) {
-		Value* val = Value_eval(func, ctx);
-		Value_free(func);
-		
-		if(val->type == VAL_ERR)
-			return val;
-		
-		if(val->type != VAL_VAR) {
-			Value_free(val);
-			return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
-		}
-		
-		func = val;
-	}
-	
-	Value* vec = Value_coerce(arglist->args[1], ctx);
-	if(vec->type == VAL_ERR) {
-		Value_free(func);
-		return vec;
-	}
-	
-	if(vec->type != VAL_VEC) {
-		Value_free(func);
-		Value_free(vec);
-		return ValErr(typeError("Builtin 'map' expects a vector as its second argument."));
-	}
-	
-	ArgList* mapping = ArgList_new(vec->vec->vals->count);
-	
-	/* Don't evaluate the call now. Let Builtin_eval do this for us */
-	unsigned i;
-	for(i = 0; i < mapping->count; i++) {
-		ArgList* arg = ArgList_create(1, Value_copy(vec->vec->vals->args[i]));
-		Value* call = ValCall(FuncCall_create(func->name, arg));
-		
-		mapping->args[i] = call;
-	}
-	
-	Value_free(func);
-	Value_free(vec);
-	
-	return ValVec(Vector_new(mapping));
-}
-
-static Value* eval_elem(Context* ctx, ArgList* arglist, bool internal) {
-	if (arglist->count != 2) {
-		return ValErr(builtinArgs("elem", 2, arglist->count));
-	}
-	
-	/* Get evaluated values */
-	Value* vec = Value_coerce(arglist->args[0], ctx);
-	Value* index = Value_coerce(arglist->args[1], ctx);
-	
-	/* Check vector type */
-	if(vec->type != VAL_VEC) {
-		return ValErr(typeError("Only vectors are subscriptable."));
-	}
-	
-	/* Get actual value */
-	Value* ret = Vector_elem(vec->vec, index, ctx);
-	
-	/* Free allocated memory */
-	Value_free(vec);
-	Value_free(index);
-	return ret;
-}
-
-static const char* _vector_names[] = {
-	"dot", "cross", "map",
-	"elem"
-};
-static builtin_eval_t _vector_funcs[] = {
-	&eval_dot, &eval_cross, &eval_map,
-	&eval_elem
-};
-
-/* This is just a copy of register_math remade for vectors */
-void Vector_register(Context* ctx) {
-	unsigned count = sizeof(_vector_names) / sizeof(_vector_names[0]);
-	unsigned i;
-	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(_vector_names[i], _vector_funcs[i]);
-		Builtin_register(blt, ctx);
-	}
 }
 
 char* Vector_verbose(Vector* vec, int indent) {

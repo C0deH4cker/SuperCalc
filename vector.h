@@ -9,6 +9,8 @@
 #ifndef _SC_VECTOR_H_
 #define _SC_VECTOR_H_
 
+#include <stdarg.h>
+
 typedef struct Vector Vector;
 #include "value.h"
 #include "arglist.h"
@@ -22,6 +24,8 @@ struct Vector {
 
 /* Constructor */
 Vector* Vector_new(ArgList* vals);
+Vector* Vector_create(unsigned count, /* Value* */...);
+Vector* Vector_vcreate(unsigned count, va_list args);
 
 /* Destructor */
 void Vector_free(Vector* vec);
@@ -45,7 +49,9 @@ Value* Vector_rdiv(Vector* vec, Value* scalar, Context* ctx);
 Value* Vector_pow(Vector* vec, Value* other, Context* ctx);
 Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx);
 Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx);
+Value* Vector_cross(Vector* vector1, Vector* vector2, Context* ctx);
 Value* Vector_magnitude(Vector* vec, Context* ctx);
+Value* Vector_normalize(Vector* vec, Context* ctx);
 
 /* Access Values */
 Value* Vector_elem(Vector* vec, Value* index, Context* ctx);

@@ -22,39 +22,10 @@
 #include "funccall.h"
 
 
-#define EVAL_CONST(name, val) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
-	if(arglist->count > 1) { \
-		return ValErr(builtinNotFunc(#name)); \
-	} \
-	if(arglist->count == 1) { \
-		return ValExpr(BinOp_new(BIN_MUL, ValReal((val)), Value_copy(arglist->args[0]))); \
-	} \
-	return ValReal((val)); \
-}
-
 EVAL_CONST(pi, M_PI);
 EVAL_CONST(e, M_E);
 #define PHI 1.61803398874989484820458683436563811 /* Golden ratio: (1 + sqrt(5)) / 2 */
 EVAL_CONST(phi, PHI);
-
-
-#define EVAL_FUNC(name, func, nargs) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
-	if(arglist->count != (nargs)) { \
-		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
-	} \
-	ArgList* e = ArgList_eval(arglist, ctx); \
-	if(!e) { \
-		return ValErr(ignoreError()); \
-	} \
-	double* a = ArgList_toReals(e, ctx); \
-	if(!a) { \
-		return ValErr(badConversion(#name)); \
-	} \
-	ArgList_free(e); \
-	Value* ret = ValReal((func)); \
-	free(a); \
-	return ret; \
-}
 
 
 static Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {

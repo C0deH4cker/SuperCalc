@@ -11,6 +11,36 @@
 
 #include "context.h"
 
+
+#define EVAL_CONST(name, val) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+	if(arglist->count > 1) { \
+		return ValErr(builtinNotFunc(#name)); \
+	} \
+	if(arglist->count == 1) { \
+		return ValExpr(BinOp_new(BIN_MUL, ValReal((val)), Value_copy(arglist->args[0]))); \
+	} \
+	return ValReal((val)); \
+}
+
+#define EVAL_FUNC(name, func, nargs) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+	if(arglist->count != (nargs)) { \
+		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
+	} \
+	ArgList* e = ArgList_eval(arglist, ctx); \
+	if(!e) { \
+		return ValErr(ignoreError()); \
+	} \
+	double* a = ArgList_toReals(e, ctx); \
+	if(!a) { \
+		return ValErr(badConversion(#name)); \
+	} \
+	ArgList_free(e); \
+	Value* ret = ValReal((func)); \
+	free(a); \
+	return ret; \
+}
+
+
 void register_math(Context* ctx);
 
 
