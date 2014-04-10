@@ -60,7 +60,6 @@ Vector* Vector_vcreate(unsigned count, va_list args) {
 
 void Vector_free(Vector* vec) {
 	ArgList_free(vec->vals);
-	
 	free(vec);
 }
 
@@ -169,10 +168,12 @@ static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE 
 	for(i = 0; i < count; i++) {
 		/* Perform the specified operation on each matching component */
 		Value* val2;
-		if(vector2->vals->count == 1)
+		if(vector2->vals->count == 1) {
 			val2 = vector2->vals->args[0];
-		else
+		}
+		else {
 			val2 = vector2->vals->args[i];
+		}
 		
 		BinOp* op = BinOp_new(bin, Value_copy(vector1->vals->args[i]), Value_copy(val2));
 		Value* result = BinOp_eval(op, ctx);
@@ -256,10 +257,12 @@ Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
 	unsigned i;
 	for(i = 0; i < count; i++) {
 		Value* val2;
-		if(vector2->vals->count == 1)
+		if(vector2->vals->count == 1) {
 			val2 = vector2->vals->args[0];
-		else
+		}
+		else {
 			val2 = vector2->vals->args[i];
+		}
 		
 		/* Multiply v1[i] and v2[i] */
 		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vals->args[i]), Value_copy(val2));

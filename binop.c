@@ -102,18 +102,22 @@ static Value* binop_add(Context* ctx, Value* a, Value* b) {
 	else {
 		double a1, a2;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			a1 = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			a1 = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_INT)
+		if(b->type == VAL_INT) {
 			a2 = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			a2 = b->rval;
+		}
 		else {
 			return ValErr(badOpType("right", b->type));
 		}
@@ -150,18 +154,22 @@ static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 	else {
 		double s1, s2;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			s1 = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			s1 = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_INT)
+		if(b->type == VAL_INT) {
 			s2 = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			s2 = b->rval;
+		}
 		else {
 			return ValErr(badOpType("right", b->type));
 		}
@@ -194,18 +202,22 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 	else {
 		double m1, m2;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			m1 = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			m1 = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_INT)
+		if(b->type == VAL_INT) {
 			m2 = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			m2 = b->rval;
+		}
 		else {
 			return ValErr(badOpType("right", b->type));
 		}
@@ -250,18 +262,22 @@ static Value* binop_div(Context* ctx, Value* a, Value* b) {
 	else {
 		double n, d;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			n = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			n = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_INT)
+		if(b->type == VAL_INT) {
 			d = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			d = b->rval;
+		}
 		else {
 			return ValErr(badOpType("right", b->type));
 		}
@@ -305,18 +321,22 @@ static Value* binop_mod(Context* ctx, Value* a, Value* b) {
 	else {
 		double n, d;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			n = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			n = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_INT)
+		if(b->type == VAL_INT) {
 			d = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			d = b->rval;
+		}
 		else {
 			return ValErr(badOpType("right", b->type));
 		}
@@ -354,20 +374,25 @@ static Value* binop_pow(Context* ctx, Value* a, Value* b) {
 		/* Just do a real pow */
 		double base, exp;
 		
-		if(a->type == VAL_INT)
+		if(a->type == VAL_INT) {
 			base = a->ival;
-		else if(a->type == VAL_REAL)
+		}
+		else if(a->type == VAL_REAL) {
 			base = a->rval;
+		}
 		else {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_FRAC)
+		if(b->type == VAL_FRAC) {
 			exp = Fraction_asReal(b->frac);
-		else if(b->type == VAL_INT)
+		}
+		else if(b->type == VAL_INT) {
 			exp = b->ival;
-		else if(b->type == VAL_REAL)
+		}
+		else if(b->type == VAL_REAL) {
 			exp = b->rval;
+		}
 		else {
 			return ValErr(badOpType("rightf", b->type));
 		}
@@ -406,11 +431,14 @@ BinOp* BinOp_copy(BinOp* node) {
 }
 
 Value* BinOp_eval(BinOp* node, Context* ctx) {
-	if(node == NULL) return ValErr(nullError());
+	if(node == NULL) {
+		return ValErr(nullError());
+	}
 	
 	Value* a = Value_coerce(node->a, ctx);
-	if(a->type == VAL_ERR)
+	if(a->type == VAL_ERR) {
 		return a;
+	}
 	
 	Value* b = Value_coerce(node->b, ctx);
 	if(b->type == VAL_ERR) {
@@ -429,7 +457,7 @@ Value* BinOp_eval(BinOp* node, Context* ctx) {
 /* Like Rambo */
 static BINTYPE nextSpecialOp(const char** expr) {
 	unsigned i;
-	for(i = 0; i < sizeof(_binop_pretty) / sizeof(_binop_pretty[0]); i++) {
+	for(i = 0; i < ARRSIZE(_binop_pretty); i++) {
 		size_t len = strlen(_binop_pretty[i]);
 		
 		if(strncmp(_binop_pretty[i], *expr, len) == 0) {
@@ -446,8 +474,9 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
 	
 	trimSpaces(expr);
 	
-	if(**expr == sep || **expr == end)
+	if(**expr == sep || **expr == end) {
 		return BIN_END;
+	}
 	
 	switch(**expr) {
 		case '+':
@@ -498,8 +527,9 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 char* BinOp_verbose(BinOp* op, int indent) {
 	char* ret;
 	
-	if(op == NULL)
+	if(op == NULL) {
 		return strNULL();
+	}
 	
 	char* spacing = spaces(indent + IWIDTH);
 	char* current = spaces(indent);
@@ -524,8 +554,9 @@ char* BinOp_verbose(BinOp* op, int indent) {
 char* BinOp_repr(BinOp* node, bool pretty) {
 	char* ret;
 	
-	if(node == NULL)
+	if(node == NULL) {
 		return strNULL();
+	}
 	
 	char* a = Value_repr(node->a, pretty);
 	char* b = Value_repr(node->b, pretty);

@@ -21,10 +21,11 @@ typedef Value* (*builtin_eval_t)(Context*, ArgList*, bool);
 struct Builtin {
 	char* name;
 	builtin_eval_t evaluator;
+	bool isFunction;
 };
 
 /* Constructor */
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator);
+Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction);
 
 /* Destructor */
 void Builtin_free(Builtin* blt);

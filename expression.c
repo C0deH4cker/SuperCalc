@@ -53,8 +53,9 @@ Expression* Expression_parse(const char** expr) {
 			var = VarErr(Error_copy(val->err));
 			Value_free(val);
 		}
-		else
+		else {
 			var = VarValue(NULL, val);
+		}
 		
 		return Expression_new(var);
 	}
@@ -128,8 +129,9 @@ Expression* Expression_parse(const char** expr) {
 				args[len++] = arg;
 				arg = NULL;
 				
-				if(**expr == ')')
+				if(**expr == ')') {
 					break;
+				}
 				
 				(*expr)++;
 				
@@ -159,7 +161,9 @@ Expression* Expression_parse(const char** expr) {
 			}
 		}
 		
-		if(arg) free(arg);
+		if(arg) {
+			free(arg);
+		}
 		
 		if(**expr != ')') {
 			/* Invalid character inside argument name list */
@@ -242,8 +246,9 @@ Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v) {
 		ret = Value_eval(var->val, ctx);
 		
 		/* If an error occurred, bail */
-		if(ret->type == VAL_ERR)
+		if(ret->type == VAL_ERR) {
 			return ret;
+		}
 		
 		/* Expression result is a variable? */
 		if(ret->type == VAL_VAR) {
@@ -279,8 +284,9 @@ Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v) {
 			Context_setGlobal(ctx, "ans", Variable_copy(var));
 			
 			/* Save the newly evaluated variable */
-			if(var->name != NULL)
+			if(var->name != NULL) {
 				Context_setGlobal(ctx, var->name, Variable_copy(var));
+			}
 		}
 	}
 	else if(var->type == VAR_FUNC) {
@@ -320,7 +326,9 @@ char* Expression_repr(Expression* expr, Context* ctx, bool pretty) {
 		Variable* var = Variable_get(ctx, expr->var->val->name);
 		if(var == NULL) {
 			/* If the variable doesn't exist, just return its name */
-			if(pretty) return strdup(getPretty(expr->var->val->name));
+			if(pretty) {
+				return strdup(getPretty(expr->var->val->name));
+			}
 			
 			return strdup(expr->var->val->name);
 		}

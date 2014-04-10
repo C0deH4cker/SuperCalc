@@ -28,10 +28,7 @@ void readLine(FILE* fp) {
 }
 
 bool isInteractive(FILE* fp) {
-	if(isatty(fileno(fp)))
-		return true;
-	
-	return false;
+	return isatty(fileno(fp));
 }
 
 VERBOSITY getVerbosity(const char** str) {
@@ -64,14 +61,14 @@ static const char* _pretty_tok[] = {
 	"φ", "χ", "ψ", "ω"
 };
 const char* getPretty(const char* name) {
-	if(name == NULL)
-		return NULL;
+	if(name == NULL) return NULL;
 	
 	/* More: "∞≠∑ß∂ƒ∆÷≥≤∫≈±∏Ø" */
 	unsigned i;
-	for(i = 0; i < sizeof(_repr_tok) / sizeof(_repr_tok[0]); i++) {
-		if(strcmp(name, _repr_tok[i]) == 0)
+	for(i = 0; i < ARRSIZE(_repr_tok); i++) {
+		if(strcmp(name, _repr_tok[i]) == 0) {
 			return _pretty_tok[i];
+		}
 	}
 	
 	return name;
@@ -102,8 +99,9 @@ char* strERR(void) {
 long long ipow(long long base, long long exp) {
 	long long result = 1;
 	while(exp) {
-		if(exp & 1)
+		if(exp & 1) {
 			result *= base;
+		}
 		
 		exp >>= 1;
 		base *= base;
@@ -117,7 +115,7 @@ long long gcd(long long a, long long b) {
 
 char* nextSpecial(const char** expr) {
 	unsigned i;
-	for(i = 0; i < sizeof(_pretty_tok) / sizeof(_pretty_tok[0]); i++) {
+	for(i = 0; i < ARRSIZE(_pretty_tok); i++) {
 		size_t len = strlen(_pretty_tok[i]);
 		
 		if(strncmp(_pretty_tok[i], *expr, len) == 0) {
@@ -135,18 +133,21 @@ char* nextToken(const char** expr) {
 	trimSpaces(expr);
 	
 	char* special = nextSpecial(expr);
-	if(special)
+	if(special) {
 		return special;
+	}
 	
 	const char* p = *expr;
 	
 	/* First char must match [a-zA-Z_] */
-	if(!(isalpha(p[0]) || p[0] == '_'))
+	if(!(isalpha(p[0]) || p[0] == '_')) {
 		return NULL;
+	}
 	
 	/* Count consecutive number of chars matching [a-zA-Z0-9_] */
-	while(isalnum(p[len]) || p[len] == '_')
+	while(isalnum(p[len]) || p[len] == '_') {
 		len++;
+	}
 	
 	char* ret = strndup(*expr, len);
 	*expr += len;
@@ -216,9 +217,10 @@ int getSign(const char** expr) {
 }
 
 double approx(double real) {
-	/* "Close enough" to zero */
-	if(ABS(real) < EPSILON)
-		return 0;
+	/* "Close enough" to zero. This makes %g look better. */
+	if(ABS(real) < EPSILON) {
+		return 0.0;
+	}
 	
 	return real;
 }

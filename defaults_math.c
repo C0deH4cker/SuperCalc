@@ -46,8 +46,9 @@ static Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 	
 	Value* val = Value_coerce(arglist->args[0], ctx);
 	
-	if(val->type == VAL_ERR)
+	if(val->type == VAL_ERR) {
 		return val;
+	}
 	
 	switch(val->type) {
 		case VAL_INT:
@@ -60,10 +61,10 @@ static Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 			return ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
 			
 		case VAL_VEC:
-			if(internal)
+			if(internal) {
 				return Vector_magnitude(val->vec, ctx);
-			else
-				return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
+			}
+			return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
 		
 		default:
 			badValType(val->type);
@@ -122,8 +123,15 @@ EVAL_FUNC(ln, log(a[0]), 1);
 EVAL_FUNC(logbase, log(a[0]) / log(a[1]), 2);
 
 
+static const char* _math_const_names[] = {
+	"pi", "e", "phi"
+};
+
+static builtin_eval_t _math_consts[] = {
+	&eval_pi, &eval_e, &eval_phi
+};
+
 static const char* _math_names[] = {
-	"pi", "e", "phi",
 	"sqrt", "abs", "exp",
 	"sin", "cos", "tan",
 	"sec", "csc", "cot",
@@ -138,7 +146,6 @@ static const char* _math_names[] = {
 };
 
 static builtin_eval_t _math_funcs[] = {
-	&eval_pi, &eval_e, &eval_phi,
 	&eval_sqrt, &eval_abs, &eval_exp,
 	&eval_sin, &eval_cos, &eval_tan,
 	&eval_sec, &eval_csc, &eval_cot,
@@ -154,13 +161,18 @@ static builtin_eval_t _math_funcs[] = {
 
 
 void register_math(Context* ctx) {
-	Vector_register(ctx);
-	
-	unsigned count = sizeof(_math_names) / sizeof(_math_names[0]);
-	
 	unsigned i;
-	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(_math_names[i], _math_funcs[i]);
+	unsigned constCount = ARRSIZE(_math_const_names);
+	
+	for(i = 0; i < constCount; i++) {
+		Builtin* blt = Builtin_new(_math_const_names[i], _math_consts[i], false);
+		Builtin_register(blt, ctx);
+	}
+	
+	unsigned funcCount = ARRSIZE(_math_names);
+	
+	for(i = 0; i < funcCount; i++) {
+		Builtin* blt = Builtin_new(_math_names[i], _math_funcs[i], true);
 		Builtin_register(blt, ctx);
 	}
 }

@@ -23,9 +23,12 @@
 SuperCalc* SC_new(FILE* fout) {
 	SuperCalc* ret = fmalloc(sizeof(*ret));
 	
-	/* Create context and register modules */
+	/* Create context */
 	ret->ctx = Context_new();
+	
+	/* Register modules */
 	register_math(ret->ctx);
+	register_vector(ret->ctx);
 	
 	ret->fin = NULL;
 	ret->fout = fout;
@@ -42,14 +45,17 @@ Value* SC_runFile(SuperCalc* sc, FILE* fp) {
 	Value* ret = NULL;
 	
 	for(nextLine(fp); !feof(fp); nextLine(fp)) {
-		if(ret) Value_free(ret);
+		if(ret) {
+			Value_free(ret);
+		}
 		
 		const char* p = line;
 		VERBOSITY v = getVerbosity(&p);
 		
 		ret = SC_runString(sc, p, v);
-		if(ret && ret->type != VAL_VAR)
+		if(ret && ret->type != VAL_VAR) {
 			Value_print(ret, sc, v);
+		}
 	}
 	
 	return ret;
@@ -59,15 +65,20 @@ Value* SC_runInteractive(SuperCalc* sc, FILE* fp) {
 	Value* ret = NULL;
 	
 	for(readLine(fp); !feof(fp); readLine(fp)) {
-		if(ret) Value_free(ret);
+		if(ret) {
+			Value_free(ret);
+		}
 		
 		const char* p = line;
 		VERBOSITY v = getVerbosity(&p) | V_PRETTY;
 		
 		ret = SC_runString(sc, p, v);
-		if(ret && ret->type != VAL_VAR)
+		if(ret && ret->type != VAL_VAR) {
 			Value_print(ret, sc, v);
+		}
 	}
+	
+	putchar('\n');
 	
 	return ret;
 }

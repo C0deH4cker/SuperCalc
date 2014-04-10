@@ -137,8 +137,9 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		arg = NULL;
 		
 		trimSpaces(expr);
-		if(**expr != sep)
+		if(**expr != sep) {
 			break;
+		}
 		
 		(*expr)++;
 		
@@ -156,7 +157,9 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		return NULL;
 	}
 	
-	if(arg) Value_free(arg);
+	if(arg) {
+		Value_free(arg);
+	}
 	
 	if(**expr && **expr != end) {
 		/* Not NUL and not end means invalid char */
@@ -174,8 +177,9 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	
 	free(args);
 	
-	if(**expr == end)
+	if(**expr == end) {
 		(*expr)++;
+	}
 	
 	return ret;
 }

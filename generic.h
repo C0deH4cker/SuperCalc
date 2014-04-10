@@ -21,6 +21,18 @@
 	_x < 0 ? -_x : _x; \
 })
 
+#define CMP(op, a, b) ({ \
+	__typeof__(a) _a = (a); \
+	__typeof__(b) _b = (b); \
+	(_a op _b) ? _a : _b; \
+})
+#define MIN(a, b) CMP(<, a, b)
+#define MAX(a, b) CMP(>, a, b)
+
+#define CLAMP(x, lo, hi) MAX(lo, MIN(x, hi))
+
+#define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #define fmalloc(size) ({ \
 	void* _mem = malloc((size)); \
 	if(_mem == NULL) allocError(); \

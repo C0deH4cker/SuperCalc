@@ -72,6 +72,18 @@ static Value* callVar(Context* ctx, const char* name, ArgList* args) {
 	switch(var->type) {
 		case VAR_BUILTIN:
 			ret = Builtin_eval(var->blt, ctx, args, internal);
+			
+			if(!var->blt->isFunction) {
+				if(args->count > 1) {
+					Value_free(ret);
+					ret = ValErr(builtinNotFunc(name));
+				}
+				else if(args->count == 1) {
+					/* i.e. pi(2) -> pi * 2 */
+					ret = ValExpr(BinOp_new(BIN_MUL, ret, Value_copy(args->args[0])));
+				}
+			}
+			
 			break;
 		
 		case VAR_FUNC:
@@ -125,7 +137,8 @@ Value* FuncCall_eval(FuncCall* call, Context* ctx) {
 		case VAL_FRAC:
 		case VAL_VEC:
 			if(call->arglist->count == 1) {
-				BinOp* mul = BinOp_new(BIN_MUL, Value_copy(func), Value_copy(call->arglist->args[0]));
+				BinOp* mul = BinOp_new(BIN_MUL, Value_copy(func),
+				                       Value_copy(call->arglist->args[0]));
 				Value* result = BinOp_eval(mul, ctx);
 				BinOp_free(mul);
 				return result;

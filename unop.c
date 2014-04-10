@@ -31,8 +31,9 @@ static const char* _unop_repr[] = {
 static long long fact(long long n) {
 	long long ret = 1;
 	
-	while(n > 1)
+	while(n > 1) {
 		ret *= n--;
+	}
 	
 	return ret;
 }
@@ -65,7 +66,9 @@ UnOp* UnOp_new(UNTYPE type, Value* a) {
 void UnOp_free(UnOp* term) {
 	if(!term) return;
 	
-	if(term->a) Value_free(term->a);
+	if(term->a) {
+		Value_free(term->a);
+	}
 	
 	free(term);
 }
@@ -75,11 +78,14 @@ UnOp* UnOp_copy(UnOp* term) {
 }
 
 Value* UnOp_eval(UnOp* term, Context* ctx) {
-	if(!term) return ValErr(nullError());
+	if(!term) {
+		return ValErr(nullError());
+	}
 	
 	Value* a = Value_coerce(term->a, ctx);
-	if(a->type == VAL_ERR)
+	if(a->type == VAL_ERR) {
 		return a;
+	}
 	
 	Value* ret = _unop_table[term->type](ctx, a);
 	
@@ -91,7 +97,9 @@ Value* UnOp_eval(UnOp* term, Context* ctx) {
 char* UnOp_verbose(UnOp* term, int indent) {
 	char* ret;
 	
-	if(!term) return NULL;
+	if(!term) {
+		return NULL;
+	}
 	
 	char* spacing = spaces(indent + IWIDTH);
 	char* current = spaces(indent);
@@ -111,8 +119,9 @@ char* UnOp_verbose(UnOp* term, int indent) {
 char* UnOp_repr(UnOp* term, bool pretty) {
 	char* ret;
 	
-	if(term == NULL)
+	if(term == NULL) {
 		return strNULL();
+	}
 	
 	char* val = Value_repr(term->a, pretty);
 	

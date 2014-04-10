@@ -153,7 +153,7 @@ Value* Variable_coerce(Variable* var, Context* ctx) {
 	else if(var->type == VAR_FUNC) {
 		ret = ValErr(typeError("Variable '%s' is a function.", var->name));
 	}
-	else if(var->type == VAR_BUILTIN) {
+	else if(var->type == VAR_BUILTIN && !var->blt->isFunction) {
 		ArgList* noArgs = ArgList_new(0);
 		ret = Builtin_eval(var->blt, ctx, noArgs, false);
 		ArgList_free(noArgs);
@@ -262,8 +262,9 @@ char* Variable_repr(Variable* var, bool pretty) {
 	char* ret;
 	
 	const char* name = var->name;
-	if(pretty)
+	if(pretty) {
 		name = getPretty(name);
+	}
 	
 	if(var->type == VAR_FUNC) {
 		char* func = Function_repr(var->func, pretty);

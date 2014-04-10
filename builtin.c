@@ -21,11 +21,12 @@
 #include "variable.h"
 
 
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator) {
+Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction) {
 	Builtin* ret = fmalloc(sizeof(*ret));
 	
 	ret->name = strdup(name);
 	ret->evaluator = evaluator;
+	ret->isFunction = isFunction;
 	
 	return ret;
 }
@@ -36,7 +37,7 @@ void Builtin_free(Builtin* blt) {
 }
 
 Builtin* Builtin_copy(Builtin* blt) {
-	return Builtin_new(blt->name, blt->evaluator);
+	return Builtin_new(blt->name, blt->evaluator, blt->isFunction);
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
@@ -69,8 +70,9 @@ char* Builtin_verbose(Builtin* blt, int indent) {
 }
 
 char* Builtin_repr(Builtin* blt, bool pretty) {
-	if(pretty)
+	if(pretty) {
 		return strdup(getPretty(blt->name));
+	}
 	
 	return strdup(blt->name);
 }

@@ -250,10 +250,12 @@ Value* Value_eval(Value* val, Context* ctx) {
 		
 		case VAL_VAR:
 			var = Variable_get(ctx, val->name);
-			if(var == NULL)
-				ret = ValErr(varNotFound(val->name));
-			else
+			if(var) {
 				ret = Variable_eval(var, ctx);
+			}
+			else {
+				ret = ValErr(varNotFound(val->name));
+			}
 			break;
 		
 		case VAL_VEC:
@@ -334,14 +336,18 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		
 		/* Error parsing next value? */
 		if(val->type == VAL_ERR) {
-			if(tree) BinOp_free(tree);
+			if(tree) {
+				BinOp_free(tree);
+			}
 			
 			return val;
 		}
 		
 		/* End of input? */
 		if(val->type == VAL_END) {
-			if(tree) BinOp_free(tree);
+			if(tree) {
+				BinOp_free(tree);
+			}
 			
 			return val;
 		}
@@ -351,11 +357,11 @@ Value* Value_parse(const char** expr, char sep, char end) {
 			Value_free(val);
 			BinOp* cur = BinOp_new(BIN_MUL, ValInt(-1), NULL);
 			
-			if(!tree) {
-				tree = cur;
+			if(tree) {
+				prev->b = ValExpr(cur);
 			}
 			else {
-				prev->b = ValExpr(cur);
+				tree = cur;
 			}
 			
 			prev = cur;
@@ -368,7 +374,10 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		/* Invalid operator? Return syntax error */
 		if(op == BIN_UNK) {
 			/* Exit gracefully and return error */
-			if(tree) BinOp_free(tree);
+			if(tree) {
+				BinOp_free(tree);
+			}
+			
 			Value_free(val);
 			
 			return ValErr(badChar(**expr));
@@ -376,12 +385,14 @@ Value* Value_parse(const char** expr, char sep, char end) {
 		/* End of the expression? */
 		else if(op == BIN_END) {
 			/* Only skip end character if there's only one value to parse */
-			if(!sep && **expr && **expr == end)
+			if(!sep && **expr && **expr == end) {
 				(*expr)++;
+			}
 			
 			/* If there was only one value, return it */
-			if(!tree)
+			if(!tree) {
 				return val;
+			}
 			
 			/* Otherwise, place the final value into the tree and break out of the parse loop */
 			prev->b = val;
@@ -428,6 +439,7 @@ static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val) {
 			next = BinOp_new(op, parent->b, NULL);
 			parent->b = ValExpr(next);
 		}
+		
 		(*prev)->b = val;
 	}
 	else {
@@ -527,8 +539,9 @@ static Value* parseToken(const char** expr) {
 	char* token = nextToken(expr);
 	trimSpaces(expr);
 	
-	if(token == NULL)
+	if(token == NULL) {
 		return ValErr(badChar(**expr));
+	}
 	
 	if(**expr == '(') {
 		(*expr)++;
@@ -556,11 +569,13 @@ Value* Value_next(const char** expr, char end) {
 	Value* ret;
 	
 	trimSpaces(expr);
-	if(**expr == end)
+	if(**expr == end) {
 		return ValEnd();
+	}
 	
-	if(getSign(expr) == -1)
+	if(getSign(expr) == -1) {
 		return ValNeg();
+	}
 	
 	trimSpaces(expr);
 	
@@ -582,8 +597,9 @@ Value* Value_next(const char** expr, char end) {
 		Value* val = Value_parse(expr, 0, '|');
 		
 		/* Error checking */
-		if(val->type == VAL_ERR)
+		if(val->type == VAL_ERR) {
 			return val;
+		}
 		
 		/* Use absolute value builtin */
 		ret = ValCall(FuncCall_create("@abs", ArgList_create(1, val)));
@@ -593,8 +609,9 @@ Value* Value_next(const char** expr, char end) {
 	}
 	
 	/* Check if a parse error occurred */
-	if(ret->type == VAL_ERR)
+	if(ret->type == VAL_ERR) {
 		return ret;
+	}
 	
 	while(1) {
 		bool again = true;
@@ -615,10 +632,13 @@ Value* Value_next(const char** expr, char end) {
 				break;
 		}
 		
-		if(!again) break;
+		if(!again) {
+			break;
+		}
 		
-		if(tmp->type == VAL_ERR)
+		if(tmp->type == VAL_ERR) {
 			return tmp;
+		}
 		
 		ret = tmp;
 	}
@@ -715,10 +735,12 @@ char* Value_repr(Value* val, bool pretty) {
 			break;
 		
 		case VAL_VAR:
-			if(pretty)
+			if(pretty) {
 				ret = strdup(getPretty(val->name));
-			else
+			}
+			else {
 				ret = strdup(val->name);
+			}
 			break;
 		
 		case VAL_VEC:

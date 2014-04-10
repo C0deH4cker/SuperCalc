@@ -419,7 +419,8 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 										ValExpr(BinOp_new(BIN_POW,
 														  ValFrac(Fraction_new(base_n, base_d)),
 														  ValFrac(Fraction_copy(exp))
-														  ))));
+														  ))
+										));
 			}
 		}
 		
@@ -495,17 +496,9 @@ Value* Fraction_rpow(Fraction* exp, Value* base) {
 }
 
 static int fracCmp(Fraction* a, Fraction* b) {
-	int ret;
 	long long val = a->n * b->d - b->n * a->d;
 	
-	if(val < 0)
-		ret = -1;
-	else if(val > 0)
-		ret = 1;
-	else
-		ret = 0;
-	
-	return ret;
+	return (int)CLAMP(val, -1, 1);
 }
 
 Value* Fraction_cmp(Fraction* a, Value* b) {
@@ -516,12 +509,7 @@ Value* Fraction_cmp(Fraction* a, Value* b) {
 	switch(b->type) {
 		case VAL_INT:
 			val = a->n - b->ival * a->d;
-			if(val < 0)
-				diff = -1;
-			else if(val > 0)
-				diff = 1;
-			else
-				diff = 0;
+			diff = (int)CLAMP(val, -1, 1);
 			break;
 		
 		case VAL_FRAC:
@@ -530,12 +518,7 @@ Value* Fraction_cmp(Fraction* a, Value* b) {
 		
 		case VAL_REAL:
 			real = Fraction_asReal(a) - b->rval;
-			if(real < 0)
-				diff = -1;
-			else if(real > 0)
-				diff = 1;
-			else
-				diff = 0;
+			diff = (int)CLAMP(real, -1, 1);
 			break;
 		
 		default:

@@ -73,14 +73,14 @@ static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
 		return ValErr(typeError("Builtin 'cross' expects two vectors."));
 	}
 	
-	if(vector1->vec->vals->count != 3 || vector2->vec->vals->count != 3) {
-		/* Vectors must each have a size of 3 */
+	if((vector1->vec->vals->count | 1) != 3 || (vector2->vec->vals->count | 1) != 3) {
+		/* Vectors must each have a size of 2 or 3 */
 		Value_free(vector1);
 		Value_free(vector2);
 		return ValErr(mathError("Vectors must each have a size of 3 for cross product."));
 	}
 	
-	
+	return Vector_cross(vector1->vec, vector2->vec, ctx);
 }
 
 static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
@@ -93,8 +93,9 @@ static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
 		Value* val = Value_eval(func, ctx);
 		Value_free(func);
 		
-		if(val->type == VAL_ERR)
+		if(val->type == VAL_ERR) {
 			return val;
+		}
 		
 		if(val->type != VAL_VAR) {
 			Value_free(val);
@@ -198,11 +199,11 @@ static builtin_eval_t _vector_funcs[] = {
 };
 
 /* This is just a copy of register_math remade for vectors */
-void Vector_register(Context* ctx) {
-	unsigned count = sizeof(_vector_names) / sizeof(_vector_names[0]);
+void register_vector(Context* ctx) {
+	unsigned count = ARRSIZE(_vector_names);
 	unsigned i;
 	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(_vector_names[i], _vector_funcs[i]);
+		Builtin* blt = Builtin_new(_vector_names[i], _vector_funcs[i], true);
 		Builtin_register(blt, ctx);
 	}
 }

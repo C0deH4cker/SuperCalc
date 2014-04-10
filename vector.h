@@ -56,9 +56,6 @@ Value* Vector_normalize(Vector* vec, Context* ctx);
 /* Access Values */
 Value* Vector_elem(Vector* vec, Value* index, Context* ctx);
 
-/* Builtin registration */
-void Vector_register(Context* ctx);
-
 /* Printing */
 char* Vector_verbose(Vector* vec, int indent);
 char* Vector_repr(Vector* vec);

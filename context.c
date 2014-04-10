@@ -54,8 +54,7 @@ Context* Context_new(void) {
 }
 
 static void freeVars(struct VarNode* cur) {
-	if(cur == NULL)
-		return;
+	if(cur == NULL) return;
 	
 	struct VarNode* next = cur->next;
 	
@@ -66,8 +65,9 @@ static void freeVars(struct VarNode* cur) {
 		
 		/* Go to next element in the linked list */
 		cur = next;
-		if(cur)
+		if(cur) {
 			next = cur->next;
+		}
 	}
 }
 
@@ -126,11 +126,13 @@ static struct ContextStack* copyStack(struct ContextStack* stack) {
 		dst->vars = copyVars(stack->vars);
 		dst->next = NULL;
 		
-		if(ret == NULL)
+		if(ret == NULL) {
 			ret = dst;
+		}
 		
-		if(prev)
+		if(prev) {
 			prev->next = dst;
+		}
 		
 		prev = dst;
 		dst = dst->next;
@@ -166,8 +168,9 @@ void Context_addGlobal(Context* ctx, Variable* var) {
 }
 
 void Context_addLocal(Context* ctx, Variable* var) {
-	if(ctx->locals == NULL)
+	if(ctx->locals == NULL) {
 		Context_pushLocals(ctx);
+	}
 	
 	addVar(&ctx->locals->vars, var);
 }
@@ -182,10 +185,11 @@ void Context_setGlobal(Context* ctx, const char* name, Variable* var) {
 	
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
-		
 		/* Make sure we are assigning the correct variable */
-		if(var->name != NULL)
+		if(var->name != NULL) {
 			free(var->name);
+		}
+		
 		var->name = strdup(name);
 		
 		Context_addGlobal(ctx, var);
