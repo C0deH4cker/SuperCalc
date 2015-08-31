@@ -202,6 +202,9 @@ Examples using `map`:
 	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
 	>>> map(sin, angles)
 	<0, 1, 0, -1, 0>
+	>>> add1(x) = 1 + x
+	>>> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
+	<2, 3, 4, 5, 5.47213595499958, 7/3>
 
 
 Vectors can have any dimension greater than one:
@@ -307,7 +310,7 @@ Examples of verbose printing:
 	(8 - (9 * (((6 ^ 2) + (3 / 7)) ^ 3)))
 	-149229631/343 (-435071.810495627)
 
-Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of it's body.
+Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of its body.
 
 Examples of printing functions verbosely:
 
@@ -338,7 +341,7 @@ Examples of printing functions verbosely:
 
 ##Building
 
-To build on Linux, you need Automake and Autoconf:
+To build on Linux or Mac OS X, you can use Automake and Autoconf:
 
 	$ ./autogen.sh
 	$ ./configure
