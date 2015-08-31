@@ -53,7 +53,7 @@ Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* argli
 	Value* ret = Value_eval(tmp, ctx);
 	Value_free(tmp);
 	
-	if(ret->type == VAL_ERR || (ret->type == VAL_REAL && isnan(ret->rval))) {
+	if((ret->type == VAL_ERR && ret->err->type == ERR_MATH) || (ret->type == VAL_REAL && isnan(ret->rval))) {
 		Value_free(ret);
 		ret = ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));
 	}
