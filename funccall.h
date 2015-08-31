@@ -9,36 +9,38 @@
 #ifndef _SC_FUNCCALL_H_
 #define _SC_FUNCCALL_H_
 
+#include <stdbool.h>
 
 typedef struct FuncCall FuncCall;
 
 #include "context.h"
 #include "value.h"
-#include "variable.h"
 #include "arglist.h"
 
 
 struct FuncCall {
-	char* name;
+	Value* func;
 	ArgList* arglist;
 };
 
 
 /* Constructor */
-/* This method consumes the `arglist` argument */
-FuncCall* FuncCall_new(const char* name, ArgList* arglist);
+/* This method consumes both the `func` and `arglist` arguments */
+FuncCall* FuncCall_new(Value* func, ArgList* arglist);
+/* Used to create specific calls like "sqrt". `arglist` is consumed */
+FuncCall* FuncCall_create(const char* name, ArgList* arglist);
 
 /* Destructor */
 void FuncCall_free(FuncCall* call);
 
 /* Copying */
-FuncCall* FuncCall_copy(FuncCall* call);
+FuncCall* FuncCall_copy(const FuncCall* call);
 
 /* Evaluation */
-Value* FuncCall_eval(FuncCall* call, Context* ctx);
+Value* FuncCall_eval(const FuncCall* call, const Context* ctx);
 
 /* Printing */
-char* FuncCall_verbose(FuncCall* call, int indent);
-char* FuncCall_repr(FuncCall* call);
+char* FuncCall_verbose(const FuncCall* call, int indent);
+char* FuncCall_repr(const FuncCall* call, bool pretty);
 
 #endif

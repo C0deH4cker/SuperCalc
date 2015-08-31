@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "error.h"
@@ -17,13 +18,15 @@
 #include "value.h"
 #include "context.h"
 #include "arglist.h"
+#include "variable.h"
 
 
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator) {
+Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction) {
 	Builtin* ret = fmalloc(sizeof(*ret));
 	
 	ret->name = strdup(name);
 	ret->evaluator = evaluator;
+	ret->isFunction = isFunction;
 	
 	return ret;
 }
@@ -33,8 +36,8 @@ void Builtin_free(Builtin* blt) {
 	free(blt);
 }
 
-Builtin* Builtin_copy(Builtin* blt) {
-	return Builtin_new(blt->name, blt->evaluator);
+Builtin* Builtin_copy(const Builtin* blt) {
+	return Builtin_new(blt->name, blt->evaluator, blt->isFunction);
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
@@ -42,9 +45,9 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 	Context_addGlobal(ctx, var);
 }
 
-Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist) {
+Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
-	Value* tmp = blt->evaluator(ctx, arglist);
+	Value* tmp = blt->evaluator(ctx, arglist, internal);
 	
 	/* Simplify result */
 	Value* ret = Value_eval(tmp, ctx);
@@ -58,7 +61,7 @@ Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist) {
 	return ret;
 }
 
-char* Builtin_verbose(Builtin* blt, int indent) {
+char* Builtin_verbose(const Builtin* blt, int indent) {
 	char* ret;
 	
 	asprintf(&ret, "<builtin %s>", blt->name);
@@ -66,7 +69,11 @@ char* Builtin_verbose(Builtin* blt, int indent) {
 	return ret;
 }
 
-char* Builtin_repr(Builtin* blt) {
+char* Builtin_repr(const Builtin* blt, bool pretty) {
+	if(pretty) {
+		return strdup(getPretty(blt->name));
+	}
+	
 	return strdup(blt->name);
 }
 

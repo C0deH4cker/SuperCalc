@@ -9,6 +9,7 @@
 #ifndef _SC_BINOP_H_
 #define _SC_BINOP_H_
 
+#include <stdbool.h>
 
 typedef struct BinOp BinOp;
 
@@ -44,10 +45,10 @@ BinOp* BinOp_new(BINTYPE type, Value* a, Value* b);
 void BinOp_free(BinOp* node);
 
 /* Copying */
-BinOp* BinOp_copy(BinOp* node);
+BinOp* BinOp_copy(const BinOp* node);
 
 /* Evaluation */
-Value* BinOp_eval(BinOp* node, Context* ctx);
+Value* BinOp_eval(const BinOp* node, const Context* ctx);
 
 /* Tokenizer */
 BINTYPE BinOp_nextType(const char** expr, char sep, char end);
@@ -56,8 +57,8 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end);
 int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
-char* BinOp_verbose(BinOp* node, int indent);
-char* BinOp_repr(BinOp* node);
+char* BinOp_verbose(const BinOp* node, int indent);
+char* BinOp_repr(const BinOp* node, bool pretty);
 
 
 #endif

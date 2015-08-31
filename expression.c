@@ -9,13 +9,16 @@
 #include "expression.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
+#include "generic.h"
+#include "error.h"
 #include "value.h"
 #include "variable.h"
 #include "context.h"
-#include "generic.h"
 #include "binop.h"
-
+#include "function.h"
+#include "binop.h"
 
 
 Expression* Expression_new(Variable* var) {
@@ -226,7 +229,7 @@ Expression* Expression_parse(const char** expr) {
 	return ret;
 }
 
-Value* Expression_eval(Expression* expr, Context* ctx) {
+Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
 	Value* ret;
 	Variable* var = expr->var;
 	
@@ -235,12 +238,12 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 		ret = Value_eval(var->val, ctx);
 		
 		/* If an error occurred, bail */
-		if(ret->type == VAL_ERR)
+		if(ret->type == VAL_ERR) {
 			return ret;
+		}
 		
-		/* Variable assignment? */
+		/* Expression result is a variable? */
 		if(ret->type == VAL_VAR) {
-			/* This means ret must be a function */
 			Variable* func = Variable_get(ctx, ret->name);
 			if(func == NULL) {
 				Value* err = ValErr(varNotFound(ret->name));
@@ -266,8 +269,9 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 			Context_setGlobal(ctx, "ans", Variable_copy(var));
 			
 			/* Save the newly evaluated variable */
-			if(var->name != NULL)
+			if(var->name != NULL) {
 				Context_setGlobal(ctx, var->name, Variable_copy(var));
+			}
 		}
 	}
 	else if(var->type == VAR_FUNC) {
@@ -281,11 +285,11 @@ Value* Expression_eval(Expression* expr, Context* ctx) {
 	return ret;
 }
 
-bool Expression_didError(Expression* expr) {
+bool Expression_didError(const Expression* expr) {
 	return (expr->var->type == VAR_ERR);
 }
 
-char* Expression_verbose(Expression* expr, Context* ctx) {
+char* Expression_verbose(const Expression* expr, const Context* ctx) {
 	/* What an if statement!!! */
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
@@ -301,45 +305,44 @@ char* Expression_verbose(Expression* expr, Context* ctx) {
 	return Variable_verbose(expr->var);
 }
 
-char* Expression_repr(Expression* expr, Context* ctx) {
-	/* And another crazy if statement!!! */
+char* Expression_repr(const Expression* expr, const Context* ctx, bool pretty) {
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
 		if(var == NULL) {
 			/* If the variable doesn't exist, just return its name */
+			if(pretty) {
+				return strdup(getPretty(expr->var->val->name));
+			}
+			
 			return strdup(expr->var->val->name);
 		}
 		
-		return Variable_repr(var);
+		return Variable_repr(var, pretty);
 	}
 	
-	return Variable_repr(expr->var);
+	return Variable_repr(expr->var, pretty);
 }
 
-void Expression_fprint(FILE* fp, Expression* expr, Context* ctx, int verbosity) {
+void Expression_print(const Expression* expr, const SuperCalc* sc, VERBOSITY v) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
-		Error_raise(expr->var->err);
+		Error_raise(expr->var->err, false);
 		return;
 	}
 	
-	if(verbosity >= 2) {
+	if(v & V_TREE) {
 		/* Dump expression tree */
-		char* tree = Expression_verbose(expr, ctx);
-		fprintf(fp, "%s\n", tree);
+		char* tree = Expression_verbose(expr, sc->ctx);
+		fprintf(sc->fout, "%s\n", tree);
 		free(tree);
 	}
 	
-	if(verbosity >= 1) {
+	if(v & V_REPR) {
 		/* Print parenthesized expression */
-		char* reprinted = Expression_repr(expr, ctx);
-		fprintf(fp, "%s\n", reprinted);
+		char* reprinted = Expression_repr(expr, sc->ctx, v & V_PRETTY);
+		fprintf(sc->fout, "%s\n", reprinted);
 		free(reprinted);
 	}
-}
-
-void Expression_print(Expression* expr, Context* ctx, int verbosity) {
-	Expression_fprint(stdout, expr, ctx, verbosity);
 }
 

@@ -9,37 +9,39 @@
 #ifndef _SC_BUILTIN_H_
 #define _SC_BUILTIN_H_
 
+#include <stdbool.h>
 
 typedef struct Builtin Builtin;
 #include "context.h"
 #include "arglist.h"
 #include "value.h"
 
-typedef Value* (*builtin_eval_t)(Context*, ArgList*);
+typedef Value* (*builtin_eval_t)(const Context*, const ArgList*, bool);
 
 struct Builtin {
 	char* name;
 	builtin_eval_t evaluator;
+	bool isFunction;
 };
 
 /* Constructor */
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator);
+Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction);
 
 /* Destructor */
 void Builtin_free(Builtin* blt);
 
 /* Copying */
-Builtin* Builtin_copy(Builtin* blt);
+Builtin* Builtin_copy(const Builtin* blt);
 
 /* Registration */
 void Builtin_register(Builtin* blt, Context* ctx);
 
 /* Evaluation */
-Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist);
+Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal);
 
 /* Printing */
-char* Builtin_verbose(Builtin* blt, int indent);
-char* Builtin_repr(Builtin* blt);
+char* Builtin_verbose(const Builtin* blt, int indent);
+char* Builtin_repr(const Builtin* blt, bool pretty);
 
 
 #endif

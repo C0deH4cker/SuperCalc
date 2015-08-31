@@ -9,6 +9,7 @@
 #ifndef _SC_VARIABLE_H_
 #define _SC_VARIABLE_H_
 
+#include <stdbool.h>
 
 typedef struct Variable Variable;
 #include "context.h"
@@ -48,14 +49,15 @@ Variable* VarFunc(const char* name, Function* func);
 void Variable_free(Variable* var);
 
 /* Copying */
-Variable* Variable_copy(Variable* var);
+Variable* Variable_copy(const Variable* var);
 
 /* Evaluation */
-Value* Variable_eval(const char* name, Context* ctx);
+Value* Variable_eval(const Variable* var, const Context* ctx);
+Value* Variable_coerce(const Variable* var, const Context* ctx);
 
 /* Variable accessing */
-Variable* Variable_get(Context* ctx, const char* name);
-Variable* Variable_getAbove(Context* ctx, const char* name);
+Variable* Variable_get(const Context* ctx, const char* name);
+Variable* Variable_getAbove(const Context* ctx, const char* name);
 
 /*
  This method basically frees the content of `dst`, moves
@@ -65,7 +67,7 @@ Variable* Variable_getAbove(Context* ctx, const char* name);
 void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */
-char* Variable_verbose(Variable* var);
-char* Variable_repr(Variable* var);
+char* Variable_verbose(const Variable* var);
+char* Variable_repr(const Variable* var, bool pretty);
 
 #endif

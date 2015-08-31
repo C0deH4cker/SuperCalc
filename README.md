@@ -27,10 +27,10 @@ As well as the following mathematical functions:
 * `sqrt(x)`
 * `abs(x)`
 * `exp(x)`
-* `log(x)` (base 10)
-* `log2(x)` (base 2)
-* `ln(x)` (base e)
-* `logbase(x, b)` -> log_b(x)
+* `log(x)` -> log<sub>10</sub>(x)
+* `log2(x)` -> log<sub>2</sub>(x)
+* `ln(x)` -> log<sub>e</sub>(x)
+* `logbase(x, b)` -> log<sub>b</sub>(x)
 * `sin(x)`
 * `cos(x)`
 * `tan(x)`
@@ -62,9 +62,9 @@ SuperCalc likes to be as precise as it knows how, so floating point values are a
 Example of using fractions:
 
 	>>> (2 / 7) ^ 2
-	4/49 (0.081632653061224)
+	4/49 (0.0816326530612245)
 	>>> -(3 + 4!/7)^3
-	-91125/343 (-265.670553935860084)
+	-91125/343 (-265.67055393586)
 
 Variables are supported:
 
@@ -178,9 +178,18 @@ Vector functions:
 	>>> b = <6, 5, 3>
 	<6, 5, 3>
 	>>> cross(a, b)
-	<-9, -15, -7>
+	<-9, 15, -7>
 	>>> dot(a, b)
 	25
+
+Function calls and vector subscripting is recursive:
+
+	>>> getVec() = <1, 2, 3, <4, 5>>
+	>>> getVec()[3][1]
+	5
+	>>> getFunc() = getVec
+	>>> getFunc()()[3][0]
+	4
 
 Examples using `map`:
 
@@ -216,13 +225,13 @@ Vectors even support scalar operations:
 	>>> a = <4, 7, -3>
 	<4, 7, -3>
 	>>> a + 2
-	<6, 9, -1>
+	<4.92998110995055, 8.62746694241347, -3.69748583246292>
 	>>> ans / 3
-	<2, 3, -1/3>
+	<1.64332703665018, 2.87582231413782, -1.23249527748764>
 	>>> ans ^ 2
-	<4, 9, 1/9>
+	<2.70052374938548, 8.27035398249302, 1.51904460902933>
 	>>> 2 / ans
-	<1/2, 2/9, 18>
+	<0.740597078790777, 0.241827617564335, 1.31661702896138>
 
 Variables can be deleted using `~`:
 
@@ -254,9 +263,9 @@ Error messages attempt to be clear:
 	>>> 3 / (1 - 1)
 	Math Error: Division by zero.
 	>>> sqrt()
-	Type Error: Builtin 'sqrt' takes 1 argument, not 0.
+	Type Error: Builtin 'sqrt' expects 1 argument, not 0.
 	>>> sqrt(4, 3)
-	Type Error: Builtin 'sqrt' takes 1 argument, not 2.
+	Type Error: Builtin 'sqrt' expects 1 argument, not 2.
 	>>> sqrt(-1)
 	Math Error: Builtin function 'sqrt' returned an invalid value.
 	>>> a
@@ -268,7 +277,7 @@ Error messages attempt to be clear:
 	>>> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
-For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree.
+For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree. Verbosity >= 3 will force pretty printing (with unicode characters).
 
 Examples of verbose printing:
 

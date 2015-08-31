@@ -10,10 +10,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "error.h"
 #include "generic.h"
 #include "context.h"
+#include "value.h"
+#include "arglist.h"
+#include "variable.h"
+
+
+static char* argsVerbose(const Function* func);
 
 
 Function* Function_new(unsigned argcount, char** argnames, Value* body) {
@@ -38,7 +45,7 @@ void Function_free(Function* func) {
 	free(func);
 }
 
-Function* Function_copy(Function* func) {
+Function* Function_copy(const Function* func) {
 	char** argsCopy = fmalloc(func->argcount * sizeof(*argsCopy));
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
@@ -48,9 +55,9 @@ Function* Function_copy(Function* func) {
 	return Function_new(func->argcount, argsCopy, Value_copy(func->body));
 }
 
-Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
+Value* Function_eval(const Function* func, const Context* ctx, const ArgList* arglist) {
 	if(func->argcount != arglist->count) {
-		return ValErr(typeError("Function expects %u arguments, not %u.", func->argcount, arglist->count));
+		return ValErr(typeError("Function expects %u argument%s, not %u.", func->argcount, func->argcount == 1 ? "" : "s", arglist->count));
 	}
 	
 	ArgList* evaluated = ArgList_eval(arglist, ctx);
@@ -58,7 +65,7 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 		return ValErr(ignoreError());
 	}
 	
-	Context_pushLocals(ctx);
+	Context* frame = Context_pushFrame(ctx);
 	
 	unsigned i;
 	for(i = 0; i < evaluated->count; i++) {
@@ -66,7 +73,7 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 		Variable* arg;
 		
 		if(val->type == VAL_VAR) {
-			Variable* var = Variable_getAbove(ctx, val->name);
+			Variable* var = Variable_getAbove(frame, val->name);
 			
 			switch(var->type) {
 				case VAR_VALUE:
@@ -86,22 +93,22 @@ Value* Function_eval(Function* func, Context* ctx, ArgList* arglist) {
 			}
 		}
 		else {
-			arg = VarValue(func->argnames[i], val);
+			arg = VarValue(func->argnames[i], Value_copy(val));
 		}
 		
-		Context_addLocal(ctx, arg);
+		Context_addLocal(frame, arg);
 	}
 	
 	ArgList_free(evaluated);
 	
-	Value* ret = Value_eval(func->body, ctx);
+	Value* ret = Value_eval(func->body, frame);
 	
-	Context_popLocals(ctx);
+	Context_popFrame(frame);
 	
 	return ret;
 }
 
-static char* argsVerbose(Function* func) {
+static char* argsVerbose(const Function* func) {
 	char* ret;
 	/* 8 is big enough even for: "x, y, z", so it's a good starting size */
 	size_t size = 8;
@@ -130,7 +137,7 @@ static char* argsVerbose(Function* func) {
 	return ret;
 }
 
-char* Function_verbose(Function* func) {
+char* Function_verbose(const Function* func) {
 	char* ret;
 	
 	char* spacing = spaces(IWIDTH);
@@ -147,11 +154,11 @@ char* Function_verbose(Function* func) {
 	return ret;
 }
 
-char* Function_repr(Function* func) {
+char* Function_repr(const Function* func, bool pretty) {
 	char* ret;
 	
 	char* args = argsVerbose(func);
-	char* body = Value_repr(func->body);
+	char* body = Value_repr(func->body, pretty);
 	
 	asprintf(&ret, "(%s) = %s", args, body);
 	
@@ -160,3 +167,4 @@ char* Function_repr(Function* func) {
 	
 	return ret;
 }
+

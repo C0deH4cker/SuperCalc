@@ -18,7 +18,8 @@
 #include "context.h"
 #include "function.h"
 #include "builtin.h"
-#include "value.h"
+#include "variable.h"
+#include "arglist.h"
 
 
 static Variable* allocVar(VARTYPE type, const char* name) {
@@ -92,7 +93,7 @@ void Variable_free(Variable* var) {
 	free(var);
 }
 
-Variable* Variable_copy(Variable* var) {
+Variable* Variable_copy(const Variable* var) {
 	Variable* ret;
 	
 	switch(var->type) {
@@ -119,34 +120,56 @@ Variable* Variable_copy(Variable* var) {
 	return ret;
 }
 
-Value* Variable_eval(const char* name, Context* ctx) {
+Value* Variable_eval(const Variable* var, const Context* ctx) {
 	Value* ret;
 	
-	/* Look up variable */
-	Variable* var = Variable_get(ctx, name);
-	if(var == NULL) {
-		ret = ValErr(varNotFound(name));
-	}
-	else if(var->type == VAR_FUNC) {
-		ret = ValVar(var->name);
-	}
-	else if(var->type == VAR_BUILTIN) {
-		ArgList* noArgs = ArgList_new(0);
-		ret = Builtin_eval(var->blt, ctx, noArgs);
-		ArgList_free(noArgs);
-	}
-	else {
-		ret = Value_copy(var->val);
+	switch(var->type) {
+		case VAR_VALUE:
+			ret = Value_copy(var->val);
+			break;
+		
+		case VAR_FUNC:
+		case VAR_BUILTIN:
+			ret = ValVar(var->name);
+			break;
+		
+		case VAR_ERR:
+			ret = ValErr(var->err);
+			break;
+		
+		default:
+			badVarType(var->type);
 	}
 	
 	return ret;
 }
 
-Variable* Variable_get(Context* ctx, const char* name) {
+Value* Variable_coerce(const Variable* var, const Context* ctx) {
+	Value* ret;
+	
+	if(var->type == VAR_VALUE) {
+		ret = Value_copy(var->val);
+	}
+	else if(var->type == VAR_FUNC) {
+		ret = ValErr(typeError("Variable '%s' is a function.", var->name));
+	}
+	else if(var->type == VAR_BUILTIN && !var->blt->isFunction) {
+		ArgList* noArgs = ArgList_new(0);
+		ret = Builtin_eval(var->blt, ctx, noArgs, false);
+		ArgList_free(noArgs);
+	}
+	else {
+		badVarType(var->type);
+	}
+	
+	return ret;
+}
+
+Variable* Variable_get(const Context* ctx, const char* name) {
 	return Context_get(ctx, name);
 }
 
-Variable* Variable_getAbove(Context* ctx, const char* name) {
+Variable* Variable_getAbove(const Context* ctx, const char* name) {
 	return Context_getAbove(ctx, name);
 }
 
@@ -203,7 +226,7 @@ void Variable_update(Variable* dst, Variable* src) {
 	free(src);
 }
 
-char* Variable_verbose(Variable* var) {
+char* Variable_verbose(const Variable* var) {
 	char* ret;
 	
 	if(var->type == VAR_FUNC) {
@@ -235,31 +258,36 @@ char* Variable_verbose(Variable* var) {
 	return ret;
 }
 
-char* Variable_repr(Variable* var) {
+char* Variable_repr(const Variable* var, bool pretty) {
 	char* ret;
 	
+	const char* name = var->name;
+	if(pretty) {
+		name = getPretty(name);
+	}
+	
 	if(var->type == VAR_FUNC) {
-		char* func = Function_repr(var->func);
-		asprintf(&ret, "%s%s", var->name, func);
+		char* func = Function_repr(var->func, pretty);
+		asprintf(&ret, "%s%s", name, func);
 		free(func);
 	}
 	else if(var->type == VAR_BUILTIN) {
-		char* blt = Builtin_repr(var->blt);
-		if(var->name == NULL) {
+		char* blt = Builtin_repr(var->blt, pretty);
+		if(name == NULL) {
 			ret = blt;
 		}
 		else {
-			asprintf(&ret, "%s = %s", var->name, blt);
+			asprintf(&ret, "%s = %s", name, blt);
 			free(blt);
 		}
 	}
 	else {
-		char* val = Value_repr(var->val);
-		if(var->name == NULL) {
+		char* val = Value_repr(var->val, pretty);
+		if(name == NULL) {
 			ret = val;
 		}
 		else {
-			asprintf(&ret, "%s = %s", var->name, val);
+			asprintf(&ret, "%s = %s", name, val);
 			free(val);
 		}
 	}

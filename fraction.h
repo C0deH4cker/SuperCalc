@@ -9,7 +9,6 @@
 #ifndef _SC_FRACTION_H_
 #define _SC_FRACTION_H_
 
-/* value.h needs Fraction */
 typedef struct Fraction Fraction;
 #include "value.h"
 
@@ -25,27 +24,28 @@ Fraction* Fraction_new(long long numerator, long long denominator);
 void Fraction_free(Fraction* frac);
 
 /* Copying */
-Fraction* Fraction_copy(Fraction* frac);
+Fraction* Fraction_copy(const Fraction* frac);
 
 /* In-place simplification */
 void Fraction_simplify(Fraction* frac);
 void Fraction_reduce(Value* frac);
 
 /* Arithmetic operations */
-Value* Fraction_add(Fraction* a, Value* b);
-Value* Fraction_sub(Fraction* a, Value* b);
-Value* Fraction_mul(Fraction* a, Value* b);
-Value* Fraction_div(Fraction* a, Value* b);
-Value* Fraction_mod(Fraction* a, Value* b);
-Value* Fraction_pow(Fraction* base, Value* exp);
+Value* Fraction_add(const Fraction* a, const Value* b);
+Value* Fraction_sub(const Fraction* a, const Value* b);
+Value* Fraction_mul(const Fraction* a, const Value* b);
+Value* Fraction_div(const Fraction* a, const Value* b);
+Value* Fraction_mod(const Fraction* a, const Value* b);
+Value* Fraction_pow(const Fraction* base, const Value* exp);
+Value* Fraction_rpow(const Fraction* exp, const Value* base);
 
 /* Comparison */
-Value* Fraction_cmp(Fraction* a, Value* b);
+Value* Fraction_cmp(const Fraction* a, const Value* b);
 
 /* Conversion */
-double Fraction_asReal(Fraction* frac);
+double Fraction_asReal(const Fraction* frac);
 
 /* Printing */
-char* Fraction_repr(Fraction* frac);
+char* Fraction_repr(const Fraction* frac, bool pretty);
 
 #endif

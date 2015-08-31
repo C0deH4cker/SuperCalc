@@ -9,6 +9,7 @@
 #ifndef _SC_VECTOR_H_
 #define _SC_VECTOR_H_
 
+#include <stdarg.h>
 
 typedef struct Vector Vector;
 #include "value.h"
@@ -23,34 +24,40 @@ struct Vector {
 
 /* Constructor */
 Vector* Vector_new(ArgList* vals);
+Vector* Vector_create(unsigned count, /* Value* */...);
+Vector* Vector_vcreate(unsigned count, va_list args);
 
 /* Destructor */
 void Vector_free(Vector* vec);
 
 /* Copying */
-Vector* Vector_copy(Vector* vec);
+Vector* Vector_copy(const Vector* vec);
 
 /* Parsing */
-Value* Vector_parse(const char** expr);
+Value* Vector_parse(const char** expr, parser_cb* cb);
 
 /* Evaluation */
-Value* Vector_eval(Vector* vec, Context* ctx);
+Value* Vector_eval(const Vector* vec, const Context* ctx);
 
 /* Arithmetic */
-Value* Vector_add(Vector* vec, Value* other, Context* ctx);
-Value* Vector_sub(Vector* vec, Value* other, Context* ctx);
-Value* Vector_rsub(Vector* vec, Value* scalar, Context* ctx);
-Value* Vector_mul(Vector* vec, Value* other, Context* ctx);
-Value* Vector_div(Vector* vec, Value* other, Context* ctx);
-Value* Vector_rdiv(Vector* vec, Value* scalar, Context* ctx);
-Value* Vector_pow(Vector* vec, Value* other, Context* ctx);
-Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx);
+Value* Vector_add(const Vector* vec, const Value* other, const Context* ctx);
+Value* Vector_sub(const Vector* vec, const Value* other, const Context* ctx);
+Value* Vector_rsub(const Vector* vec, const Value* scalar, const Context* ctx);
+Value* Vector_mul(const Vector* vec, const Value* other, const Context* ctx);
+Value* Vector_div(const Vector* vec, const Value* other, const Context* ctx);
+Value* Vector_rdiv(const Vector* vec, const Value* scalar, const Context* ctx);
+Value* Vector_pow(const Vector* vec, const Value* other, const Context* ctx);
+Value* Vector_rpow(const Vector* vec, const Value* scalar, const Context* ctx);
+Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* ctx);
+Value* Vector_cross(const Vector* vector1, const Vector* vector2, const Context* ctx);
+Value* Vector_magnitude(const Vector* vec, const Context* ctx);
+Value* Vector_normalize(const Vector* vec, const Context* ctx);
 
-/* Builtin registration */
-void Vector_register(Context* ctx);
+/* Access Values */
+Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx);
 
 /* Printing */
-char* Vector_verbose(Vector* vec, int indent);
-char* Vector_repr(Vector* vec);
+char* Vector_verbose(const Vector* vec, int indent);
+char* Vector_repr(const Vector* vec);
 
 #endif

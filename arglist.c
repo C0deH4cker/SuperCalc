@@ -11,9 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "generic.h"
+#include "error.h"
 #include "value.h"
 #include "context.h"
 
@@ -48,12 +50,12 @@ void ArgList_free(ArgList* arglist) {
 }
 
 ArgList* ArgList_create(unsigned count, ...) {
-	va_list va;
-	va_start(va, count);
+	va_list args;
+	va_start(args, count);
 	
-	ArgList* ret = ArgList_vcreate(count, va);
+	ArgList* ret = ArgList_vcreate(count, args);
 	
-	va_end(va);
+	va_end(args);
 	
 	return ret;
 }
@@ -70,7 +72,7 @@ ArgList* ArgList_vcreate(unsigned count, va_list args) {
 	return ret;
 }
 
-ArgList* ArgList_copy(ArgList* arglist) {
+ArgList* ArgList_copy(const ArgList* arglist) {
 	unsigned count = arglist->count;
 	ArgList* ret = ArgList_new(count);
 	
@@ -82,15 +84,15 @@ ArgList* ArgList_copy(ArgList* arglist) {
 	return ret;
 }
 
-ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
+ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx) {
 	ArgList* ret = ArgList_new(arglist->count);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* result = Value_eval(arglist->args[i], ctx);
+		Value* result = Value_coerce(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
 			/* An error occurred */
-			Error_raise(result->err);
+			Error_raise(result->err, false);
 			
 			Value_free(result);
 			ArgList_free(ret);
@@ -104,16 +106,12 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 	return ret;
 }
 
-double* ArgList_toReals(ArgList* arglist, Context* ctx) {
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
-	if(evaluated == NULL)
-		return NULL;
-	
+double* ArgList_toReals(const ArgList* arglist, const Context* ctx) {
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		double real = Value_asReal(evaluated->args[i]);
+		double real = Value_asReal(arglist->args[i]);
 		if(isnan(real)) {
 			free(ret);
 			return NULL;
@@ -122,19 +120,20 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 		ret[i] = real;
 	}
 	
-	ArgList_free(evaluated);
-	
 	return ret;
 }
 
-ArgList* ArgList_parse(const char** expr, char sep, char end) {
+ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
+	unsigned i;
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
-	Value* arg = Value_parse(expr, sep, end);
+	Value* arg = Value_parse(expr, sep, end, cb);
+	trimSpaces(expr);
+	
 	while(arg->type != VAL_END && arg->type != VAL_ERR) {
 		if(count >= size) {
 			size *= 2;
@@ -142,8 +141,42 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		}
 		
 		args[count++] = arg;
+		arg = NULL;
 		
-		arg = Value_parse(expr, sep, end);
+		trimSpaces(expr);
+		if(**expr != sep) {
+			break;
+		}
+		
+		(*expr)++;
+		
+		arg = Value_parse(expr, sep, end, cb);
+	}
+	
+	if(arg && arg->type == VAL_ERR) {
+		for(i = 0; i < count; i++) {
+			free(args[i]);
+		}
+		free(args);
+		
+		Error_raise(arg->err, false);
+		Value_free(arg);
+		return NULL;
+	}
+	
+	if(arg) {
+		Value_free(arg);
+	}
+	
+	if(**expr && **expr != end) {
+		/* Not NUL and not end means invalid char */
+		for(i = 0; i < count; i++) {
+			free(args[i]);
+		}
+		free(args);
+		
+		RAISE(badChar(**expr), false);
+		return NULL;
 	}
 	
 	if(arg->type == VAL_ERR) {
@@ -168,12 +201,14 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	
 	free(args);
 	
-	(*expr)++;
+	if(**expr == end) {
+		(*expr)++;
+	}
 	
 	return ret;
 }
 
-char* ArgList_verbose(ArgList* arglist, int indent) {
+char* ArgList_verbose(const ArgList* arglist, int indent) {
 	char* ret;
 	
 	size_t size = 32;
@@ -211,7 +246,7 @@ char* ArgList_verbose(ArgList* arglist, int indent) {
 	return ret;
 }
 
-char* ArgList_repr(ArgList* arglist) {
+char* ArgList_repr(const ArgList* arglist, bool pretty) {
 	char* ret;
 	
 	size_t size = 32;
@@ -223,7 +258,7 @@ char* ArgList_repr(ArgList* arglist) {
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		Value* arg = arglist->args[i];
-		char* argstr = Value_repr(arg);
+		char* argstr = Value_repr(arg, pretty);
 		
 		/* Double the string size if it's too short */
 		size_t newlen = strlen(ret) + 2 + strlen(argstr);

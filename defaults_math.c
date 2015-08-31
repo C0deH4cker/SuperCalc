@@ -8,6 +8,7 @@
 
 #include "defaults.h"
 #include <math.h>
+#include <stdbool.h>
 
 #include "generic.h"
 #include "error.h"
@@ -17,17 +18,10 @@
 #include "value.h"
 #include "binop.h"
 #include "vector.h"
+#include "fraction.h"
+#include "funccall.h"
+#include "template.h"
 
-
-#define EVAL_CONST(name, val) Value* eval_ ## name(Context* ctx, ArgList* arglist) { \
-	if(arglist->count > 1) { \
-		return ValErr(builtinNotFunc(#name)); \
-	} \
-	if(arglist->count == 1) { \
-		return ValExpr(BinOp_new(BIN_MUL, ValReal((val)), Value_copy(arglist->args[0]))); \
-	} \
-	return ValReal((val)); \
-}
 
 EVAL_CONST(pi, M_PI);
 EVAL_CONST(e, M_E);
@@ -35,37 +29,24 @@ EVAL_CONST(e, M_E);
 EVAL_CONST(phi, PHI);
 
 
-#define EVAL_FUNC(name, func, nargs) Value* eval_ ## name(Context* ctx, ArgList* arglist) { \
-	if(arglist->count != (nargs)) { \
-		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
-	} \
-	double* a = ArgList_toReals(arglist, ctx); \
-	if(!a) { \
-		return ValErr(badConversion(#name)); \
-	} \
-	Value* ret = ValReal((func)); \
-	free(a); \
-	return ret; \
-}
-
-
-Value* eval_sqrt(Context* ctx, ArgList* arglist) {
+static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
 	
-	Fraction* half = Fraction_new(1, 2);
-	Value* arg = ValFrac(half);
-	BinOp* sqrt_pow = BinOp_new(BIN_POW, Value_copy(arglist->args[0]), arg);
-	return ValExpr(sqrt_pow);
+	return TP_EVAL("@@^(1/2)", ctx, Value_copy(arglist->args[0]));
 }
 
-Value* eval_abs(Context* ctx, ArgList* arglist) {
+static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
 	
-	Value* val = arglist->args[0];
+	Value* val = Value_coerce(arglist->args[0], ctx);
+	
+	if(val->type == VAL_ERR) {
+		return val;
+	}
 	
 	switch(val->type) {
 		case VAL_INT:
@@ -76,13 +57,21 @@ Value* eval_abs(Context* ctx, ArgList* arglist) {
 		
 		case VAL_FRAC:
 			return ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
+			
+		case VAL_VEC:
+			if(internal) {
+				return Vector_magnitude(val->vec, ctx);
+			}
+			return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
 		
 		default:
 			badValType(val->type);
 	}
+	
+	Value_free(val);
 }
 
-Value* eval_exp(Context* ctx, ArgList* arglist) {
+static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}
@@ -132,8 +121,15 @@ EVAL_FUNC(ln, log(a[0]), 1);
 EVAL_FUNC(logbase, log(a[0]) / log(a[1]), 2);
 
 
-static const char* math_names[] = {
-	"pi", "e", "phi",
+static const char* _math_const_names[] = {
+	"pi", "e", "phi"
+};
+
+static builtin_eval_t _math_consts[] = {
+	&eval_pi, &eval_e, &eval_phi
+};
+
+static const char* _math_names[] = {
 	"sqrt", "abs", "exp",
 	"sin", "cos", "tan",
 	"sec", "csc", "cot",
@@ -147,8 +143,7 @@ static const char* math_names[] = {
 	"logbase", "atan2"
 };
 
-static builtin_eval_t math_funcs[] = {
-	&eval_pi, &eval_e, &eval_phi,
+static builtin_eval_t _math_funcs[] = {
 	&eval_sqrt, &eval_abs, &eval_exp,
 	&eval_sin, &eval_cos, &eval_tan,
 	&eval_sec, &eval_csc, &eval_cot,
@@ -162,14 +157,21 @@ static builtin_eval_t math_funcs[] = {
 	&eval_logbase, &eval_atan2
 };
 
+
 void register_math(Context* ctx) {
-	Vector_register(ctx);
-	
-	unsigned count = sizeof(math_names) / sizeof(math_names[0]);
-	
 	unsigned i;
-	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(math_names[i], math_funcs[i]);
+	unsigned constCount = ARRSIZE(_math_const_names);
+	
+	for(i = 0; i < constCount; i++) {
+		Builtin* blt = Builtin_new(_math_const_names[i], _math_consts[i], false);
+		Builtin_register(blt, ctx);
+	}
+	
+	unsigned funcCount = ARRSIZE(_math_names);
+	
+	for(i = 0; i < funcCount; i++) {
+		Builtin* blt = Builtin_new(_math_names[i], _math_funcs[i], true);
 		Builtin_register(blt, ctx);
 	}
 }
+
