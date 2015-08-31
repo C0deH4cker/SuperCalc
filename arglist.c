@@ -24,28 +24,18 @@ ArgList* ArgList_new(unsigned count) {
 	ArgList* ret = fmalloc(sizeof(*ret));
 	
 	ret->count = count;
-	if(count > 0) {
-		size_t len = count * sizeof(*ret->args);
-		ret->args = fmalloc(len);
-		memset(ret->args, 0, len);
-	}
-	else {
-		ret->args = NULL;
-	}
+	ret->args = count != 0 ? fcalloc(count, sizeof(*ret->args)) : NULL;
 	
 	return ret;
 }
 
 void ArgList_free(ArgList* arglist) {
-	if(arglist->count > 0) {
-		unsigned i;
-		for(i = 0; i < arglist->count; i++) {
-			Value_free(arglist->args[i]);
-		}
-		
-		free(arglist->args);
+	unsigned i;
+	for(i = 0; i < arglist->count; i++) {
+		Value_free(arglist->args[i]);
 	}
 	
+	free(arglist->args);
 	free(arglist);
 }
 
@@ -178,23 +168,6 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 		RAISE(badChar(**expr), false);
 		return NULL;
 	}
-	
-	if(arg->type == VAL_ERR) {
-		/* Error parsing one of the args */
-		Error_raise(arg->err);
-		Value_free(arg);
-		
-		unsigned i;
-		for(i = 0; i < count; i++) {
-			Value_free(args[i]);
-		}
-		
-		free(args);
-		
-		return NULL;
-	}
-	
-	Value_free(arg);
 	
 	ArgList* ret = ArgList_new(count);
 	memcpy(ret->args, args, count * sizeof(*args));

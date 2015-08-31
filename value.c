@@ -527,14 +527,14 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 	
 	if(**expr == '(') {
 		(*expr)++;
-		ArgList* arglist = ArgList_parse(expr, ',', ')');
+		ArgList* arglist = ArgList_parse(expr, ',', ')', cb);
 		if(arglist == NULL) {
-			/* Error occurred and was already printed */
+			/* Parse error occurred and has already been raised */
 			free(token);
 			return ValErr(ignoreError());
 		}
 		
-		FuncCall* call = FuncCall_new(token, arglist);
+		FuncCall* call = FuncCall_create(token, arglist);
 		
 		ret = ValCall(call);
 	}
@@ -551,7 +551,7 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	Value* ret;
 	
 	trimSpaces(expr);
-	if(**expr == end || **expr == '\0')
+	if(**expr == end) {
 		return ValEnd();
 	}
 	

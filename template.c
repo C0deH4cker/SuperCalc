@@ -268,3 +268,4 @@ char Template_placeholderChar(VALTYPE type) {
 unsigned Template_placeholderCount(const Template* tp) {
 	return tp->num_placeholders;
 }
+

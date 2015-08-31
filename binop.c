@@ -440,7 +440,7 @@ Value* BinOp_eval(const BinOp* node, const Context* ctx) {
 		return a;
 	}
 	
-	Value* b = Value_eval(node->b, ctx);
+	Value* b = Value_coerce(node->b, ctx);
 	if(b->type == VAL_ERR) {
 		Value_free(a);
 		return b;

@@ -50,8 +50,8 @@ void FuncCall_free(FuncCall* call) {
 	free(call);
 }
 
-FuncCall* FuncCall_copy(FuncCall* call) {
-	return FuncCall_new(call->name, ArgList_copy(call->arglist));
+FuncCall* FuncCall_copy(const FuncCall* call) {
+	return FuncCall_new(Value_copy(call->func), ArgList_copy(call->arglist));
 }
 
 static Value* callVar(const Context* ctx, const char* name, const ArgList* args) {

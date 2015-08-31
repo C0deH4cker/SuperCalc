@@ -328,6 +328,11 @@ static Value* fracPow(const Fraction* base, const Fraction* exp) {
 		return ValInt(0);
 	}
 	
+	if(base->n < 0) {
+		/* Negative base with fractional exponent results in complex result */
+		return ValErr(mathError("Power result is complex"));
+	}
+	
 	/* c/1 == c */
 	if(exp->d == 1) {
 		if(exp->n < 0) {

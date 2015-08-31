@@ -34,26 +34,6 @@ void Expression_free(Expression* expr) {
 	free(expr);
 }
 
-static Expression* parseExpr(const char** expr) {
-	Variable* var;
-	Value* val = Value_parse(expr, 0, 0);
-	
-	if(val->type == VAL_END) {
-		var = VarErr(ignoreError());
-	}
-	else if(val->type == VAL_ERR) {
-		Error* err = Error_copy(val->err);
-		var = VarErr(err);
-	}
-	else {
-		var = VarValue(NULL, Value_copy(val));
-	}
-	
-	Value_free(val);
-	
-	return Expression_new(var);
-}
-
 Expression* Expression_parse(const char** expr) {
 	Expression* ret = NULL;
 	Variable* var;
@@ -63,13 +43,27 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		return parseExpr(expr);
+		val = Value_parse(expr, 0, 0, &default_cb);
+		
+		if(val->type == VAL_END) {
+			Value_free(val);
+			var = VarErr(earlyEnd());
+		}
+		else if(val->type == VAL_ERR) {
+			var = VarErr(Error_copy(val->err));
+			Value_free(val);
+		}
+		else {
+			var = VarValue(NULL, val);
+		}
+		
+		return Expression_new(var);
 	}
 	
 	/* There is an assignment */
 	/* First, parse the right side of the assignment */
 	equals++;
-	val = Value_parse(&equals, 0, 0);
+	val = Value_parse(&equals, 0, 0, &default_cb);
 	
 	if(val->type == VAL_ERR) {
 		/* A parse error occurred */
@@ -97,6 +91,10 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(**expr == '(') {
 		/* Defining a function */
+		/*
+		 TODO: Consider utilizing ArgList_parse for this and
+		 just check to make sure all args are VAL_VAR
+		*/
 		(*expr)++;
 		
 		/* Array of argument names */
@@ -129,9 +127,11 @@ Expression* Expression_parse(const char** expr) {
 			/* Loop through each argument in the list */
 			while(**expr == ',' || **expr == ')') {
 				args[len++] = arg;
+				arg = NULL;
 				
-				if(**expr == ')')
+				if(**expr == ')') {
 					break;
+				}
 				
 				(*expr)++;
 				
@@ -161,17 +161,23 @@ Expression* Expression_parse(const char** expr) {
 			}
 		}
 		
+		if(arg) {
+			free(arg);
+		}
+		
 		if(**expr != ')') {
 			/* Invalid character inside argument name list */
 			Value_free(val);
 			free(name);
 			
-			/* Free argument names and return */
-			unsigned i;
-			for(i = 0; i < len; i++) {
-				free(args[i]);
+			if(args) {
+				/* Free argument names and return */
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
 			}
-			free(args);
 			
 			var = VarErr(badChar(**expr));
 			return Expression_new(var);
@@ -185,11 +191,13 @@ Expression* Expression_parse(const char** expr) {
 			Value_free(val);
 			free(name);
 			
-			unsigned i;
-			for(i = 0; i < len; i++) {
-				free(args[i]);
+			if(args) {
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
 			}
-			free(args);
 			
 			var = VarErr(badChar(**expr));
 			return Expression_new(var);
@@ -246,18 +254,25 @@ Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
 		if(ret->type == VAL_VAR) {
 			Variable* func = Variable_get(ctx, ret->name);
 			if(func == NULL) {
-				Value* err = ValErr(varNotFound(ret->name));
+				Error* err = varNotFound(ret->name);
 				Value_free(ret);
-				return err;
-			}
-			
-			if(func->type == VAR_BUILTIN) {
-				Value_free(ret);
-				return ValErr(typeError("Cannot assign a variable to a builtin value."));
+				return ValErr(err);
 			}
 			
 			if(var->name != NULL) {
+				/* Assign the variable */
+				if(func->type == VAR_BUILTIN) {
+					Value_free(ret);
+					return ValErr(typeError("Cannot assign a variable to a builtin."));
+				}
+				
 				Context_setGlobal(ctx, var->name, Variable_copy(func));
+			}
+			else if((v & (V_REPR|V_TREE)) == 0 || func->type != VAR_FUNC) {
+				/* Coerce the variable to a Value */
+				Value* val = Variable_coerce(func, ctx);
+				Value_free(ret);
+				ret = val;
 			}
 		}
 		else {

@@ -178,8 +178,7 @@ void Context_addLocal(const Context* ctx, Variable* var) {
 
 void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
 	if(var->type == VAR_FUNC && strcmp(name, "ans") == 0) {
-		Variable_free(var);
-		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."));
+		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."), false);
 		return;
 	}
 	
@@ -198,8 +197,7 @@ void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
 	}
 	else {
 		if(dst->type == VAR_BUILTIN) {
-			Variable_free(var);
-			RAISE(typeError("Unable to modify builtin variable '%s'.", dst->name));
+			RAISE(typeError("Unable to modify builtin variable '%s'.", dst->name), false);
 			return;
 		}
 		

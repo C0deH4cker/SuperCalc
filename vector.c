@@ -68,10 +68,13 @@ Vector* Vector_copy(const Vector* vec) {
 	return Vector_new(ArgList_copy(vec->vals));
 }
 
-Value* Vector_parse(const char** expr) {
-	ArgList* vals = ArgList_parse(expr, ',', '>');
-	if(vals == NULL)
+Value* Vector_parse(const char** expr, parser_cb* cb) {
+	ArgList* vals = ArgList_parse(expr, ',', '>', cb);
+	
+	if(vals == NULL) {
+		/* Error occurred and has already been raised */
 		return ValErr(ignoreError());
+	}
 	
 	if(vals->count < 1) {
 		ArgList_free(vals);
