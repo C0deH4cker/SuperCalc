@@ -22,12 +22,13 @@
 #include "binop.h"
 #include "funccall.h"
 #include "builtin.h"
+#include "template.h"
 
 
-static Value* vecScalarOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
-static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
-static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin);
-static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin);
+static Value* vecScalarOp(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin);
+static Value* vecMagOp(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin);
+static Value* vecScalarOpRev(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin);
+static Value* vecCompOp(const Vector* vector1, const Vector* vector2, const Context* ctx, BINTYPE bin);
 
 
 
@@ -63,12 +64,12 @@ void Vector_free(Vector* vec) {
 	free(vec);
 }
 
-Vector* Vector_copy(Vector* vec) {
+Vector* Vector_copy(const Vector* vec) {
 	return Vector_new(ArgList_copy(vec->vals));
 }
 
-Value* Vector_parse(const char** expr) {
-	ArgList* vals = ArgList_parse(expr, ',', '>');
+Value* Vector_parse(const char** expr, parser_cb* cb) {
+	ArgList* vals = ArgList_parse(expr, ',', '>', cb);
 	
 	if(vals == NULL) {
 		/* Error occurred and has already been raised */
@@ -83,7 +84,7 @@ Value* Vector_parse(const char** expr) {
 	return ValVec(Vector_new(vals));
 }
 
-Value* Vector_eval(Vector* vec, Context* ctx) {
+Value* Vector_eval(const Vector* vec, const Context* ctx) {
 	ArgList* args = ArgList_eval(vec->vals, ctx);
 	if(args == NULL) {
 		return ValErr(ignoreError());
@@ -91,7 +92,7 @@ Value* Vector_eval(Vector* vec, Context* ctx) {
 	return ValVec(Vector_new(args));
 }
 
-static Value* vecScalarOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
+static Value* vecScalarOp(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin) {
 	ArgList* newv = ArgList_new(vec->vals->count);
 	
 	unsigned i;
@@ -114,7 +115,7 @@ static Value* vecScalarOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin)
 	return ValVec(Vector_new(newv));
 }
 
-static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
+static Value* vecMagOp(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin) {
 	/* Calculate old magnitude */
 	Value* mag = Vector_magnitude(vec, ctx);
 	
@@ -133,7 +134,7 @@ static Value* vecMagOp(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
 	return vecScalarOp(vec, scalFact, ctx, BIN_MUL);
 }
 
-static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE bin) {
+static Value* vecScalarOpRev(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin) {
 	ArgList* newv = ArgList_new(vec->vals->count);
 	
 	unsigned i;
@@ -156,7 +157,7 @@ static Value* vecScalarOpRev(Vector* vec, Value* scalar, Context* ctx, BINTYPE b
 	return ValVec(Vector_new(newv));
 }
 
-static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE bin) {
+static Value* vecCompOp(const Vector* vector1, const Vector* vector2, const Context* ctx, BINTYPE bin) {
 	unsigned count = vector1->vals->count;
 	if(count != vector2->vals->count && vector2->vals->count > 1) {
 		return ValErr(mathError("Cannot %s vectors of different sizes.", binop_verb[bin]));
@@ -192,7 +193,7 @@ static Value* vecCompOp(Vector* vector1, Vector* vector2, Context* ctx, BINTYPE 
 	return ValVec(Vector_new(newv));
 }
 
-Value* Vector_add(Vector* vec, Value* other, Context* ctx) {
+Value* Vector_add(const Vector* vec, const Value* other, const Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_ADD);
 	}
@@ -200,7 +201,7 @@ Value* Vector_add(Vector* vec, Value* other, Context* ctx) {
 	return vecMagOp(vec, other, ctx, BIN_ADD);
 }
 
-Value* Vector_sub(Vector* vec, Value* other, Context* ctx) {
+Value* Vector_sub(const Vector* vec, const Value* other, const Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_SUB);
 	}
@@ -208,11 +209,11 @@ Value* Vector_sub(Vector* vec, Value* other, Context* ctx) {
 	return vecMagOp(vec, other, ctx, BIN_SUB);
 }
 
-Value* Vector_rsub(Vector* vec, Value* scalar, Context* ctx) {
+Value* Vector_rsub(const Vector* vec, const Value* scalar, const Context* ctx) {
 	return vecScalarOpRev(vec, scalar, ctx, BIN_SUB);
 }
 
-Value* Vector_mul(Vector* vec, Value* other, Context* ctx) {
+Value* Vector_mul(const Vector* vec, const Value* other, const Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_MUL);
 	}
@@ -220,7 +221,7 @@ Value* Vector_mul(Vector* vec, Value* other, Context* ctx) {
 	return vecScalarOp(vec, other, ctx, BIN_MUL);
 }
 
-Value* Vector_div(Vector* vec, Value* other, Context* ctx) {
+Value* Vector_div(const Vector* vec, const Value* other, const Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_DIV);
 	}
@@ -228,11 +229,11 @@ Value* Vector_div(Vector* vec, Value* other, Context* ctx) {
 	return vecScalarOp(vec, other, ctx, BIN_DIV);
 }
 
-Value* Vector_rdiv(Vector* vec, Value* scalar, Context* ctx) {
+Value* Vector_rdiv(const Vector* vec, const Value* scalar, const Context* ctx) {
 	return vecScalarOpRev(vec, scalar, ctx, BIN_DIV);
 }
 
-Value* Vector_pow(Vector* vec, Value* other, Context* ctx) {
+Value* Vector_pow(const Vector* vec, const Value* other, const Context* ctx) {
 	if(other->type == VAL_VEC) {
 		return vecCompOp(vec, other->vec, ctx, BIN_POW);
 	}
@@ -240,11 +241,11 @@ Value* Vector_pow(Vector* vec, Value* other, Context* ctx) {
 	return vecScalarOp(vec, other, ctx, BIN_POW);
 }
 
-Value* Vector_rpow(Vector* vec, Value* scalar, Context* ctx) {
+Value* Vector_rpow(const Vector* vec, const Value* scalar, const Context* ctx) {
 	return vecScalarOpRev(vec, scalar, ctx, BIN_POW);
 }
 
-Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
+Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* ctx) {
 	unsigned count = vector1->vals->count;
 	if(count != vector2->vals->count && vector2->vals->count != 1) {
 		/* Both vectors must have the same number of values */
@@ -252,7 +253,7 @@ Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
 	}
 	
 	/* Store the total value of the dot product */
-	Value* total = ValInt(0);
+	Value* accum = ValInt(0);
 	
 	unsigned i;
 	for(i = 0; i < count; i++) {
@@ -264,22 +265,17 @@ Value* Vector_dot(Vector* vector1, Vector* vector2, Context* ctx) {
 			val2 = vector2->vals->args[i];
 		}
 		
-		/* Multiply v1[i] and v2[i] */
-		BinOp* mul = BinOp_new(BIN_MUL, Value_copy(vector1->vals->args[i]), Value_copy(val2));
-		
-		Value* part = BinOp_eval(mul, ctx);
-		BinOp_free(mul);
-		
-		/* Accumulate the sum for all products */
-		BinOp* add = BinOp_new(BIN_ADD, part, total);
-		total = BinOp_eval(add, ctx);
-		BinOp_free(add);
+		/* accum += v1[i] * val2 */
+		accum = TP_EVAL("@@+@@*@@", ctx,
+		                accum,
+		                Value_copy(vector1->vals->args[i]),
+		                Value_copy(val2));
 	}
 	
-	return total;
+	return accum;
 }
 
-Value* Vector_cross(Vector* vector1, Vector* vector2, Context* ctx) {
+Value* Vector_cross(const Vector* vector1, const Vector* vector2, const Context* ctx) {
 	ArgList* v1 = vector1->vals;
 	ArgList* v2 = vector2->vals;
 	
@@ -370,22 +366,11 @@ Value* Vector_cross(Vector* vector1, Vector* vector2, Context* ctx) {
 	return ValVec(Vector_create(3, i_val, j_val, k_val));
 }
 
-Value* Vector_magnitude(Vector* vec, Context* ctx) {
-	/* |v|^2 = dot(v,v) */
-	Value* magSquared = Vector_dot(vec, vec, ctx);
-	
-	/* Calculate actual magnitude */
-	ArgList* arg = ArgList_create(1, magSquared);
-	FuncCall* root = FuncCall_create("@sqrt", arg);
-	
-	Value* mag = FuncCall_eval(root, ctx);
-	
-	FuncCall_free(root);
-	
-	return mag;
+Value* Vector_magnitude(const Vector* vec, const Context* ctx) {
+	return TP_EVAL("sqrt(dot(@1v,@1v))", ctx, Vector_copy(vec));
 }
 
-Value* Vector_elem(Vector* vec, Value* index, Context* ctx) {
+Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx) {
 	if(index->type != VAL_INT) {
 		return ValErr(typeError("Subscript index must be an integer."));
 	}
@@ -407,7 +392,7 @@ Value* Vector_elem(Vector* vec, Value* index, Context* ctx) {
 	return Value_copy(vec->vals->args[index->ival]);
 }
 
-char* Vector_verbose(Vector* vec, int indent) {
+char* Vector_verbose(const Vector* vec, int indent) {
 	char* ret;
 	
 	char* current = spaces(indent);
@@ -423,7 +408,7 @@ char* Vector_verbose(Vector* vec, int indent) {
 	return ret;
 }
 
-char* Vector_repr(Vector* vec) {
+char* Vector_repr(const Vector* vec) {
 	char* ret;
 	
 	char* vals = ArgList_repr(vec->vals, false);

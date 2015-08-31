@@ -23,11 +23,11 @@
 #include "binop.h"
 
 
-static Value* callVar(Context* ctx, const char* name, ArgList* args);
-static char* verboseFunc(const char* name, ArgList* arglist, int indent);
-static char* specialVerbose(const char* name, ArgList* arglist, int indent);
-static char* reprFunc(const char* name, ArgList* arglist, bool pretty);
-static char* specialRepr(const char* name, ArgList* arglist, bool pretty);
+static Value* callVar(const Context* ctx, const char* name, const ArgList* args);
+static char* verboseFunc(const char* name, const ArgList* arglist, int indent);
+static char* specialVerbose(const char* name, const ArgList* arglist, int indent);
+static char* reprFunc(const char* name, const ArgList* arglist, bool pretty);
+static char* specialRepr(const char* name, const ArgList* arglist, bool pretty);
 
 
 FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
@@ -51,11 +51,11 @@ void FuncCall_free(FuncCall* call) {
 	free(call);
 }
 
-FuncCall* FuncCall_copy(FuncCall* call) {
+FuncCall* FuncCall_copy(const FuncCall* call) {
 	return FuncCall_new(Value_copy(call->func), ArgList_copy(call->arglist));
 }
 
-static Value* callVar(Context* ctx, const char* name, ArgList* args) {
+static Value* callVar(const Context* ctx, const char* name, const ArgList* args) {
 	Value* ret;
 	
 	bool internal = false;
@@ -96,16 +96,7 @@ static Value* callVar(Context* ctx, const char* name, ArgList* args) {
 			break;
 		
 		case VAR_VALUE:
-			/* Handle cases like a(4 + 6/7) -> a * (4 + 6/7) */
-			if(args->count != 1) {
-				ret = ValErr(nameError("Variable '%s' is not a function.", var->name));
-			}
-			else {
-				/* Just multiply the variable by the value in the parentheses */
-				BinOp* mul = BinOp_new(BIN_MUL, Value_copy(var->val), Value_copy(args->args[0]));
-				ret = BinOp_eval(mul, ctx);
-				BinOp_free(mul);
-			}
+			ret = ValErr(nameError("Variable '%s' is not a function.", var->name));
 			break;
 		
 		default:
@@ -115,7 +106,7 @@ static Value* callVar(Context* ctx, const char* name, ArgList* args) {
 	return ret;
 }
 
-Value* FuncCall_eval(FuncCall* call, Context* ctx) {
+Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 	Value* func;
 	if(call->func->type == VAL_VAR) {
 		func = Value_copy(call->func);
@@ -128,29 +119,31 @@ Value* FuncCall_eval(FuncCall* call, Context* ctx) {
 		return func;
 	}
 	
+	Value* ret;
 	switch(func->type) {
 		case VAL_VAR:
-			return callVar(ctx, func->name, call->arglist);
+			ret = callVar(ctx, func->name, call->arglist);
+			break;
 		
 		case VAL_INT:
 		case VAL_REAL:
 		case VAL_FRAC:
-		case VAL_VEC:
-			if(call->arglist->count == 1) {
-				BinOp* mul = BinOp_new(BIN_MUL, Value_copy(func),
-				                       Value_copy(call->arglist->args[0]));
-				Value* result = BinOp_eval(mul, ctx);
-				BinOp_free(mul);
-				return result;
-			}
-			return ValErr(typeError("Value is not a callable."));
+		case VAL_VEC: {
+			char* repr = Value_repr(call->func, ctx);
+			ret = ValErr(typeError("Value %s is not a callable.", repr));
+			free(repr);
+			break;
+		}
 			
 		default:
 			badValType(func->type);
 	}
+	
+	Value_free(func);
+	return ret;
 }
 
-static char* verboseFunc(const char* name, ArgList* arglist, int indent) {
+static char* verboseFunc(const char* name, const ArgList* arglist, int indent) {
 	char* ret;
 	
 	char* args = ArgList_verbose(arglist, indent + IWIDTH);
@@ -166,7 +159,7 @@ static char* verboseFunc(const char* name, ArgList* arglist, int indent) {
 	return ret;
 }
 
-static char* specialVerbose(const char* name, ArgList* arglist, int indent) {
+static char* specialVerbose(const char* name, const ArgList* arglist, int indent) {
 	char* ret;
 	
 	if(strcmp(name, "abs") == 0) {
@@ -207,7 +200,7 @@ static char* specialVerbose(const char* name, ArgList* arglist, int indent) {
 	return ret;
 }
 
-char* FuncCall_verbose(FuncCall* call, int indent) {
+char* FuncCall_verbose(const FuncCall* call, int indent) {
 	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
 		/* Internal call */
 		return specialVerbose(call->func->name + 1, call->arglist, indent);
@@ -222,7 +215,7 @@ char* FuncCall_verbose(FuncCall* call, int indent) {
 	return ret;
 }
 
-static char* reprFunc(const char* name, ArgList* arglist, bool pretty) {
+static char* reprFunc(const char* name, const ArgList* arglist, bool pretty) {
 	char* ret;
 	char* argstr = ArgList_repr(arglist, pretty);
 	
@@ -235,7 +228,7 @@ static char* reprFunc(const char* name, ArgList* arglist, bool pretty) {
 	return ret;
 }
 
-static char* specialRepr(const char* name, ArgList* arglist, bool pretty) {
+static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) {
 	char* ret;
 	
 	/* TODO: Consider removing special printing for abs in repr */
@@ -271,7 +264,7 @@ static char* specialRepr(const char* name, ArgList* arglist, bool pretty) {
 	return ret;
 }
 
-char* FuncCall_repr(FuncCall* call, bool pretty) {
+char* FuncCall_repr(const FuncCall* call, bool pretty) {
 	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
 		/* Internal call */
 		return specialRepr(call->func->name + 1, call->arglist, pretty);

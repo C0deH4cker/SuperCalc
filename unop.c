@@ -16,10 +16,10 @@
 #include "context.h"
 #include "value.h"
 
-typedef Value* (*unop_t)(Context*, Value*);
+typedef Value* (*unop_t)(const Context*, const Value*);
 
 static long long fact(long long n);
-static Value* unop_fact(Context* ctx, Value* a);
+static Value* unop_fact(const Context* ctx, const Value* a);
 
 static unop_t _unop_table[] = {
 	&unop_fact
@@ -38,7 +38,7 @@ static long long fact(long long n) {
 	return ret;
 }
 
-static Value* unop_fact(Context* ctx, Value* a) {
+static Value* unop_fact(const Context* ctx, const Value* a) {
 	Value* ret;
 	
 	if(a->type != VAL_INT) {
@@ -73,11 +73,11 @@ void UnOp_free(UnOp* term) {
 	free(term);
 }
 
-UnOp* UnOp_copy(UnOp* term) {
+UnOp* UnOp_copy(const UnOp* term) {
 	return UnOp_new(term->type, Value_copy(term->a));
 }
 
-Value* UnOp_eval(UnOp* term, Context* ctx) {
+Value* UnOp_eval(const UnOp* term, const Context* ctx) {
 	if(!term) {
 		return ValErr(nullError());
 	}
@@ -94,7 +94,7 @@ Value* UnOp_eval(UnOp* term, Context* ctx) {
 	return ret;
 }
 
-char* UnOp_verbose(UnOp* term, int indent) {
+char* UnOp_verbose(const UnOp* term, int indent) {
 	char* ret;
 	
 	if(!term) {
@@ -116,7 +116,7 @@ char* UnOp_verbose(UnOp* term, int indent) {
 	return ret;
 }
 
-char* UnOp_repr(UnOp* term, bool pretty) {
+char* UnOp_repr(const UnOp* term, bool pretty) {
 	char* ret;
 	
 	if(term == NULL) {

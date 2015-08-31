@@ -23,12 +23,8 @@
 ArgList* ArgList_new(unsigned count) {
 	ArgList* ret = fmalloc(sizeof(*ret));
 	
-	size_t len = count * sizeof(*ret->args);
-	
 	ret->count = count;
-	ret->args = fmalloc(len);
-	
-	memset(ret->args, 0, len);
+	ret->args = fcalloc(count, sizeof(*ret->args));
 	
 	return ret;
 }
@@ -43,12 +39,12 @@ void ArgList_free(ArgList* arglist) {
 }
 
 ArgList* ArgList_create(unsigned count, ...) {
-	va_list va;
-	va_start(va, count);
+	va_list args;
+	va_start(args, count);
 	
-	ArgList* ret = ArgList_vcreate(count, va);
+	ArgList* ret = ArgList_vcreate(count, args);
 	
-	va_end(va);
+	va_end(args);
 	
 	return ret;
 }
@@ -65,7 +61,7 @@ ArgList* ArgList_vcreate(unsigned count, va_list args) {
 	return ret;
 }
 
-ArgList* ArgList_copy(ArgList* arglist) {
+ArgList* ArgList_copy(const ArgList* arglist) {
 	unsigned count = arglist->count;
 	ArgList* ret = ArgList_new(count);
 	
@@ -77,7 +73,7 @@ ArgList* ArgList_copy(ArgList* arglist) {
 	return ret;
 }
 
-ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
+ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx) {
 	ArgList* ret = ArgList_new(arglist->count);
 	
 	unsigned i;
@@ -85,7 +81,7 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 		Value* result = Value_coerce(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
 			/* An error occurred */
-			Error_raise(result->err);
+			Error_raise(result->err, false);
 			
 			Value_free(result);
 			ArgList_free(ret);
@@ -99,7 +95,7 @@ ArgList* ArgList_eval(ArgList* arglist, Context* ctx) {
 	return ret;
 }
 
-double* ArgList_toReals(ArgList* arglist, Context* ctx) {
+double* ArgList_toReals(const ArgList* arglist, const Context* ctx) {
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;
@@ -116,7 +112,7 @@ double* ArgList_toReals(ArgList* arglist, Context* ctx) {
 	return ret;
 }
 
-ArgList* ArgList_parse(const char** expr, char sep, char end) {
+ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
@@ -124,7 +120,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
-	Value* arg = Value_parse(expr, sep, end);
+	Value* arg = Value_parse(expr, sep, end, cb);
 	trimSpaces(expr);
 	
 	while(arg->type != VAL_END && arg->type != VAL_ERR) {
@@ -143,7 +139,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		
 		(*expr)++;
 		
-		arg = Value_parse(expr, sep, end);
+		arg = Value_parse(expr, sep, end, cb);
 	}
 	
 	if(arg && arg->type == VAL_ERR) {
@@ -152,7 +148,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		}
 		free(args);
 		
-		Error_raise(arg->err);
+		Error_raise(arg->err, false);
 		Value_free(arg);
 		return NULL;
 	}
@@ -168,7 +164,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 		}
 		free(args);
 		
-		RAISE(badChar(**expr));
+		RAISE(badChar(**expr), false);
 		return NULL;
 	}
 	
@@ -184,7 +180,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end) {
 	return ret;
 }
 
-char* ArgList_verbose(ArgList* arglist, int indent) {
+char* ArgList_verbose(const ArgList* arglist, int indent) {
 	char* ret;
 	
 	size_t size = 32;
@@ -222,7 +218,7 @@ char* ArgList_verbose(ArgList* arglist, int indent) {
 	return ret;
 }
 
-char* ArgList_repr(ArgList* arglist, bool pretty) {
+char* ArgList_repr(const ArgList* arglist, bool pretty) {
 	char* ret;
 	
 	size_t size = 32;

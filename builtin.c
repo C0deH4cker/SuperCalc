@@ -36,7 +36,7 @@ void Builtin_free(Builtin* blt) {
 	free(blt);
 }
 
-Builtin* Builtin_copy(Builtin* blt) {
+Builtin* Builtin_copy(const Builtin* blt) {
 	return Builtin_new(blt->name, blt->evaluator, blt->isFunction);
 }
 
@@ -45,7 +45,7 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 	Context_addGlobal(ctx, var);
 }
 
-Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist, bool internal) {
+Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
 	Value* tmp = blt->evaluator(ctx, arglist, internal);
 	
@@ -61,7 +61,7 @@ Value* Builtin_eval(Builtin* blt, Context* ctx, ArgList* arglist, bool internal)
 	return ret;
 }
 
-char* Builtin_verbose(Builtin* blt, int indent) {
+char* Builtin_verbose(const Builtin* blt, int indent) {
 	char* ret;
 	
 	asprintf(&ret, "<builtin %s>", blt->name);
@@ -69,7 +69,7 @@ char* Builtin_verbose(Builtin* blt, int indent) {
 	return ret;
 }
 
-char* Builtin_repr(Builtin* blt, bool pretty) {
+char* Builtin_repr(const Builtin* blt, bool pretty) {
 	if(pretty) {
 		return strdup(getPretty(blt->name));
 	}

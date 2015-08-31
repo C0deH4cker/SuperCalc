@@ -34,13 +34,13 @@ FuncCall* FuncCall_create(const char* name, ArgList* arglist);
 void FuncCall_free(FuncCall* call);
 
 /* Copying */
-FuncCall* FuncCall_copy(FuncCall* call);
+FuncCall* FuncCall_copy(const FuncCall* call);
 
 /* Evaluation */
-Value* FuncCall_eval(FuncCall* call, Context* ctx);
+Value* FuncCall_eval(const FuncCall* call, const Context* ctx);
 
 /* Printing */
-char* FuncCall_verbose(FuncCall* call, int indent);
-char* FuncCall_repr(FuncCall* call, bool pretty);
+char* FuncCall_verbose(const FuncCall* call, int indent);
+char* FuncCall_repr(const FuncCall* call, bool pretty);
 
 #endif

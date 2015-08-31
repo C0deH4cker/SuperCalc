@@ -31,9 +31,9 @@ struct Error {
 
 
 /* Allocate, print, free */
-#define RAISE(err) do { \
+#define RAISE(err, death) do { \
 	Error* _err = (err); \
-	Error_raise(_err); \
+	Error_raise(_err, (death)); \
 	Error_free(_err); \
 } while(0)
 
@@ -56,6 +56,7 @@ const char* kBuiltinArgsStr;
 const char* kBuiltinNotFuncStr;
 const char* kBadConversionStr;
 const char* kEarlyEndStr;
+const char* kMissingPlaceholderStr;
 
 const char* kAllocErrStr;
 const char* kBadValStr;
@@ -71,6 +72,7 @@ const char* kBadVarStr;
 #define builtinNotFunc(name)        typeError(kBuiltinNotFuncStr, (name))
 #define badConversion(name)         typeError(kBadConversionStr, (name))
 #define earlyEnd()                  syntaxError(kEarlyEndStr)
+#define missingPlaceholder(n)       nameError(kMissingPlaceholderStr, (n))
 
 /* Death macros */
 #define DIE(args...)                die(__FILE__, __FUNCTION__, __LINE__, ##args)
@@ -86,13 +88,13 @@ Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args);
 void Error_free(Error* err);
 
 /* Copying */
-Error* Error_copy(Error* err);
+Error* Error_copy(const Error* err);
 
 /* Printing and maybe a side of suicide */
-void Error_raise(Error* err);
+void Error_raise(const Error* err, bool forceDeath);
 
 /* Fatal or not? */
-bool Error_canRecover(Error* err);
+bool Error_canRecover(const Error* err);
 
 /* Death function */
 void die(const char* file, const char* function, int line, const char* fmt, ...) __attribute__((__noreturn__));

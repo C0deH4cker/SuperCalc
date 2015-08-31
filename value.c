@@ -27,23 +27,27 @@
 #include "variable.h"
 #include "arglist.h"
 #include "supercalc.h"
+#include "template.h"
 
 
 static Value* allocValue(VALTYPE type);
 static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val);
 static Value* parseNum(const char** expr);
-static Value* subscriptVector(Value* val, const char** expr);
-static Value* callFunc(Value* val, const char** expr);
-static Value* parseToken(const char** expr);
+static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb);
+static Value* callFunc(Value* val, const char** expr, parser_cb* cb);
+static Value* parseToken(const char** expr, parser_cb* cb);
+
+
+/* By default, the '@' character is illegal */
+Value* _default_cb(const char** expr, void* data) {
+	return ValErr(badChar(**expr));
+}
+parser_cb default_cb = {&_default_cb, NULL};
 
 
 static Value* allocValue(VALTYPE type) {
-	Value* ret = fmalloc(sizeof(*ret));
-	
-	memset(ret, 0, sizeof(*ret));
-	
+	Value* ret = fcalloc(1, sizeof(*ret));
 	ret->type = type;
-	
 	return ret;
 }
 
@@ -53,9 +57,7 @@ Value* ValEnd(void) {
 
 Value* ValErr(Error* err) {
 	Value* ret = allocValue(VAL_ERR);
-	
 	ret->err = err;
-	
 	return ret;
 }
 
@@ -65,67 +67,56 @@ Value* ValNeg(void) {
 
 Value* ValInt(long long val) {
 	Value* ret = allocValue(VAL_INT);
-	
 	ret->ival = val;
-	
 	return ret;
 }
 
 Value* ValReal(double val) {
 	Value* ret = allocValue(VAL_REAL);
-	
 	ret->rval = val;
-	
 	return ret;
 }
 
 Value* ValFrac(Fraction* frac) {
 	Value* ret = allocValue(VAL_FRAC);
-	
 	ret->frac = frac;
-	
 	Fraction_reduce(ret);
-	
 	return ret;
 }
 
 Value* ValExpr(BinOp* expr) {
 	Value* ret = allocValue(VAL_EXPR);
-	
 	ret->expr = expr;
-	
 	return ret;
 }
 
 Value* ValUnary(UnOp* term) {
 	Value* ret = allocValue(VAL_UNARY);
-	
 	ret->term = term;
-	
 	return ret;
 }
 
 Value* ValCall(FuncCall* call) {
 	Value* ret = allocValue(VAL_CALL);
-	
 	ret->call = call;
-	
 	return ret;
 }
 
 Value* ValVar(const char* name) {
 	Value* ret = allocValue(VAL_VAR);
-	
 	ret->name = strdup(name);
-	
 	return ret;
 }
 
 Value* ValVec(Vector* vec) {
 	Value* ret = allocValue(VAL_VEC);
-	
 	ret->vec = vec;
-	
+	return ret;
+}
+
+Value* ValPlace(VALTYPE fill) {
+	Value* ret = allocValue(VAL_PLACE);
+	ret->fill = fill;
 	return ret;
 }
 
@@ -169,7 +160,7 @@ void Value_free(Value* val) {
 	free(val);
 }
 
-Value* Value_copy(Value* val) {
+Value* Value_copy(const Value* val) {
 	Value* ret;
 	
 	switch(val->type) {
@@ -223,7 +214,7 @@ Value* Value_copy(Value* val) {
 	return ret;
 }
 
-Value* Value_eval(Value* val, Context* ctx) {
+Value* Value_eval(const Value* val, const Context* ctx) {
 	if(val == NULL) return ValErr(nullError());
 	
 	Value* ret;
@@ -278,7 +269,7 @@ Value* Value_eval(Value* val, Context* ctx) {
 	return ret;
 }
 
-Value* Value_coerce(Value* val, Context* ctx) {
+Value* Value_coerce(const Value* val, const Context* ctx) {
 	Value* ret = Value_eval(val, ctx);
 	
 	if(ret->type == VAL_VAR) {
@@ -297,7 +288,7 @@ Value* Value_coerce(Value* val, Context* ctx) {
 	return ret;
 }
 
-double Value_asReal(Value* val) {
+double Value_asReal(const Value* val) {
 	double ret;
 	
 	switch(val->type) {
@@ -322,17 +313,15 @@ double Value_asReal(Value* val) {
 	return ret;
 }
 
-Value* Value_parse(const char** expr, char sep, char end) {
+Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	Value* val;
 	BINTYPE op = BIN_UNK;
 	BinOp* tree = NULL;
 	BinOp* prev;
 	
-	trimSpaces(expr);
-	
 	while(1) {
 		/* Get next value */
-		val = Value_next(expr, end);
+		val = Value_next(expr, end, cb);
 		
 		/* Error parsing next value? */
 		if(val->type == VAL_ERR) {
@@ -460,32 +449,23 @@ static Value* parseNum(const char** expr) {
 	errno = 0;
 	
 	double dbl = strtod(*expr, &end1);
-	if(errno != 0) {
+	if(errno != 0 || *expr == end1) {
 		/* An error occurred (EINVAL, ERANGE) */
-		end1 = NULL;
-	}
-	if(*expr == end1) {
-		/* Nothing got parsed */
 		end1 = NULL;
 	}
 	
 	long long ll = strtoll(*expr, &end2, 10);
-	if(errno != 0) {
+	if(errno != 0 || *expr == end2) {
 		/* An error occurred (EINVAL, ERANGE) */
 		end2 = NULL;
 	}
-	if(*expr == end2) {
-		/* Nothing got parsed */
-		end2 = NULL;
-	}
-	
 	
 	if(end1 > end2) {
 		/* Must be a double because more of the string was parsed as double than long long */
 		ret = ValReal(dbl);
 		*expr = end1;
 	}
-	else if(end2 >= end1 && end2 != NULL) {
+	else if(end2 != NULL) {
 		/* Must be an integer */
 		ret = ValInt(ll);
 		*expr = end2;
@@ -498,12 +478,12 @@ static Value* parseNum(const char** expr) {
 	return ret;
 }
 
-static Value* subscriptVector(Value* val, const char** expr) {
+static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 	/* Move past the '[' character */
 	(*expr)++;
 	
 	/* Parse inside of brackets */
-	Value* index = Value_parse(expr, 0, ']');
+	Value* index = Value_parse(expr, 0, ']', cb);
 	
 	if(index->type == VAL_ERR) {
 		Value_free(val);
@@ -511,18 +491,19 @@ static Value* subscriptVector(Value* val, const char** expr) {
 	}
 	
 	/* Use builtin function from vector.c */
-	ArgList* args = ArgList_create(2, val, index);
-	FuncCall* elem = FuncCall_create("@elem", args);
-	val = ValCall(elem);
-	
-	return val;
+	return TP_FILL("@elem(@@, @@)", val, index);
 }
 
-static Value* callFunc(Value* val, const char** expr) {
+static Value* callFunc(Value* val, const char** expr, parser_cb* cb) {
+	/* Ugly, but parses better. Only variables and the results of calls can be funcs */
+	if(val->type != VAL_VAR && val->type != VAL_CALL) {
+		return val;
+	}
+	
 	/* Move past the opening parenthesis */
 	(*expr)++;
 	
-	ArgList* args = ArgList_parse(expr, ',', ')');
+	ArgList* args = ArgList_parse(expr, ',', ')', cb);
 	if(args == NULL) {
 		Value_free(val);
 		return ValErr(ignoreError());
@@ -533,7 +514,7 @@ static Value* callFunc(Value* val, const char** expr) {
 	return ValCall(call);
 }
 
-static Value* parseToken(const char** expr) {
+static Value* parseToken(const char** expr, parser_cb* cb) {
 	Value* ret;
 	
 	char* token = nextToken(expr);
@@ -545,7 +526,7 @@ static Value* parseToken(const char** expr) {
 	
 	if(**expr == '(') {
 		(*expr)++;
-		ArgList* arglist = ArgList_parse(expr, ',', ')');
+		ArgList* arglist = ArgList_parse(expr, ',', ')', cb);
 		if(arglist == NULL) {
 			/* Parse error occurred and has already been raised */
 			free(token);
@@ -565,7 +546,7 @@ static Value* parseToken(const char** expr) {
 	return ret;
 }
 
-Value* Value_next(const char** expr, char end) {
+Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	Value* ret;
 	
 	trimSpaces(expr);
@@ -586,15 +567,15 @@ Value* Value_next(const char** expr, char end) {
 	else if(**expr == '(') {
 		(*expr)++;
 		/* FIXME: Failing case: 3(4)^2 */
-		ret = Value_parse(expr, 0, ')');
+		ret = Value_parse(expr, 0, ')', cb);
 	}
 	else if(**expr == '<') {
 		(*expr)++;
-		ret = Vector_parse(expr);
+		ret = Vector_parse(expr, cb);
 	}
 	else if(**expr == '|') {
 		(*expr)++;
-		Value* val = Value_parse(expr, 0, '|');
+		Value* val = Value_parse(expr, 0, '|', cb);
 		
 		/* Error checking */
 		if(val->type == VAL_ERR) {
@@ -602,10 +583,14 @@ Value* Value_next(const char** expr, char end) {
 		}
 		
 		/* Use absolute value builtin */
-		ret = ValCall(FuncCall_create("@abs", ArgList_create(1, val)));
+		ret = TP_FILL("abs(@@)", val);
+	}
+	else if(**expr == '@') {
+		/* Invoke callback to handle special value */
+		ret = cb->func(expr, cb->data);
 	}
 	else {
-		ret = parseToken(expr);
+		ret = parseToken(expr, cb);
 	}
 	
 	/* Check if a parse error occurred */
@@ -620,11 +605,11 @@ Value* Value_next(const char** expr, char end) {
 		trimSpaces(expr);
 		switch(**expr) {
 			case '[':
-				tmp = subscriptVector(ret, expr);
+				tmp = subscriptVector(ret, expr, cb);
 				break;
 			
 			case '(':
-				tmp = callFunc(ret, expr);
+				tmp = callFunc(ret, expr, cb);
 				break;
 			
 			default:
@@ -632,7 +617,7 @@ Value* Value_next(const char** expr, char end) {
 				break;
 		}
 		
-		if(!again) {
+		if(!again || tmp == ret) {
 			break;
 		}
 		
@@ -653,7 +638,7 @@ Value* Value_next(const char** expr, char end) {
 	return ret;
 }
 
-char* Value_verbose(Value* val, int indent) {
+char* Value_verbose(const Value* val, int indent) {
 	char* ret;
 	
 	switch(val->type) {
@@ -689,6 +674,11 @@ char* Value_verbose(Value* val, int indent) {
 			ret = Vector_verbose(val->vec, indent);
 			break;
 		
+		case VAL_PLACE:
+			/* TODO: Placeholder index? */
+			asprintf(&ret, "@%c", Template_placeholderChar(val->fill));
+			break;
+		
 		default:
 			badValType(val->type);
 	}
@@ -696,7 +686,7 @@ char* Value_verbose(Value* val, int indent) {
 	return ret;
 }
 
-char* Value_repr(Value* val, bool pretty) {
+char* Value_repr(const Value* val, bool pretty) {
 	char* ret;
 	char* str;
 	
@@ -747,6 +737,11 @@ char* Value_repr(Value* val, bool pretty) {
 			ret = Vector_repr(val->vec);
 			break;
 		
+		case VAL_PLACE:
+			/* TODO: Placeholder index? */
+			asprintf(&ret, "@%c", Template_placeholderChar(val->fill));
+			break;
+		
 		default:
 			/* Shouldn't be reached */
 			badValType(val->type);
@@ -755,10 +750,10 @@ char* Value_repr(Value* val, bool pretty) {
 	return ret;
 }
 
-void Value_print(Value* val, SuperCalc* sc, VERBOSITY v) {
+void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v) {
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
-		Error_raise(val->err);
+		Error_raise(val->err, false);
 		return;
 	}
 	

@@ -43,7 +43,7 @@ Expression* Expression_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		val = Value_parse(expr, 0, 0);
+		val = Value_parse(expr, 0, 0, &default_cb);
 		
 		if(val->type == VAL_END) {
 			Value_free(val);
@@ -63,7 +63,7 @@ Expression* Expression_parse(const char** expr) {
 	/* There is an assignment */
 	/* First, parse the right side of the assignment */
 	equals++;
-	val = Value_parse(&equals, 0, 0);
+	val = Value_parse(&equals, 0, 0, &default_cb);
 	
 	if(val->type == VAL_ERR) {
 		/* A parse error occurred */
@@ -237,7 +237,7 @@ Expression* Expression_parse(const char** expr) {
 	return ret;
 }
 
-Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v) {
+Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
 	Value* ret;
 	Variable* var = expr->var;
 	
@@ -300,11 +300,11 @@ Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v) {
 	return ret;
 }
 
-bool Expression_didError(Expression* expr) {
+bool Expression_didError(const Expression* expr) {
 	return (expr->var->type == VAR_ERR);
 }
 
-char* Expression_verbose(Expression* expr, Context* ctx) {
+char* Expression_verbose(const Expression* expr, const Context* ctx) {
 	/* What an if statement!!! */
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
@@ -320,7 +320,7 @@ char* Expression_verbose(Expression* expr, Context* ctx) {
 	return Variable_verbose(expr->var);
 }
 
-char* Expression_repr(Expression* expr, Context* ctx, bool pretty) {
+char* Expression_repr(const Expression* expr, const Context* ctx, bool pretty) {
 	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, expr->var->val->name);
@@ -339,10 +339,10 @@ char* Expression_repr(Expression* expr, Context* ctx, bool pretty) {
 	return Variable_repr(expr->var, pretty);
 }
 
-void Expression_print(Expression* expr, SuperCalc* sc, VERBOSITY v) {
+void Expression_print(const Expression* expr, const SuperCalc* sc, VERBOSITY v) {
 	/* Error parsing? */
 	if(Expression_didError(expr)) {
-		Error_raise(expr->var->err);
+		Error_raise(expr->var->err, false);
 		return;
 	}
 	

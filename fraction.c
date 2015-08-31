@@ -23,14 +23,14 @@ typedef struct prime_list {
 	long long count;
 } prime_list;
 
-static Value* fracAdd(Fraction* a, Fraction* b);
-static Value* fracSub(Fraction* a, Fraction* b);
-static Value* fracMul(Fraction* a, Fraction* b);
-static Value* fracDiv(Fraction* a, Fraction* b);
-static Value* fracMod(Fraction* a, Fraction* b);
+static Value* fracAdd(const Fraction* a, const Fraction* b);
+static Value* fracSub(const Fraction* a, const Fraction* b);
+static Value* fracMul(const Fraction* a, const Fraction* b);
+static Value* fracDiv(const Fraction* a, const Fraction* b);
+static Value* fracMod(const Fraction* a, const Fraction* b);
 static prime_list* factor_primes(long long n, unsigned* count);
-static Value* fracPow(Fraction* base, Fraction* exp);
-static int fracCmp(Fraction* a, Fraction* b);
+static Value* fracPow(const Fraction* base, const Fraction* exp);
+static int fracCmp(const Fraction* a, const Fraction* b);
 
 
 Fraction* Fraction_new(long long numerator, long long denominator) {
@@ -48,7 +48,7 @@ void Fraction_free(Fraction* frac) {
 	free(frac);
 }
 
-Fraction* Fraction_copy(Fraction* frac) {
+Fraction* Fraction_copy(const Fraction* frac) {
 	return Fraction_new(frac->n, frac->d);
 }
 
@@ -73,14 +73,14 @@ void Fraction_reduce(Value* frac) {
 	}
 }
 
-static Value* fracAdd(Fraction* a, Fraction* b) {
+static Value* fracAdd(const Fraction* a, const Fraction* b) {
 	long long n = a->n * b->d + a->d * b->n;
 	long long d = a->d * b->d;
 	
 	return ValFrac(Fraction_new(n, d));
 }
 
-Value* Fraction_add(Fraction* a, Value* b) {
+Value* Fraction_add(const Fraction* a, const Value* b) {
 	Value* ret;
 	long long n, d;
 	
@@ -107,14 +107,14 @@ Value* Fraction_add(Fraction* a, Value* b) {
 	return ret;
 }
 
-static Value* fracSub(Fraction* a, Fraction* b) {
+static Value* fracSub(const Fraction* a, const Fraction* b) {
 	long long n = a->n * b->d - a->d * b->n;
 	long long d = a->d * b->d;
 	
 	return ValFrac(Fraction_new(n, d));
 }
 
-Value* Fraction_sub(Fraction* a, Value* b) {
+Value* Fraction_sub(const Fraction* a, const Value* b) {
 	Value* ret;
 	long long n, d;
 	
@@ -142,14 +142,14 @@ Value* Fraction_sub(Fraction* a, Value* b) {
 	return ret;
 }
 
-static Value* fracMul(Fraction* a, Fraction* b) {
+static Value* fracMul(const Fraction* a, const Fraction* b) {
 	long long n = a->n * b->n;
 	long long d = a->d * b->d;
 	
 	return ValFrac(Fraction_new(n, d));
 }
 
-Value* Fraction_mul(Fraction* a, Value* b) {
+Value* Fraction_mul(const Fraction* a, const Value* b) {
 	Value* ret;
 	long long n, d;
 	
@@ -177,14 +177,14 @@ Value* Fraction_mul(Fraction* a, Value* b) {
 	return ret;
 }
 
-static Value* fracDiv(Fraction* a, Fraction* b) {
+static Value* fracDiv(const Fraction* a, const Fraction* b) {
 	long long n = a->n * b->d;
 	long long d = a->d * b->n;
 	
 	return ValFrac(Fraction_new(n, d));
 }
 
-Value* Fraction_div(Fraction* a, Value* b) {
+Value* Fraction_div(const Fraction* a, const Value* b) {
 	Value* ret;
 	long long n, d;
 	
@@ -212,7 +212,7 @@ Value* Fraction_div(Fraction* a, Value* b) {
 	return ret;
 }
 
-static Value* fracMod(Fraction* a, Fraction* b) {
+static Value* fracMod(const Fraction* a, const Fraction* b) {
 	Value* f;
 	Value* next;
 	Value* diff;
@@ -221,6 +221,7 @@ static Value* fracMod(Fraction* a, Fraction* b) {
 	next = Value_copy(f);
 	
 	/* While the next multiple is still valid, set f to next */
+	/* TODO: Fix hang with "2/3%-2" */
 	for(diff = Fraction_cmp(a, next); diff->ival > 0; diff = Fraction_cmp(a, next)) {
 		Value_free(f);
 		f = Value_copy(next);
@@ -236,12 +237,12 @@ static Value* fracMod(Fraction* a, Fraction* b) {
 	return Fraction_sub(a, f);
 }
 
-Value* Fraction_mod(Fraction* a, Value* b) {
+Value* Fraction_mod(const Fraction* a, const Value* b) {
 	Value* ret;
 	Fraction* f;
 	
 	if(Fraction_cmp(a, b) < 0) {
-		ret = ValFrac(a);
+		ret = ValFrac(Fraction_copy(a));
 	}
 	else {
 		/*
@@ -261,7 +262,7 @@ Value* Fraction_mod(Fraction* a, Value* b) {
 				break;
 				
 			case VAL_REAL:
-				ret = ValReal(remainder(Fraction_asReal(a), b->rval));
+				ret = ValReal(fmod(Fraction_asReal(a), b->rval));
 				break;
 				
 			default:
@@ -276,7 +277,7 @@ Value* Fraction_mod(Fraction* a, Value* b) {
 static prime_list* factor_primes(long long n, unsigned* count) {
 	unsigned size = 2, len = 0;
 	
-	if(n == 1) {
+	if(n <= 1) {
 		*count = 0;
 		return NULL;
 	}
@@ -300,7 +301,7 @@ static prime_list* factor_primes(long long n, unsigned* count) {
 		if(n % i == 0) {
 			if(len >= size) {
 				size *= 2;
-				ret = frealloc(ret, size);
+				ret = frealloc(ret, size * sizeof(*ret));
 			}
 			
 			ret[len].prime = i;
@@ -319,9 +320,13 @@ static prime_list* factor_primes(long long n, unsigned* count) {
 	return ret;
 }
 
-static Value* fracPow(Fraction* base, Fraction* exp) {
+static Value* fracPow(const Fraction* base, const Fraction* exp) {
 	Value* ret;
 	long long n, d;
+	
+	if(base->n == 0) {
+		return ValInt(0);
+	}
 	
 	/* c/1 == c */
 	if(exp->d == 1) {
@@ -352,6 +357,7 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 			/* Apply the exponent's numerator to each prime */
 			n_primes[i].count *= exp->n;
 			
+			/* TODO: Fix hang with "-(3+4!/7)^-(3+43+4!/7)^-(3+433" */
 			while(n_primes[i].count >= exp->d) {
 				n *= n_primes[i].prime;
 				n_primes[i].count -= exp->d;
@@ -400,7 +406,8 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 		}
 		else {
 			/* Not completely reduced */
-			
+#if 0
+			/* TODO: Fix this */
 			/* Did any reduction even occur? */
 			if(coef->type == VAL_INT && coef->ival == 1) {
 				/* No reduction occurred */
@@ -422,6 +429,9 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 														  ))
 										));
 			}
+#else
+			ret = ValReal(pow(Fraction_asReal(base), Fraction_asReal(exp)));
+#endif
 		}
 		
 		free(n_primes);
@@ -431,7 +441,7 @@ static Value* fracPow(Fraction* base, Fraction* exp) {
 	return ret;
 }
 
-Value* Fraction_pow(Fraction* base, Value* exp) {
+Value* Fraction_pow(const Fraction* base, const Value* exp) {
 	Value* ret;
 	long long n, d;
 	
@@ -466,7 +476,7 @@ Value* Fraction_pow(Fraction* base, Value* exp) {
 	return ret;
 }
 
-Value* Fraction_rpow(Fraction* exp, Value* base) {
+Value* Fraction_rpow(const Fraction* exp, const Value* base) {
 	Value* ret;
 	Fraction* fbase;
 	
@@ -495,13 +505,13 @@ Value* Fraction_rpow(Fraction* exp, Value* base) {
 	return ret;
 }
 
-static int fracCmp(Fraction* a, Fraction* b) {
+static int fracCmp(const Fraction* a, const Fraction* b) {
 	long long val = a->n * b->d - b->n * a->d;
 	
 	return (int)CLAMP(val, -1, 1);
 }
 
-Value* Fraction_cmp(Fraction* a, Value* b) {
+Value* Fraction_cmp(const Fraction* a, const Value* b) {
 	int diff;
 	long long val;
 	double real;
@@ -528,17 +538,19 @@ Value* Fraction_cmp(Fraction* a, Value* b) {
 	return ValInt(diff);
 }
 
-double Fraction_asReal(Fraction* frac) {
+double Fraction_asReal(const Fraction* frac) {
 	return (double)frac->n / (double)frac->d;
 }
 
-char* Fraction_repr(Fraction* f, bool pretty) {
+char* Fraction_repr(const Fraction* f, bool pretty) {
 	char* ret;
 	
-//	if(pretty)
-//		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
-//	else
+	if(pretty) {
+		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
+	}
+	else {
 		asprintf(&ret, "%lld/%lld", f->n, f->d);
+	}
 	
 	return ret;
 }

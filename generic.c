@@ -155,54 +155,6 @@ char* nextToken(const char** expr) {
 	return ret;
 }
 
-/* Don't think this is needed any more, but it doesn't hurt to keep it around. */
-char* copyUntilClose(const char** expr) {
-	char* ret;
-	
-	/* Called when expr is after the opening parenthesis */
-	
-	int sublen;
-	int level = 1;
-	/* We need a reference to the beginning of the parenthesized subexpression */
-	const char* ex = *expr;
-	
-	/* Skip opening parenthesis */
-	(*expr)++;
-	
-	/* Calculate length of substring between parentheses */
-	for(sublen = 1; **expr; (*expr)++, sublen++) {
-		if(**expr == '(') {
-			level++;
-		}
-		else if(**expr == ')') {
-			level--;
-			
-			/* If the current parenthesis level was just closed, break from the loop */
-			if(level == 0) {
-				/* Skip final closing parenthesis */
-				(*expr)++;
-				break;
-			}
-		}
-		else if(**expr == '\r' || **expr == '\n') {
-			/* Treat EOL as end of subexpression */
-			(*expr)++;
-			break;
-		}
-	}
-	/* Subtract one from length due to final parenthesis or EOL */
-	sublen--;
-	
-	/* Create the substring */
-	ret = fmalloc((sublen + 1) * sizeof(*ret));
-	
-	/* Copy the contents of the parenthesized group to a new expression string */
-	strncpy(ret, &ex[1], sublen);
-	ret[sublen] = '\0';
-	
-	return ret;
-}
-
 int getSign(const char** expr) {
 	int sign = 1;
 	

@@ -12,11 +12,13 @@
 #include "context.h"
 
 
-#define EVAL_CONST(name, val) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+#define EVAL_CONST(name, val) \
+static Value* eval_ ## name(const Context* ctx, const ArgList* arglist, bool internal) { \
 	return ValReal((val)); \
 }
 
-#define EVAL_FUNC(name, func, nargs) static Value* eval_ ## name(Context* ctx, ArgList* arglist, bool internal) { \
+#define EVAL_FUNC(name, func, nargs) \
+static Value* eval_ ## name(const Context* ctx, const ArgList* arglist, bool internal) { \
 	if(arglist->count != (nargs)) { \
 		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
 	} \

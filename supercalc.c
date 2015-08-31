@@ -41,7 +41,7 @@ void SC_free(SuperCalc* sc) {
 	free(sc);
 }
 
-Value* SC_runFile(SuperCalc* sc, FILE* fp) {
+Value* SC_runFile(const SuperCalc* sc, FILE* fp) {
 	Value* ret = NULL;
 	
 	for(nextLine(fp); !feof(fp); nextLine(fp)) {
@@ -61,7 +61,7 @@ Value* SC_runFile(SuperCalc* sc, FILE* fp) {
 	return ret;
 }
 
-Value* SC_runInteractive(SuperCalc* sc, FILE* fp) {
+Value* SC_runInteractive(const SuperCalc* sc, FILE* fp) {
 	Value* ret = NULL;
 	
 	for(readLine(fp); !feof(fp); readLine(fp)) {
@@ -83,7 +83,7 @@ Value* SC_runInteractive(SuperCalc* sc, FILE* fp) {
 	return ret;
 }
 
-Value* SC_runString(SuperCalc* sc, const char* str, VERBOSITY v) {
+Value* SC_runString(const SuperCalc* sc, const char* str, VERBOSITY v) {
 	char* code = strdup(str);
 	
 	/* Strip trailing newline */
@@ -104,20 +104,18 @@ Value* SC_runString(SuperCalc* sc, const char* str, VERBOSITY v) {
 			/* '~~~' means reset interpreter */
 			if(p[0] == '~' && p[1] == '~') {
 				/* Wipe out context */
-				Context_free(sc->ctx);
-				sc->ctx = Context_new();
-				register_math(sc->ctx);
+				Context_clear(sc->ctx);
 				free(code);
 				return NULL;
 			}
 			
 			if(*p == '\0') {
 				free(code);
-				RAISE(earlyEnd());
+				RAISE(earlyEnd(), false);
 				return NULL;
 			}
 			
-			RAISE(badChar(*p));
+			RAISE(badChar(*p), false);
 			free(code);
 			return NULL;
 		}

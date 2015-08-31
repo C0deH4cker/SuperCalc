@@ -20,6 +20,7 @@
 #include "vector.h"
 #include "fraction.h"
 #include "funccall.h"
+#include "template.h"
 
 
 EVAL_CONST(pi, M_PI);
@@ -28,18 +29,15 @@ EVAL_CONST(e, M_E);
 EVAL_CONST(phi, PHI);
 
 
-static Value* eval_sqrt(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
 	
-	Fraction* half = Fraction_new(1, 2);
-	Value* arg = ValFrac(half);
-	BinOp* sqrt_pow = BinOp_new(BIN_POW, Value_copy(arglist->args[0]), arg);
-	return ValExpr(sqrt_pow);
+	return TP_EVAL("@@^(1/2)", ctx, Value_copy(arglist->args[0]));
 }
 
-static Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
@@ -73,7 +71,7 @@ static Value* eval_abs(Context* ctx, ArgList* arglist, bool internal) {
 	Value_free(val);
 }
 
-static Value* eval_exp(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}

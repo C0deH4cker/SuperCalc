@@ -26,8 +26,8 @@ struct SuperCalc {
 
 SuperCalc* SC_new(FILE* fout);
 void SC_free(SuperCalc* sc);
-Value* SC_runFile(SuperCalc* sc, FILE* fp);
-Value* SC_runInteractive(SuperCalc* sc, FILE* fp);
-Value* SC_runString(SuperCalc* sc, const char* str, VERBOSITY v);
+Value* SC_runFile(const SuperCalc* sc, FILE* fp);
+Value* SC_runInteractive(const SuperCalc* sc, FILE* fp);
+Value* SC_runString(const SuperCalc* sc, const char* str, VERBOSITY v);
 
 #endif

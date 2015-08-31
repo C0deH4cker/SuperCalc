@@ -17,8 +17,8 @@ typedef struct ArgList ArgList;
 #include "context.h"
 
 struct ArgList {
-	unsigned count;
 	Value** args;
+	unsigned count;
 };
 
 /* Constructor */
@@ -32,18 +32,18 @@ ArgList* ArgList_create(unsigned count, /* Value* */...);
 ArgList* ArgList_vcreate(unsigned count, va_list args);
 
 /* Copying */
-ArgList* ArgList_copy(ArgList* arglist);
+ArgList* ArgList_copy(const ArgList* arglist);
 
 /* Evaluation */
-ArgList* ArgList_eval(ArgList* arglist, Context* ctx);
-double* ArgList_toReals(ArgList* arglist, Context* ctx);
+ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx);
+double* ArgList_toReals(const ArgList* arglist, const Context* ctx);
 
 /* Parsing */
-ArgList* ArgList_parse(const char** expr, char sep, char end);
+ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb);
 
 /* Printing */
-char* ArgList_verbose(ArgList* arglist, int indent);
-char* ArgList_repr(ArgList* arglist, bool pretty);
+char* ArgList_verbose(const ArgList* arglist, int indent);
+char* ArgList_repr(const ArgList* arglist, bool pretty);
 
 
 #endif

@@ -38,14 +38,14 @@ void Expression_free(Expression* expr);
 Expression* Expression_parse(const char** expr);
 
 /* Error handling */
-bool Expression_didError(Expression* expr);
+bool Expression_didError(const Expression* expr);
 
 /* Evaluation */
-Value* Expression_eval(Expression* expr, Context* ctx, VERBOSITY v);
+Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v);
 
 /* Printing */
-char* Expression_verbose(Expression* expr, Context* ctx);
-char* Expression_repr(Expression* expr, Context* ctx, bool pretty);
-void Expression_print(Expression* expr, SuperCalc* sc, VERBOSITY v);
+char* Expression_verbose(const Expression* expr, const Context* ctx);
+char* Expression_repr(const Expression* expr, const Context* ctx, bool pretty);
+void Expression_print(const Expression* expr, const SuperCalc* sc, VERBOSITY v);
 
 #endif

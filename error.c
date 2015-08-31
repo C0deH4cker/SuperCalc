@@ -16,20 +16,21 @@
 #include "generic.h"
 
 
-const char* kNullErrStr         = "NULL pointer value.";
-const char* kDivByZeroStr       = "Division by zero.";
-const char* kModByZeroStr       = "Modulus by zero.";
-const char* kVarNotFoundStr     = "No variable named '%s' found.";
-const char* kBadOpTypeStr       = "Bad %s operand type: %d.";
-const char* kBadCharStr         = "Unexpected character: '%c'.";
-const char* kBuiltinArgsStr     = "Builtin '%s' expects %u argument%s, not %u.";
-const char* kBuiltinNotFuncStr  = "Builtin '%s' is not a function.";
-const char* kBadConversionStr   = "One or more arguments to builtin '%s' couldn't be converted to numbers.";
-const char* kEarlyEndStr        = "Premature end of input.";
+const char* kNullErrStr             = "NULL pointer value.";
+const char* kDivByZeroStr           = "Division by zero.";
+const char* kModByZeroStr           = "Modulus by zero.";
+const char* kVarNotFoundStr         = "No variable named '%s' found.";
+const char* kBadOpTypeStr           = "Bad %s operand type: %d.";
+const char* kBadCharStr             = "Unexpected character: '%c'.";
+const char* kBuiltinArgsStr         = "Builtin '%s' expects %u argument%s, not %u.";
+const char* kBuiltinNotFuncStr      = "Builtin '%s' is not a function.";
+const char* kBadConversionStr       = "One or more arguments to builtin '%s' couldn't be converted to numbers.";
+const char* kEarlyEndStr            = "Premature end of input.";
+const char* kMissingPlaceholderStr  = "Missing placeholder number %z.";
 
-const char* kAllocErrStr        = "Unable to allocate memory.";
-const char* kBadValStr          = "Unexpected value type: %d.";
-const char* kBadVarStr          = "Unexpected variable type: %d.";
+const char* kAllocErrStr            = "Unable to allocate memory.";
+const char* kBadValStr              = "Unexpected value type: %d.";
+const char* kBadVarStr              = "Unexpected variable type: %d.";
 
 
 static const char* error_messages[] = {
@@ -44,12 +45,12 @@ static const char* error_messages[] = {
 
 
 Error* Error_new(ERRTYPE type, const char* fmt, ...) {
-	va_list va;
-	va_start(va, fmt);
+	va_list args;
+	va_start(args, fmt);
 	
-	Error* ret = Error_vnew(type, fmt, va);
+	Error* ret = Error_vnew(type, fmt, args);
 	
-	va_end(va);
+	va_end(args);
 	
 	return ret;
 }
@@ -73,7 +74,7 @@ void Error_free(Error* err) {
 	free(err);
 }
 
-Error* Error_copy(Error* err) {
+Error* Error_copy(const Error* err) {
 	Error* ret = fmalloc(sizeof(*ret));
 	
 	ret->type = err->type;
@@ -82,16 +83,17 @@ Error* Error_copy(Error* err) {
 	return ret;
 }
 
-void Error_raise(Error* err) {
+void Error_raise(const Error* err, bool forceDeath) {
 	fprintf(stderr, "%s", err->msg);
 	
-	if(!Error_canRecover(err)) {
+	if(forceDeath || !Error_canRecover(err)) {
+		/* Useful to set a breakpoint on the next line for debugging */
 		fprintf(stderr, "Crashing line:\n%s", line);
 		exit(EXIT_FAILURE);
 	}
 }
 
-bool Error_canRecover(Error* err) {
+bool Error_canRecover(const Error* err) {
 	switch(err->type) {
 		case ERR_MATH:
 		case ERR_NAME:
@@ -108,15 +110,15 @@ bool Error_canRecover(Error* err) {
 }
 
 void die(const char* file, const char* function, int line, const char* fmt, ...) {
-	va_list va;
-	va_start(va, fmt);
+	va_list args;
+	va_start(args, fmt);
 	
-	Error* err = Error_vnew(ERR_FATAL, fmt, va);
+	Error* err = Error_vnew(ERR_FATAL, fmt, args);
 	
-	va_end(va);
+	va_end(args);
 	
 	fprintf(stderr, "\n\nFile %s in %s on line %d:\n", file, function, line);
-	Error_raise(err);
+	Error_raise(err, true);
 	/* Error_raise will cause the program to die */
 	
 	__builtin_unreachable();

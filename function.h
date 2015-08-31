@@ -17,6 +17,7 @@ typedef struct Function Function;
 #include "arglist.h"
 #include "value.h"
 
+
 struct Function {
 	unsigned argcount;
 	char** argnames;
@@ -32,14 +33,14 @@ Function* Function_new(unsigned argcount, char** argnames, Value* body);
 void Function_free(Function* func);
 
 /* Copying */
-Function* Function_copy(Function* func);
+Function* Function_copy(const Function* func);
 
 /* Evaluation */
-Value* Function_eval(Function* func, Context* ctx, ArgList* arglist);
+Value* Function_eval(const Function* func, const Context* ctx, const ArgList* arglist);
 
 /* Printing */
-char* Function_verbose(Function* func);
-char* Function_repr(Function* func, bool pretty);
+char* Function_verbose(const Function* func);
+char* Function_repr(const Function* func, bool pretty);
 
 
 #endif

@@ -35,13 +35,25 @@
 
 #define fmalloc(size) ({ \
 	void* _mem = malloc((size)); \
-	if(_mem == NULL) allocError(); \
+	if(_mem == NULL) { \
+		allocError(); \
+	} \
+	_mem; \
+})
+
+#define fcalloc(count, size) ({ \
+	void* _mem = calloc((count), (size)); \
+	if(_mem == NULL) { \
+		allocError(); \
+	} \
 	_mem; \
 })
 
 #define frealloc(mem, size) ({ \
 	__typeof__(mem) _mem = realloc((mem), (size)); \
-	if(_mem == NULL) allocError(); \
+	if(_mem == NULL) { \
+		allocError(); \
+	} \
 	_mem; \
 })
 

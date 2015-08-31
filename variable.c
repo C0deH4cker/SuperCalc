@@ -93,7 +93,7 @@ void Variable_free(Variable* var) {
 	free(var);
 }
 
-Variable* Variable_copy(Variable* var) {
+Variable* Variable_copy(const Variable* var) {
 	Variable* ret;
 	
 	switch(var->type) {
@@ -120,7 +120,7 @@ Variable* Variable_copy(Variable* var) {
 	return ret;
 }
 
-Value* Variable_eval(Variable* var, Context* ctx) {
+Value* Variable_eval(const Variable* var, const Context* ctx) {
 	Value* ret;
 	
 	switch(var->type) {
@@ -144,7 +144,7 @@ Value* Variable_eval(Variable* var, Context* ctx) {
 	return ret;
 }
 
-Value* Variable_coerce(Variable* var, Context* ctx) {
+Value* Variable_coerce(const Variable* var, const Context* ctx) {
 	Value* ret;
 	
 	if(var->type == VAR_VALUE) {
@@ -165,11 +165,11 @@ Value* Variable_coerce(Variable* var, Context* ctx) {
 	return ret;
 }
 
-Variable* Variable_get(Context* ctx, const char* name) {
+Variable* Variable_get(const Context* ctx, const char* name) {
 	return Context_get(ctx, name);
 }
 
-Variable* Variable_getAbove(Context* ctx, const char* name) {
+Variable* Variable_getAbove(const Context* ctx, const char* name) {
 	return Context_getAbove(ctx, name);
 }
 
@@ -226,7 +226,7 @@ void Variable_update(Variable* dst, Variable* src) {
 	free(src);
 }
 
-char* Variable_verbose(Variable* var) {
+char* Variable_verbose(const Variable* var) {
 	char* ret;
 	
 	if(var->type == VAR_FUNC) {
@@ -258,7 +258,7 @@ char* Variable_verbose(Variable* var) {
 	return ret;
 }
 
-char* Variable_repr(Variable* var, bool pretty) {
+char* Variable_repr(const Variable* var, bool pretty) {
 	char* ret;
 	
 	const char* name = var->name;

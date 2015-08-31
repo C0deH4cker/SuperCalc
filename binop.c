@@ -21,15 +21,15 @@
 #include "fraction.h"
 #include "vector.h"
 
-typedef Value* (*binop_t)(Context*, Value*, Value*);
+typedef Value* (*binop_t)(const Context*, const Value*, const Value*);
 
 static Value* val_ipow(long long base, long long exp);
-static Value* binop_add(Context* ctx, Value* a, Value* b);
-static Value* binop_sub(Context* ctx, Value* a, Value* b);
-static Value* binop_mul(Context* ctx, Value* a, Value* b);
-static Value* binop_div(Context* ctx, Value* a, Value* b);
-static Value* binop_mod(Context* ctx, Value* a, Value* b);
-static Value* binop_pow(Context* ctx, Value* a, Value* b);
+static Value* binop_add(const Context* ctx, const Value* a, const Value* b);
+static Value* binop_sub(const Context* ctx, const Value* a, const Value* b);
+static Value* binop_mul(const Context* ctx, const Value* a, const Value* b);
+static Value* binop_div(const Context* ctx, const Value* a, const Value* b);
+static Value* binop_mod(const Context* ctx, const Value* a, const Value* b);
+static Value* binop_pow(const Context* ctx, const Value* a, const Value* b);
 static BINTYPE nextSpecialOp(const char** expr);
 
 static binop_t _binop_table[] = {
@@ -52,10 +52,10 @@ static const int _binop_cmp[6][6] = {
 };
 
 static const char* _binop_pretty[] = {
-	"+", "-", "×", "÷", "%", "^", "$", "?"
+	"+", "-", "×", "÷", "%", "^"
 };
 static const char* _binop_repr[] = {
-	"+", "-", "*", "/", "%", "^", "$", "?"
+	"+", "-", "*", "/", "%", "^"
 };
 
 const char* binop_verb[] = {
@@ -78,7 +78,7 @@ static Value* val_ipow(long long base, long long exp) {
 	return ValInt(result);
 }
 
-static Value* binop_add(Context* ctx, Value* a, Value* b) {
+static Value* binop_add(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_VEC) {
@@ -128,7 +128,7 @@ static Value* binop_add(Context* ctx, Value* a, Value* b) {
 	return ret;
 }
 
-static Value* binop_sub(Context* ctx, Value* a, Value* b) {
+static Value* binop_sub(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_VEC) {
@@ -180,7 +180,7 @@ static Value* binop_sub(Context* ctx, Value* a, Value* b) {
 	return ret;
 }
 
-static Value* binop_mul(Context* ctx, Value* a, Value* b) {
+static Value* binop_mul(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_VEC) {
@@ -228,7 +228,7 @@ static Value* binop_mul(Context* ctx, Value* a, Value* b) {
 	return ret;
 }
 
-static Value* binop_div(Context* ctx, Value* a, Value* b) {
+static Value* binop_div(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_VEC) {
@@ -293,7 +293,7 @@ static Value* binop_div(Context* ctx, Value* a, Value* b) {
 	return ret;
 }
 
-static Value* binop_mod(Context* ctx, Value* a, Value* b) {
+static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_VEC || b->type == VAL_VEC) {
@@ -345,14 +345,14 @@ static Value* binop_mod(Context* ctx, Value* a, Value* b) {
 			ret = ValErr(zeroDivError());
 		}
 		else {
-			ret = ValReal(remainder(n, d));
+			ret = ValReal(fmod(n, d));
 		}
 	}
 	
 	return ret;
 }
 
-static Value* binop_pow(Context* ctx, Value* a, Value* b) {
+static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
 	if(a->type == VAL_INT && b->type == VAL_INT) {
@@ -426,11 +426,11 @@ void BinOp_free(BinOp* node) {
 	free(node);
 }
 
-BinOp* BinOp_copy(BinOp* node) {
+BinOp* BinOp_copy(const BinOp* node) {
 	return BinOp_new(node->type, Value_copy(node->a), Value_copy(node->b));
 }
 
-Value* BinOp_eval(BinOp* node, Context* ctx) {
+Value* BinOp_eval(const BinOp* node, const Context* ctx) {
 	if(node == NULL) {
 		return ValErr(nullError());
 	}
@@ -470,7 +470,7 @@ static BINTYPE nextSpecialOp(const char** expr) {
 }
 
 BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
-	BINTYPE ret;
+	BINTYPE ret = BIN_UNK;
 	
 	trimSpaces(expr);
 	
@@ -524,7 +524,7 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 	return _binop_cmp[a][b];
 }
 
-char* BinOp_verbose(BinOp* op, int indent) {
+char* BinOp_verbose(const BinOp* op, int indent) {
 	char* ret;
 	
 	if(op == NULL) {
@@ -551,7 +551,7 @@ char* BinOp_verbose(BinOp* op, int indent) {
 	return ret;
 }
 
-char* BinOp_repr(BinOp* node, bool pretty) {
+char* BinOp_repr(const BinOp* node, bool pretty) {
 	char* ret;
 	
 	if(node == NULL) {

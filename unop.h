@@ -36,13 +36,13 @@ UnOp* UnOp_new(UNTYPE type, Value* a);
 void UnOp_free(UnOp* term);
 
 /* Copying */
-UnOp* UnOp_copy(UnOp* term);
+UnOp* UnOp_copy(const UnOp* term);
 
 /* Evaluation */
-Value* UnOp_eval(UnOp* term, Context* ctx);
+Value* UnOp_eval(const UnOp* term, const Context* ctx);
 
 /* Printing */
-char* UnOp_verbose(UnOp* term, int indent);
-char* UnOp_repr(UnOp* term, bool pretty);
+char* UnOp_verbose(const UnOp* term, int indent);
+char* UnOp_repr(const UnOp* term, bool pretty);
 
 #endif

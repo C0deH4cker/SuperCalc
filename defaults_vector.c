@@ -16,7 +16,7 @@
 #include "binop.h"
 #include "builtin.h"
 
-static Value* eval_dot(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal) {
 	Value* ret;
 	
 	if(arglist->count != 2) {
@@ -49,7 +49,7 @@ static Value* eval_dot(Context* ctx, ArgList* arglist, bool internal) {
 	return ret;
 }
 
-static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 2) {
 		/* Two vectors are required for a cross product */
 		return ValErr(builtinArgs("cross", 2, arglist->count));
@@ -83,7 +83,7 @@ static Value* eval_cross(Context* ctx, ArgList* arglist, bool internal) {
 	return Vector_cross(vector1->vec, vector2->vec, ctx);
 }
 
-static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("map", 2, arglist->count));
 	}
@@ -134,7 +134,7 @@ static Value* eval_map(Context* ctx, ArgList* arglist, bool internal) {
 	return ValVec(Vector_new(mapping));
 }
 
-static Value* eval_elem(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("elem", 2, arglist->count));
 	}
@@ -157,7 +157,7 @@ static Value* eval_elem(Context* ctx, ArgList* arglist, bool internal) {
 	return ret;
 }
 
-static Value* eval_mag(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("mag", 1, arglist->count));
 	}
@@ -175,7 +175,7 @@ static Value* eval_mag(Context* ctx, ArgList* arglist, bool internal) {
 	return Vector_magnitude(vec->vec, ctx);
 }
 
-static Value* eval_norm(Context* ctx, ArgList* arglist, bool internal) {
+static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool internal) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("norm", 1, arglist->count));
 	}
