@@ -34,13 +34,14 @@ const char* kBadVarStr              = "Unexpected variable type: %d.";
 
 
 static const char* error_messages[] = {
+	"",
 	"Math Error: %s\n",
 	"Syntax Error: %s\n",
 	"Fatal Error: %s\n",
 	"Name Error: %s\n",
 	"Type Error: %s\n",
-	"Unknown Error: %s\n",
-	""
+	"Internal Error: %s\n",
+	"Unknown Error: %s\n"
 };
 
 
@@ -103,6 +104,7 @@ bool Error_canRecover(const Error* err) {
 			return true;
 		
 		case ERR_FATAL:
+		case ERR_INTERNAL:
 		case ERR_UNK:
 		default:
 			return false;

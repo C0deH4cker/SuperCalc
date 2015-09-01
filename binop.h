@@ -57,8 +57,8 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end);
 int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
-char* BinOp_verbose(const BinOp* node, int indent);
 char* BinOp_repr(const BinOp* node, bool pretty);
-
+char* BinOp_verbose(const BinOp* node, unsigned indent);
+char* BinOp_xml(const BinOp* node, unsigned indent);
 
 #endif

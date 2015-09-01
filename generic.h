@@ -57,15 +57,12 @@
 	_mem; \
 })
 
-#define IWIDTH 2
-#define EPSILON 1e-12
-
 typedef enum {
-	V_REPR   = 1,
-	V_TREE   = 1<<1,
-	V_PRETTY = 1<<2
+	V_REPR   = 1<<0,
+	V_PRETTY = 1<<1,
+	V_TREE   = 1<<2,
+	V_XML    = 1<<3
 } VERBOSITY;
-#define V_ALL (V_REPR|V_TREE|V_PRETTY)
 
 /* Hacky, I know */
 char line[1024];
@@ -74,20 +71,16 @@ char line[1024];
 void trimSpaces(const char** str);
 char* nextSpecial(const char** expr);
 char* nextToken(const char** expr);
-char* copyUntilClose(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
-void nextLine(FILE* fp);
-void readLine(FILE* fp);
+void readLine(FILE* fp, const char* prompt);
 bool isInteractive(FILE* fp);
 VERBOSITY getVerbosity(const char** str);
 
 /* Verbose printing */
 const char* getPretty(const char* name);
-char* spaces(int n);
-char* strNULL(void);
-char* strERR(void);
+const char* indentation(unsigned level);
 
 /* Math */
 long long ipow(long long base, long long exp);

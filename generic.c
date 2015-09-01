@@ -17,13 +17,21 @@
 
 #include "supercalc.h"
 
+#define PROMPT  "sc> "
+#define ICHAR   ' '
+#define IWIDTH  2
+#define EPSILON 1e-12
 
-void nextLine(FILE* fp) {
-	fgets(line, sizeof(line), fp);
-}
+typedef enum {
+	VC_REPR   = 'r',
+	VC_PRETTY = 'p',
+	VC_TREE   = 't',
+	VC_XML    = 'x'
+} VERBOSITY_CHAR;
 
-void readLine(FILE* fp) {
-	printf(">>> ");
+
+void readLine(FILE* fp, const char* prompt) {
+	printf("%s", prompt);
 	fgets(line, sizeof(line), fp);
 }
 
@@ -34,12 +42,64 @@ bool isInteractive(FILE* fp) {
 VERBOSITY getVerbosity(const char** str) {
 	VERBOSITY ret = 0;
 	
-	while(**str == '?') {
-		ret = (ret << 1) | 1;
+	if(**str != '?') {
+		return 0;
+	}
+	
+	/* Move past the '?' */
+	(*str)++;
+	
+	bool again = true;
+	while(again) {
+		switch(**str) {
+			case VC_REPR:
+				if(ret & V_REPR) {
+					RAISE(syntaxError("Specified repr verbosity more than once."), false);
+				}
+				ret |= V_REPR;
+				break;
+			
+			case VC_PRETTY:
+				if(ret & V_PRETTY) {
+					RAISE(syntaxError("Specified pretty verbosity more than once."), false);
+				}
+				/* Pretty implies repr */
+				ret |= V_PRETTY | V_REPR;
+				break;
+			
+			case VC_TREE:
+				if(ret & V_TREE) {
+					RAISE(syntaxError("Specified tree verbosity more than once."), false);
+				}
+				ret |= V_TREE;
+				break;
+			
+			case VC_XML:
+				if(ret & V_XML) {
+					RAISE(syntaxError("Specified XML verbosity more than once."), false);
+				}
+				ret |= V_XML;
+			
+			case ' ':
+			case '\t':
+				/* Verbosity command ended by whitespace only */
+				again = false;
+				break;
+			
+			default:
+				RAISE(badChar(**str), false);
+				return ret;
+		}
+		
 		(*str)++;
 	}
 	
-	return ret & V_ALL;
+	/* For slight backwards compatibility and for ease of use */
+	if(ret == 0) {
+		ret |= V_REPR;
+	}
+	
+	return ret;
 }
 
 static const char* _repr_tok[] = {
@@ -80,20 +140,46 @@ void trimSpaces(const char** str) {
 	*str = p;
 }
 
-char* spaces(int n) {
-	char* ret = fmalloc((n + 1) * sizeof(*ret));
+const char* indentation(unsigned level) {
+	/* Try just using a static array full of spaces */
+	static char blanks[40 * IWIDTH + 1] = "";
+	if(blanks[0] == '\0') {
+		memset(blanks, ICHAR, ARRSIZE(blanks) - 1);
+		blanks[ARRSIZE(blanks) - 1] = '\0';
+	}
 	
-	memset(ret, ' ', n);
-	ret[n] = '\0';
-	return ret;
-}
-
-char* strNULL(void) {
-	return strdup("NULL");
-}
-
-char* strERR(void) {
-	return strdup("ERR");
+	if(level <= (ARRSIZE(blanks) - 1) / IWIDTH) {
+		return &blanks[ARRSIZE(blanks) - 1 - level * IWIDTH];
+	}
+	
+	/* Too much indentation for static array */
+	
+	/* Find target index of spaces array large enough */
+	size_t index = 0;
+	size_t count = (ARRSIZE(blanks) - 1) / IWIDTH;
+	while(level > count) {
+		++index;
+		count *= 2;
+	}
+	
+	/* Expand array if necessary */
+	static size_t large_count = 0;
+	static char** larger = NULL;
+	if(index + 1 > large_count) {
+		size_t new_count = index + 1;
+		larger = frealloc(larger, new_count * sizeof(*larger));
+		memset(larger + large_count, 0, (new_count - large_count) * sizeof(*larger));
+		large_count = new_count;
+	}
+	
+	/* Need to create array of spaces */
+	if(larger[index] == NULL) {
+		larger[index] = fmalloc(count * IWIDTH + 1);
+		memset(larger[index], IWIDTH, count * IWIDTH);
+		larger[index][count * IWIDTH] = '\0';
+	}
+	
+	return &larger[index][(count - level) * IWIDTH];
 }
 
 long long ipow(long long base, long long exp) {

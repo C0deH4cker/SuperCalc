@@ -15,13 +15,14 @@
 typedef struct Error Error;
 
 typedef enum {
-	ERR_MATH = 0,
+	ERR_IGN = 0,
+	ERR_MATH,
 	ERR_SYNTAX,
 	ERR_FATAL,
 	ERR_NAME,
 	ERR_TYPE,
-	ERR_UNK,
-	ERR_IGN
+	ERR_INTERNAL,
+	ERR_UNK
 } ERRTYPE;
 
 struct Error {
@@ -38,13 +39,14 @@ struct Error {
 } while(0)
 
 /* Convenience constructors */
+#define ignoreError()               Error_new(ERR_IGN, "")
 #define mathError(fmt, args...)     Error_new(ERR_MATH, fmt, ##args)
 #define syntaxError(fmt, args...)   Error_new(ERR_SYNTAX, fmt, ##args)
 #define fatalError(fmt, args...)    Error_new(ERR_FATAL, fmt, ##args)
 #define nameError(fmt, args...)     Error_new(ERR_NAME, fmt, ##args)
 #define typeError(fmt, args...)     Error_new(ERR_TYPE, fmt, ##args)
+#define internalError(fmt, args...) Error_new(ERR_INTERNAL, fmt, ##args)
 #define unknownError(fmt, args...)  Error_new(ERR_UNK, fmt, ##args)
-#define ignoreError()               Error_new(ERR_IGN, "")
 
 const char* kNullErrStr;
 const char* kDivByZeroStr;

@@ -41,10 +41,25 @@ void SC_free(SuperCalc* sc) {
 	free(sc);
 }
 
-Value* SC_runFile(const SuperCalc* sc, FILE* fp) {
+Value* SC_run(const SuperCalc* sc, FILE* fp) {
+	const char* prompt = "";
+	if(isInteractive(fp)) {
+		prompt = "sc> ";
+	}
+	
+	Value* ret = SC_runFile(sc, fp, prompt);
+	
+	if(isInteractive(fp)) {
+		putchar('\n');
+	}
+	
+	return ret;
+}
+
+Value* SC_runFile(const SuperCalc* sc, FILE* fp, const char* prompt) {
 	Value* ret = NULL;
 	
-	for(nextLine(fp); !feof(fp); nextLine(fp)) {
+	for(readLine(fp, prompt); !feof(fp); readLine(fp, prompt)) {
 		if(ret) {
 			Value_free(ret);
 		}
@@ -57,28 +72,6 @@ Value* SC_runFile(const SuperCalc* sc, FILE* fp) {
 			Value_print(ret, sc, v);
 		}
 	}
-	
-	return ret;
-}
-
-Value* SC_runInteractive(const SuperCalc* sc, FILE* fp) {
-	Value* ret = NULL;
-	
-	for(readLine(fp); !feof(fp); readLine(fp)) {
-		if(ret) {
-			Value_free(ret);
-		}
-		
-		const char* p = line;
-		VERBOSITY v = getVerbosity(&p) | V_PRETTY;
-		
-		ret = SC_runString(sc, p, v);
-		if(ret && ret->type != VAL_VAR) {
-			Value_print(ret, sc, v);
-		}
-	}
-	
-	putchar('\n');
 	
 	return ret;
 }

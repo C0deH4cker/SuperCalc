@@ -15,6 +15,7 @@
 #include "arglist.h"
 #include "binop.h"
 #include "builtin.h"
+#include "template.h"
 
 static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal) {
 	Value* ret;
@@ -45,7 +46,6 @@ static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal
 	
 	Value_free(vector1);
 	Value_free(vector2);
-	
 	return ret;
 }
 
@@ -73,14 +73,18 @@ static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool intern
 		return ValErr(typeError("Builtin 'cross' expects two vectors."));
 	}
 	
-	if((vector1->vec->vals->count | 1) != 3 || (vector2->vec->vals->count | 1) != 3) {
+	if(vector1->vec->vals->count != 3 || vector2->vec->vals->count != 3) {
 		/* Vectors must each have a size of 2 or 3 */
 		Value_free(vector1);
 		Value_free(vector2);
 		return ValErr(mathError("Vectors must each have a size of 3 for cross product."));
 	}
 	
-	return Vector_cross(vector1->vec, vector2->vec, ctx);
+	Value* ret = Vector_cross(vector1->vec, vector2->vec, ctx);
+	
+	Value_free(vector1);
+	Value_free(vector2);
+	return ret;
 }
 
 static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal) {
@@ -119,18 +123,15 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 	
 	ArgList* mapping = ArgList_new(vec->vec->vals->count);
 	
-	/* Don't evaluate the call now. Let Builtin_eval do this for us */
 	unsigned i;
 	for(i = 0; i < mapping->count; i++) {
-		ArgList* arg = ArgList_create(1, Value_copy(vec->vec->vals->args[i]));
-		Value* call = ValCall(FuncCall_create(func->name, arg));
-		
-		mapping->args[i] = call;
+		mapping->args[i] = TP_EVAL("@n(@@)", ctx,
+								   func->name,
+								   Value_copy(vec->vec->vals->args[i]));
 	}
 	
 	Value_free(func);
 	Value_free(vec);
-	
 	return ValVec(Vector_new(mapping));
 }
 
@@ -162,11 +163,7 @@ static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal
 		return ValErr(builtinArgs("mag", 1, arglist->count));
 	}
 	
-	Value* vec = Value_eval(arglist->args[0], ctx);
-	if(vec->type == VAL_ERR) {
-		return vec;
-	}
-	
+	Value* vec = Value_coerce(arglist->args[0], ctx);
 	if(vec->type != VAL_VEC) {
 		Value_free(vec);
 		return ValErr(typeError("Can only evaluate the magnitude of a vector."));
@@ -186,7 +183,7 @@ static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool interna
 		return ValErr(typeError("Can only normalize a vector."));
 	}
 	
-	return ValExpr(BinOp_new(BIN_DIV, val, Vector_magnitude(val->vec, ctx)));
+	return TP_EVAL("@1v/mag(@1v)", ctx, Vector_copy(val->vec));
 }
 
 static const char* _vector_names[] = {

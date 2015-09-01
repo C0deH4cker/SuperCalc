@@ -29,6 +29,7 @@ typedef struct parser_cb {
 #include "error.h"
 #include "generic.h"
 #include "vector.h"
+#include "placeholder.h"
 #include "supercalc.h"
 
 
@@ -51,20 +52,20 @@ typedef enum {
 struct Value {
 	VALTYPE type;
 	union {
-		long long  ival;
-		double     rval;
-		Fraction*  frac;
-		Vector*    vec;
-		UnOp*      term;
-		BinOp*     expr;
-		FuncCall*  call;
-		char*      name;
-		Error*     err;
-		VALTYPE    fill;
+		long long    ival;
+		double       rval;
+		Fraction*    frac;
+		Vector*      vec;
+		UnOp*        term;
+		BinOp*       expr;
+		FuncCall*    call;
+		char*        name;
+		Error*       err;
+		Placeholder* ph;
 	};
 };
 
-/* Does nothing */
+/* Default parser callback errors on '@' */
 parser_cb default_cb;
 
 /* Value constructors */
@@ -80,7 +81,7 @@ Value* ValUnary(UnOp* term);
 Value* ValCall(FuncCall* call);
 Value* ValVar(const char* name);
 Value* ValVec(Vector* vec);
-Value* ValPlace(VALTYPE fill);
+Value* ValPlace(Placeholder* ph);
 
 /* Destructor */
 void Value_free(Value* val);
@@ -100,8 +101,9 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb);
 Value* Value_next(const char** expr, char end, parser_cb* cb);
 
 /* Printing */
-char* Value_verbose(const Value* val, int indent);
 char* Value_repr(const Value* val, bool pretty);
+char* Value_verbose(const Value* val, unsigned indent);
+char* Value_xml(const Value* val, unsigned indent);
 void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v);
 
 #endif

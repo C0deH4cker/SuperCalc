@@ -51,11 +51,7 @@ Value* Template_fillv(const Template* tp, va_list args);
 Value* Template_eval(const Template* tp, const Context* ctx, ...);
 Value* Template_evalv(const Template* tp, const Context* ctx, va_list args);
 
-/* Get the format character for the specified Value type */
-char Template_placeholderChar(VALTYPE type);
-
 /* Number of placeholders that must be filled */
 unsigned Template_placeholderCount(const Template* tp);
-
 
 #endif /* _SC_TEMPLATE_H_ */

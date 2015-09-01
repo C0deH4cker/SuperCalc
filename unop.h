@@ -42,7 +42,8 @@ UnOp* UnOp_copy(const UnOp* term);
 Value* UnOp_eval(const UnOp* term, const Context* ctx);
 
 /* Printing */
-char* UnOp_verbose(const UnOp* term, int indent);
 char* UnOp_repr(const UnOp* term, bool pretty);
+char* UnOp_verbose(const UnOp* term, unsigned indent);
+char* UnOp_xml(const UnOp* term, unsigned indent);
 
 #endif

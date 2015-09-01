@@ -40,8 +40,9 @@ void Builtin_register(Builtin* blt, Context* ctx);
 Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal);
 
 /* Printing */
-char* Builtin_verbose(const Builtin* blt, int indent);
 char* Builtin_repr(const Builtin* blt, bool pretty);
+char* Builtin_verbose(const Builtin* blt, unsigned indent);
+char* Builtin_xml(const Builtin* blt, unsigned indent);
 
 
 #endif

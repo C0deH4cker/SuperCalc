@@ -560,3 +560,22 @@ char* Fraction_repr(const Fraction* f, bool pretty) {
 	return ret;
 }
 
+char* Fraction_xml(const Fraction* f) {
+	/*
+	 sc> a = -42/1337
+	 -6/191
+	 sc> ?x a
+	 
+	 <vardata name="a">
+	   <frac numerator="-6" denominator="191"/>
+	 </vardata>
+	 
+	 -6/191
+	*/
+	char* ret;
+	asprintf(&ret,
+			 "<frac numerator=\"%lld\" denominator=\"%lld\"/>",
+			 f->n, f->d);
+	return ret;
+}
+

@@ -97,4 +97,30 @@ g(x, y) {
   )
 }
 g(x, y) = (((x ^ 2) - ((2 * x) * y)) + 1)
+<vardata name="g">
+  <func>
+    <argnames>
+      <arg name="x"/>
+      <arg name="y"/>
+    </argnames>
+    <expr>
+      <add>
+        <sub>
+          <pow>
+            <var name="x"/>
+            <int>2</int>
+          </pow>
+          <mul>
+            <mul>
+              <int>2</int>
+              <var name="x"/>
+            </mul>
+            <var name="y"/>
+          </mul>
+        </sub>
+        <int>1</int>
+      </add>
+    </expr>
+  </func>
+</vardata>
 <2, 3, 4, 5, 5.47213595499958, 7/3>

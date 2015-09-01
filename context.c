@@ -46,7 +46,7 @@ Context* Context_new(void) {
 	Context* ret = fmalloc(sizeof(*ret));
 	
 	ret->globals = fmalloc(sizeof(*ret->globals));
-	ret->globals->var = VarValue("ans", ValInt(0));
+	ret->globals->var = VarValue(strdup("ans"), ValInt(0));
 	ret->globals->next = NULL;
 	ret->locals = NULL;
 	

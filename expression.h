@@ -44,8 +44,9 @@ bool Expression_didError(const Expression* expr);
 Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v);
 
 /* Printing */
-char* Expression_verbose(const Expression* expr, const Context* ctx);
 char* Expression_repr(const Expression* expr, const Context* ctx, bool pretty);
+char* Expression_verbose(const Expression* expr, const Context* ctx);
+char* Expression_xml(const Expression* expr, const Context* ctx);
 void Expression_print(const Expression* expr, const SuperCalc* sc, VERBOSITY v);
 
 #endif

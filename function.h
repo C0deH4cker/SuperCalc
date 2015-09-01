@@ -39,8 +39,8 @@ Function* Function_copy(const Function* func);
 Value* Function_eval(const Function* func, const Context* ctx, const ArgList* arglist);
 
 /* Printing */
-char* Function_verbose(const Function* func);
 char* Function_repr(const Function* func, bool pretty);
-
+char* Function_verbose(const Function* func);
+char* Function_xml(const Function* func, unsigned indent);
 
 #endif

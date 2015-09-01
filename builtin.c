@@ -41,30 +41,17 @@ Builtin* Builtin_copy(const Builtin* blt) {
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
-	Variable* var = VarBuiltin(blt->name, blt);
+	Variable* var = VarBuiltin(strdup(blt->name), blt);
 	Context_addGlobal(ctx, var);
 }
 
 Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
-	Value* tmp = blt->evaluator(ctx, arglist, internal);
-	
-	/* Simplify result */
-	Value* ret = Value_eval(tmp, ctx);
-	Value_free(tmp);
-	
+	Value* ret = blt->evaluator(ctx, arglist, internal);
 	if((ret->type == VAL_ERR && ret->err->type == ERR_MATH) || (ret->type == VAL_REAL && isnan(ret->rval))) {
 		Value_free(ret);
-		ret = ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));
+		return ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));
 	}
-	
-	return ret;
-}
-
-char* Builtin_verbose(const Builtin* blt, int indent) {
-	char* ret;
-	
-	asprintf(&ret, "<builtin %s>", blt->name);
 	
 	return ret;
 }
@@ -75,5 +62,24 @@ char* Builtin_repr(const Builtin* blt, bool pretty) {
 	}
 	
 	return strdup(blt->name);
+}
+
+char* Builtin_verbose(const Builtin* blt, unsigned indent) {
+	char* ret;
+	asprintf(&ret, "<builtin %s>", blt->name);
+	return ret;
+}
+
+char* Builtin_xml(const Builtin* blt, unsigned indent) {
+	/*
+	 sc> ?x sqrt
+	 
+	 <vardata name="sqrt">
+	   <builtin name="sqrt"/>
+	 </vardata>
+	*/
+	char* ret;
+	asprintf(&ret, "<builtin name=\"%s\"/>", blt->name);
+	return ret;
 }
 

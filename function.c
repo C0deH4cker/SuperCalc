@@ -71,21 +71,22 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 	for(i = 0; i < evaluated->count; i++) {
 		Value* val = Value_copy(evaluated->args[i]);
 		Variable* arg;
+		char* argname = strdup(func->argnames[i]);
 		
 		if(val->type == VAL_VAR) {
 			Variable* var = Variable_getAbove(frame, val->name);
 			
 			switch(var->type) {
 				case VAR_VALUE:
-					arg = VarValue(func->argnames[i], Value_copy(var->val));
+					arg = VarValue(argname, Value_copy(var->val));
 					break;
 				
 				case VAR_FUNC:
-					arg = VarFunc(func->argnames[i], Function_copy(var->func));
+					arg = VarFunc(argname, Function_copy(var->func));
 					break;
 				
 				case VAR_BUILTIN:
-					arg = VarBuiltin(func->argnames[i], Builtin_copy(var->blt));
+					arg = VarBuiltin(argname, Builtin_copy(var->blt));
 					break;
 				
 				default:
@@ -93,7 +94,7 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 			}
 		}
 		else {
-			arg = VarValue(func->argnames[i], Value_copy(val));
+			arg = VarValue(argname, Value_copy(val));
 		}
 		
 		Context_addLocal(frame, arg);
@@ -108,30 +109,31 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 	return ret;
 }
 
+char* Function_repr(const Function* func, bool pretty) {
+	char* ret;
+	char* args = argsVerbose(func);
+	char* body = Value_repr(func->body, pretty);
+	
+	asprintf(&ret, "(%s) = %s", args, body);
+	
+	free(body);
+	free(args);
+	return ret;
+}
+
 static char* argsVerbose(const Function* func) {
 	char* ret;
-	/* 8 is big enough even for: "x, y, z", so it's a good starting size */
-	size_t size = 8;
-	
-	ret = fmalloc((size + 1) * sizeof(*ret));
-	
-	ret[0] = '\0';
-	
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
-		size_t namelen = strlen(func->argnames[i]);
-		
-		/* Double the string size if it's too short */
-		if(strlen(ret) + namelen + 2 > size) {
-			size *= 2;
-			ret = frealloc(ret, (size + 1) * sizeof(*ret));
+		if(i == 0) {
+			asprintf(&ret, "%s", func->argnames[i]);
 		}
-		
-		if(i > 0) {
-			strncat(ret, ", ", size);
+		else {
+			char* tmp;
+			asprintf(&tmp, "%s, %s", ret, func->argnames[i]);
+			free(ret);
+			ret = tmp;
 		}
-		
-		strncat(ret, func->argnames[i], size);
 	}
 	
 	return ret;
@@ -139,32 +141,85 @@ static char* argsVerbose(const Function* func) {
 
 char* Function_verbose(const Function* func) {
 	char* ret;
-	
-	char* spacing = spaces(IWIDTH);
-	
 	char* args = argsVerbose(func);
+	char* body = Value_verbose(func->body, 1);
 	
-	asprintf(&ret, "(%s) {\n%s%s\n}", args,
-			 spacing, Value_verbose(func->body, IWIDTH)
-			 );
+	asprintf(&ret,
+			 "(%s) {\n"
+				 "%s%s\n"
+			 "}",
+			 args,
+			 indentation(1), body);
 	
-	free(spacing);
+	free(body);
 	free(args);
+	return ret;
+}
+
+static char* argsXml(const Function* func, unsigned indent) {
+	char* ret = NULL;
+	
+	unsigned i;
+	for(i = 0; i < func->argcount; i++) {
+		if(i == 0) {
+			asprintf(&ret, "%s<arg name=\"%s\"/>",
+					 indentation(indent), func->argnames[i]);
+		}
+		else {
+			char* tmp;
+			asprintf(&tmp,
+					 "%s\n"
+					 "%s<arg name=\"%s\"/>",
+					 ret,
+					 indentation(indent), func->argnames[i]);
+			free(ret);
+			ret = tmp;
+		}
+	}
 	
 	return ret;
 }
 
-char* Function_repr(const Function* func, bool pretty) {
+char* Function_xml(const Function* func, unsigned indent) {
+	/*
+	 sc> ?x f(x) = 3x + 4
+	 
+	 <vardata name="f">
+	   <func>
+	     <argnames>
+	       <arg name="x"/>
+	     </argnames>
+	     <expr>
+	       <add>
+	         <mul>
+	           <int>3</int>
+	           <var name="x"/>
+	         </mul>
+	         <int>4</int>
+	       </add>
+	     </expr>
+	   </func>
+	 </vardata>
+	*/
 	char* ret;
+	char* args = argsXml(func, indent + 2);
+	char* body = Value_xml(func->body, indent + 2);
 	
-	char* args = argsVerbose(func);
-	char* body = Value_repr(func->body, pretty);
+	asprintf(&ret,
+			 "<func>\n"
+				 "%2$s<argnames>\n"
+					 "%4$s\n" /* args */
+				 "%2$s</argnames>\n"
+				 "%2$s<expr>\n"
+					 "%3$s%5$s\n" /* body */
+				 "%2$s</expr>\n"
+			 "%1$s</func>",
+			 indentation(indent), indentation(indent + 1), indentation(indent + 2),
+			 args,
+			 body);
 	
-	asprintf(&ret, "(%s) = %s", args, body);
-	
-	free(args);
 	free(body);
-	
+	free(args);
 	return ret;
 }
 

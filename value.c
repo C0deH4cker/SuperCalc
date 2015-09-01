@@ -114,9 +114,9 @@ Value* ValVec(Vector* vec) {
 	return ret;
 }
 
-Value* ValPlace(VALTYPE fill) {
+Value* ValPlace(Placeholder* ph) {
 	Value* ret = allocValue(VAL_PLACE);
-	ret->fill = fill;
+	ret->ph = ph;
 	return ret;
 }
 
@@ -497,7 +497,7 @@ static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 
 static Value* callFunc(Value* val, const char** expr, parser_cb* cb) {
 	/* Ugly, but parses better. Only variables and the results of calls can be funcs */
-	if(val->type != VAL_VAR && val->type != VAL_CALL) {
+	if(val->type != VAL_VAR && val->type != VAL_CALL && val->type != VAL_PLACE) {
 		return val;
 	}
 	
@@ -519,12 +519,11 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 	Value* ret;
 	
 	char* token = nextToken(expr);
-	trimSpaces(expr);
-	
 	if(token == NULL) {
 		return ValErr(badChar(**expr));
 	}
 	
+	trimSpaces(expr);
 	if(**expr == '(') {
 		(*expr)++;
 		ArgList* arglist = ArgList_parse(expr, ',', ')', cb);
@@ -534,9 +533,7 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 			return ValErr(ignoreError());
 		}
 		
-		FuncCall* call = FuncCall_create(token, arglist);
-		
-		ret = ValCall(call);
+		ret = ValCall(FuncCall_create(token, arglist));
 	}
 	else {
 		ret = ValVar(token);
@@ -567,7 +564,6 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	}
 	else if(**expr == '(') {
 		(*expr)++;
-		/* FIXME: Failing case: 3(4)^2 */
 		ret = Value_parse(expr, 0, ')', cb);
 	}
 	else if(**expr == '<') {
@@ -639,7 +635,65 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	return ret;
 }
 
-char* Value_verbose(const Value* val, int indent) {
+char* Value_repr(const Value* val, bool pretty) {
+	char* ret;
+	char* str;
+	
+	switch(val->type) {
+		case VAL_INT:
+			asprintf(&ret, "%lld", val->ival);
+			break;
+			
+		case VAL_REAL:
+			if(pretty && isinf(val->rval)) {
+				ret = strdup(val->rval < 0 ? "-∞" : "∞");
+			}
+			else {
+				asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
+			}
+			break;
+			
+		case VAL_FRAC:
+			ret = Fraction_repr(val->frac, pretty);
+			break;
+			
+		case VAL_UNARY:
+			str = UnOp_repr(val->term, pretty);
+			asprintf(&ret, "(%s)", str);
+			free(str);
+			break;
+			
+		case VAL_EXPR:
+			str = BinOp_repr(val->expr, pretty);
+			asprintf(&ret, "(%s)", str);
+			free(str);
+			break;
+			
+		case VAL_CALL:
+			ret = FuncCall_repr(val->call, pretty);
+			break;
+			
+		case VAL_VAR:
+			ret = strdup(pretty ? getPretty(val->name) : val->name);
+			break;
+			
+		case VAL_VEC:
+			ret = Vector_repr(val->vec);
+			break;
+			
+		case VAL_PLACE:
+			ret = Placeholder_repr(val->ph);
+			break;
+			
+		default:
+			/* Shouldn't be reached */
+			badValType(val->type);
+	}
+	
+	return ret;
+}
+
+char* Value_verbose(const Value* val, unsigned indent) {
 	char* ret;
 	
 	switch(val->type) {
@@ -676,8 +730,7 @@ char* Value_verbose(const Value* val, int indent) {
 			break;
 		
 		case VAL_PLACE:
-			/* TODO: Placeholder index? */
-			asprintf(&ret, "@%c", Template_placeholderChar(val->fill));
+			ret = Placeholder_repr(val->ph);
 			break;
 		
 		default:
@@ -687,64 +740,56 @@ char* Value_verbose(const Value* val, int indent) {
 	return ret;
 }
 
-char* Value_repr(const Value* val, bool pretty) {
+char* Value_xml(const Value* val, unsigned indent) {
 	char* ret;
-	char* str;
-	
-	if(val == NULL) {
-		asprintf(&ret, "NULL");
-		return ret;
-	}
 	
 	switch(val->type) {
 		case VAL_INT:
-			asprintf(&ret, "%lld", val->ival);
+			asprintf(&ret, "<int>%lld</int>", val->ival);
 			break;
-		
+			
 		case VAL_REAL:
-			asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
+			asprintf(&ret, "<real>%.*g</real>", DBL_DIG, val->rval);
 			break;
-		
+			
 		case VAL_FRAC:
-			ret = Fraction_repr(val->frac, pretty);
+			ret = Fraction_xml(val->frac);
 			break;
-		
+			
 		case VAL_UNARY:
-			str = UnOp_repr(val->term, pretty);
-			asprintf(&ret, "(%s)", str);
-			free(str);
+			ret = UnOp_xml(val->term, indent);
 			break;
-		
+			
 		case VAL_EXPR:
-			str = BinOp_repr(val->expr, pretty);
-			asprintf(&ret, "(%s)", str);
-			free(str);
+			ret = BinOp_xml(val->expr, indent);
 			break;
-		
+			
 		case VAL_CALL:
-			ret = FuncCall_repr(val->call, pretty);
+			ret = FuncCall_xml(val->call, indent);
 			break;
-		
+			
 		case VAL_VAR:
-			if(pretty) {
-				ret = strdup(getPretty(val->name));
+			if(val->name[0] == '@') {
+				asprintf(&ret,
+						 "<var name=\"%s\" internal=\"true\"/>",
+						 &val->name[1]);
 			}
 			else {
-				ret = strdup(val->name);
+				asprintf(&ret,
+						 "<var name=\"%s\"/>",
+						 val->name);
 			}
 			break;
-		
+			
 		case VAL_VEC:
-			ret = Vector_repr(val->vec);
+			ret = Vector_xml(val->vec, indent);
 			break;
-		
+			
 		case VAL_PLACE:
-			/* TODO: Placeholder index? */
-			asprintf(&ret, "@%c", Template_placeholderChar(val->fill));
+			ret = Placeholder_xml(val->ph, indent);
 			break;
-		
+			
 		default:
-			/* Shouldn't be reached */
 			badValType(val->type);
 	}
 	

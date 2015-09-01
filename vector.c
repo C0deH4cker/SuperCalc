@@ -31,12 +31,9 @@ static Value* vecScalarOpRev(const Vector* vec, const Value* scalar, const Conte
 static Value* vecCompOp(const Vector* vector1, const Vector* vector2, const Context* ctx, BINTYPE bin);
 
 
-
 Vector* Vector_new(ArgList* vals) {
 	Vector* ret = fmalloc(sizeof(*ret));
-	
 	ret->vals = vals;
-	
 	return ret;
 }
 
@@ -51,7 +48,6 @@ Vector* Vector_create(unsigned count, ...) {
 	Vector* ret = Vector_vcreate(count, ap);
 	
 	va_end(ap);
-	
 	return ret;
 }
 
@@ -275,95 +271,15 @@ Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* c
 	return accum;
 }
 
-Value* Vector_cross(const Vector* vector1, const Vector* vector2, const Context* ctx) {
-	ArgList* v1 = vector1->vals;
-	ArgList* v2 = vector2->vals;
-	
-	/* First cross multiplication */
-	BinOp* i_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[2]));
-	BinOp* i_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[1]));
-	
-	/* Evaluate multiplications */
-	Value* i_pos = BinOp_eval(i_pos_op, ctx);
-	Value* i_neg = BinOp_eval(i_neg_op, ctx);
-	
-	BinOp_free(i_pos_op);
-	BinOp_free(i_neg_op);
-	
-	/* Error checking */
-	if(i_pos->type == VAL_ERR) {
-		Value_free(i_neg);
-		return i_pos;
-	}
-	if(i_neg->type == VAL_ERR) {
-		Value_free(i_pos);
-		return i_neg;
-	}
-	
-	/* Subtract products */
-	BinOp* i_op = BinOp_new(BIN_SUB, i_pos, i_neg);
-	Value* i_val = BinOp_eval(i_op, ctx);
-	BinOp_free(i_op);
-	
-	if(i_val->type == VAL_ERR) {
-		return i_val;
-	}
-	
-	/* Part 2 */
-	BinOp* j_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[2]), Value_copy(v2->args[0]));
-	BinOp* j_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[2]));
-	
-	Value* j_pos = BinOp_eval(j_pos_op, ctx);
-	Value* j_neg = BinOp_eval(j_neg_op, ctx);
-	
-	BinOp_free(j_pos_op);
-	BinOp_free(j_neg_op);
-	
-	if(j_pos->type == VAL_ERR) {
-		Value_free(j_neg);
-		return j_pos;
-	}
-	if(j_neg->type == VAL_ERR) {
-		Value_free(j_pos);
-		return j_neg;
-	}
-	
-	BinOp* j_op = BinOp_new(BIN_SUB, j_pos, j_neg);
-	Value* j_val = BinOp_eval(j_op, ctx);
-	BinOp_free(j_op);
-	
-	if(j_val->type == VAL_ERR) {
-		return j_val;
-	}
-	
-	/* Part 3 */
-	BinOp* k_pos_op = BinOp_new(BIN_MUL, Value_copy(v1->args[0]), Value_copy(v2->args[1]));
-	BinOp* k_neg_op = BinOp_new(BIN_MUL, Value_copy(v1->args[1]), Value_copy(v2->args[0]));
-	
-	Value* k_pos = BinOp_eval(k_pos_op, ctx);
-	Value* k_neg = BinOp_eval(k_neg_op, ctx);
-	
-	BinOp_free(k_pos_op);
-	BinOp_free(k_neg_op);
-	
-	if(k_pos->type == VAL_ERR) {
-		Value_free(k_neg);
-		return k_pos;
-	}
-	if(k_neg->type == VAL_ERR) {
-		Value_free(k_pos);
-		return k_neg;
-	}
-	
-	BinOp* k_op = BinOp_new(BIN_SUB, k_pos, k_neg);
-	Value* k_val = BinOp_eval(k_op, ctx);
-	BinOp_free(k_op);
-	
-	if(k_val->type == VAL_ERR) {
-		return k_val;
-	}
-	
-	return ValVec(Vector_create(3, i_val, j_val, k_val));
+Value* Vector_cross(const Vector* u, const Vector* v, const Context* ctx) {
+	/* Down to one statement from almost 100 lines because of TP_EVAL :) */
+	return TP_EVAL(
+		"<@2@*@6@ - @3@*@5@,"
+		" @3@*@4@ - @1@*@6@,"
+		" @1@*@5@ - @2@*@4@>",
+		ctx,
+		Value_copy(u->vals->args[0]), Value_copy(u->vals->args[1]), Value_copy(u->vals->args[2]),
+		Value_copy(v->vals->args[0]), Value_copy(v->vals->args[1]), Value_copy(v->vals->args[2]));
 }
 
 Value* Vector_magnitude(const Vector* vec, const Context* ctx) {
@@ -392,29 +308,59 @@ Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx) {
 	return Value_copy(vec->vals->args[index->ival]);
 }
 
-char* Vector_verbose(const Vector* vec, int indent) {
+char* Vector_repr(const Vector* vec) {
 	char* ret;
+	char* vals = ArgList_repr(vec->vals, false);
 	
-	char* current = spaces(indent);
-	char* vals = ArgList_verbose(vec->vals, indent + IWIDTH);
+	asprintf(&ret, "<%s>", vals);
 	
-	asprintf(&ret, "Vector <\n%s%s>",
-			 vals,
-			 current);
-	
-	free(current);
 	free(vals);
-	
 	return ret;
 }
 
-char* Vector_repr(const Vector* vec) {
+char* Vector_verbose(const Vector* vec, unsigned indent) {
 	char* ret;
+	char* vals = ArgList_verbose(vec->vals, indent + 1);
 	
-	char* vals = ArgList_repr(vec->vals, false);
-	asprintf(&ret, "<%s>", vals);
+	asprintf(&ret,
+			 "Vector <\n"
+				 "%2$s%3$s\n" /* vals */
+			 "%1$s>",
+			 indentation(indent), indentation(indent + 1),
+			 vals);
+	
 	free(vals);
+	return ret;
+}
+
+char* Vector_xml(const Vector* vec, unsigned indent) {
+	/*
+	 sc> ?x <pi, 7 - 3, 4!>
+	 
+	 <vec>
+	   <var name="pi"/>
+	   <sub>
+	     <int>7</int>
+	     <int>3</int>
+	   </sub>
+	   <fact>
+	     <int>4</int>
+	   </fact>
+	 </vec>
+	 
+	 <3.14159265358979, 4, 24>
+	*/
+	char* ret;
+	char* vals = ArgList_xml(vec->vals, indent + 1);
 	
+	asprintf(&ret,
+			 "<vec>\n"
+				 "%2$s\n" /* vals */
+			 "%1$s</vec>",
+			 indentation(indent),
+			 vals);
+	
+	free(vals);
 	return ret;
 }
 

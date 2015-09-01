@@ -22,6 +22,7 @@ typedef struct Variable Variable;
 typedef enum {
 	VAR_ERR = -1,
 	VAR_BUILTIN = 0,
+	VAR_CONSTANT,
 	VAR_VALUE,
 	VAR_FUNC
 } VARTYPE;
@@ -41,9 +42,10 @@ struct Variable {
 /* Constructors */
 /* Each of these methods consume its last argument */
 Variable* VarErr(Error* err);
-Variable* VarBuiltin(const char* name, Builtin* blt);
-Variable* VarValue(const char* name, Value* val);
-Variable* VarFunc(const char* name, Function* func);
+Variable* VarBuiltin(char* name, Builtin* blt);
+Variable* VarConstant(char* name, Builtin* blt);
+Variable* VarValue(char* name, Value* val);
+Variable* VarFunc(char* name, Function* func);
 
 /* Destructor */
 void Variable_free(Variable* var);
@@ -67,7 +69,8 @@ Variable* Variable_getAbove(const Context* ctx, const char* name);
 void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */
-char* Variable_verbose(const Variable* var);
 char* Variable_repr(const Variable* var, bool pretty);
+char* Variable_verbose(const Variable* var);
+char* Variable_xml(const Variable* var);
 
 #endif

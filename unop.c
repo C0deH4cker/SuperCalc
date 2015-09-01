@@ -27,6 +27,9 @@ static unop_t _unop_table[] = {
 static const char* _unop_repr[] = {
 	"!"
 };
+static const char* _unop_xml[] = {
+	"fact"
+};
 
 static long long fact(long long n) {
 	long long ret = 1;
@@ -39,8 +42,6 @@ static long long fact(long long n) {
 }
 
 static Value* unop_fact(const Context* ctx, const Value* a) {
-	Value* ret;
-	
 	if(a->type != VAL_INT) {
 		return ValErr(typeError("Factorial operand must be an integer."));
 	}
@@ -49,9 +50,7 @@ static Value* unop_fact(const Context* ctx, const Value* a) {
 		return ValErr(mathError("Factorial operand too large (%lld > 20).", a->ival));
 	}
 	
-	ret = ValInt(fact(a->ival));
-	
-	return ret;
+	return ValInt(fact(a->ival));
 }
 
 UnOp* UnOp_new(UNTYPE type, Value* a) {
@@ -90,39 +89,11 @@ Value* UnOp_eval(const UnOp* term, const Context* ctx) {
 	Value* ret = _unop_table[term->type](ctx, a);
 	
 	Value_free(a);
-	
-	return ret;
-}
-
-char* UnOp_verbose(const UnOp* term, int indent) {
-	char* ret;
-	
-	if(!term) {
-		return NULL;
-	}
-	
-	char* spacing = spaces(indent + IWIDTH);
-	char* current = spaces(indent);
-	char* a = Value_verbose(term->a, indent + IWIDTH);
-	
-	asprintf(&ret, "%s (\n%s%s\n%s)", _unop_repr[term->type],
-			 spacing, a,
-			 current);
-	
-	free(spacing);
-	free(current);
-	free(a);
-	
 	return ret;
 }
 
 char* UnOp_repr(const UnOp* term, bool pretty) {
 	char* ret;
-	
-	if(term == NULL) {
-		return strNULL();
-	}
-	
 	char* val = Value_repr(term->a, pretty);
 	
 	switch(term->type) {
@@ -136,7 +107,50 @@ char* UnOp_repr(const UnOp* term, bool pretty) {
 	}
 	
 	free(val);
+	return ret;
+}
+
+char* UnOp_verbose(const UnOp* term, unsigned indent) {
+	char* ret;
+	char* a = Value_verbose(term->a, indent + 1);
 	
+	asprintf(&ret,
+			 "%3$s (\n"       /* Type */
+				 "%2$s%4$s\n" /* a */
+			 "%1$s)",
+			 indentation(indent), indentation(indent + 1),
+			 _unop_repr[term->type],
+			 a);
+	
+	free(a);
+	return ret;
+}
+
+char* UnOp_xml(const UnOp* term, unsigned indent) {
+	/*
+	 sc> ?x (3 - 1)!
+	 
+	 <fact>
+	   <sub>
+	     <int>3</int>
+	     <int>1</int>
+	   </sub>
+	 </fact>
+	 
+	 2
+	*/
+	char* ret;
+	char* a = Value_xml(term->a, indent + 1);
+	
+	asprintf(&ret,
+			 "<%1$s>\n"
+				 "%3$s%4$s\n" /* a */
+			 "%2$s</%1$s>",
+			 _unop_xml[term->type],
+			 indentation(indent), indentation(indent + 1),
+			 a);
+	
+	free(a);
 	return ret;
 }
 

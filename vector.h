@@ -57,7 +57,8 @@ Value* Vector_normalize(const Vector* vec, const Context* ctx);
 Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx);
 
 /* Printing */
-char* Vector_verbose(const Vector* vec, int indent);
 char* Vector_repr(const Vector* vec);
+char* Vector_verbose(const Vector* vec, unsigned indent);
+char* Vector_xml(const Vector* vec, unsigned indent);
 
 #endif

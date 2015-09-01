@@ -47,5 +47,6 @@ double Fraction_asReal(const Fraction* frac);
 
 /* Printing */
 char* Fraction_repr(const Fraction* frac, bool pretty);
+char* Fraction_xml(const Fraction* frac);
 
 #endif

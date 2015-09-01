@@ -24,8 +24,8 @@
 
 
 static Value* callVar(const Context* ctx, const char* name, const ArgList* args);
-static char* verboseFunc(const char* name, const ArgList* arglist, int indent);
-static char* specialVerbose(const char* name, const ArgList* arglist, int indent);
+static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent);
+static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent);
 static char* reprFunc(const char* name, const ArgList* arglist, bool pretty);
 static char* specialRepr(const char* name, const ArgList* arglist, bool pretty);
 
@@ -142,88 +142,14 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 	return ret;
 }
 
-static char* verboseFunc(const char* name, const ArgList* arglist, int indent) {
-	char* ret;
-	
-	char* args = ArgList_verbose(arglist, indent + IWIDTH);
-	char* current = spaces(indent);
-	
-	asprintf(&ret, "%s(\n%s%s)", name,
-			 args,
-			 current);
-	
-	free(args);
-	free(current);
-	
-	return ret;
-}
-
-static char* specialVerbose(const char* name, const ArgList* arglist, int indent) {
-	char* ret;
-	
-	if(strcmp(name, "abs") == 0) {
-		if(arglist->count != 1) {
-			return strERR();
-		}
-		
-		char* args = ArgList_verbose(arglist, indent + IWIDTH);
-		asprintf(&ret, "|%s|", args);
-		free(args);
-	}
-	else if(strcmp(name, "elem") == 0) {
-		if(arglist->count != 2) {
-			/* Freak out */
-			return strERR();
-		}
-		
-		char* vec = Value_verbose(arglist->args[0], indent);
-		char* index = Value_verbose(arglist->args[1], indent + IWIDTH);
-		
-		char* spacing = spaces(indent + IWIDTH);
-		char* current = spaces(indent);
-		
-		asprintf(&ret, "%s[\n%s%s\n%s]", vec,
-				 spacing, index,
-				 current);
-		
-		free(vec);
-		free(index);
-		free(spacing);
-		free(current);
-	}
-	else {
-		/* Just default to printing the function */
-		ret = verboseFunc(name, arglist, indent);
-	}
-	
-	return ret;
-}
-
-char* FuncCall_verbose(const FuncCall* call, int indent) {
-	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
-		/* Internal call */
-		return specialVerbose(call->func->name + 1, call->arglist, indent);
-	}
-	
-	char* ret;
-	char* callable = Value_verbose(call->func, indent);
-	ret = verboseFunc(callable, call->arglist, indent);
-	
-	free(callable);
-	
-	return ret;
-}
-
 static char* reprFunc(const char* name, const ArgList* arglist, bool pretty) {
 	char* ret;
 	char* argstr = ArgList_repr(arglist, pretty);
-	
 	const char* disp = pretty ? getPretty(name) : name;
 	
 	asprintf(&ret, "%s(%s)", disp, argstr);
 	
 	free(argstr);
-	
 	return ret;
 }
 
@@ -234,7 +160,7 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 	if(strcmp(name, "abs") == 0) {
 		if(arglist->count != 1) {
 			/* Shouldn't ever happen */
-			return strERR();
+			RAISE(internalError("More than one argument passed to internal call of abs"), true);
 		}
 		
 		char* args = ArgList_repr(arglist, pretty);
@@ -244,7 +170,7 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 	else if(strcmp(name, "elem") == 0) {
 		if(arglist->count != 2) {
 			/* Freak out */
-			return strERR();
+			RAISE(internalError("Invalid argument count passed to internal call of elem"), true);
 		}
 		
 		char* vec = Value_repr(arglist->args[0], pretty);
@@ -252,8 +178,8 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 		
 		asprintf(&ret, "%s[%s]", vec, index);
 		
-		free(vec);
 		free(index);
+		free(vec);
 	}
 	else {
 		/* Just default to printing the function */
@@ -270,12 +196,133 @@ char* FuncCall_repr(const FuncCall* call, bool pretty) {
 	}
 	
 	char* ret;
-	
 	char* callable = Value_repr(call->func, pretty);
 	ret = reprFunc(callable, call->arglist, pretty);
 	
 	free(callable);
+	return ret;
+}
+
+static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent) {
+	char* ret;
+	char* args = ArgList_verbose(arglist, indent + 1);
 	
+	asprintf(&ret,
+			 "%3$s(\n"        /* name */
+				 "%2$s%4$s\n" /* args */
+			 "%1$s)",
+			 indentation(indent), indentation(indent + 1),
+			 name,
+			 args);
+	
+	free(args);
+	return ret;
+}
+
+static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent) {
+	char* ret;
+	
+	if(strcmp(name, "abs") == 0) {
+		if(arglist->count != 1) {
+			/* Shouldn't ever happen */
+			RAISE(internalError("More than one argument passed to internal call of abs"), true);
+		}
+		
+		char* args = ArgList_verbose(arglist, indent + 1);
+		asprintf(&ret, "|%s|", args);
+		free(args);
+	}
+	else if(strcmp(name, "elem") == 0) {
+		if(arglist->count != 2) {
+			/* Freak out */
+			RAISE(internalError("Invalid argument count passed to internal call of elem"), true);
+		}
+		
+		char* vec = Value_verbose(arglist->args[0], indent);
+		char* index = Value_verbose(arglist->args[1], indent + 1);
+		
+		asprintf(&ret,
+				 "%3$s[\n"
+					 "%2$s%4$s\n"
+				 "%1$s]",
+				 indentation(indent), indentation(indent + 1),
+				 vec, index);
+		
+		free(index);
+		free(vec);
+	}
+	else {
+		/* Just default to printing the function */
+		ret = verboseFunc(name, arglist, indent);
+	}
+	
+	return ret;
+}
+
+char* FuncCall_verbose(const FuncCall* call, unsigned indent) {
+	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
+		/* Internal call */
+		return specialVerbose(&call->func->name[1], call->arglist, indent);
+	}
+	
+	char* callable = Value_verbose(call->func, indent);
+	char* ret = verboseFunc(callable, call->arglist, indent);
+	
+	free(callable);
+	return ret;
+}
+
+char* FuncCall_xml(const FuncCall* call, unsigned indent) {
+	/*
+	 sc> ?x atan2(4, 1 + 2)
+	 
+	 <call>
+	   <callee>
+	     <var name="atan2"/>
+	   </callee>
+	   <args>
+	     <int>4</int>
+	     <add>
+	       <int>1</int>
+	       <int>2</int>
+	     </add>
+	   </args>
+	 </call>
+	 
+	 0.927295218001612
+	*/
+	char* ret;
+	char* callee = Value_xml(call->func, indent + 2);
+	
+	if(call->arglist->count > 0) {
+		char* args = ArgList_xml(call->arglist, indent + 2);
+		asprintf(&ret,
+				 "<call>\n"
+					 "%2$s<callee>\n"
+						 "%3$s%4$s\n" /* func */
+					 "%2$s</callee>\n"
+					 "%2$s<args>\n"
+						 "%5$s\n" /* args */
+					 "%2$s</args>\n"
+				 "%1$s</call>",
+				 indentation(indent), indentation(indent + 1), indentation(indent + 2),
+				 callee,
+				 args);
+		free(args);
+	}
+	else {
+		asprintf(&ret,
+				 "<call>\n"
+					 "%2$s<callee>\n"
+						 "%3$s%4$s\n" /* func */
+					 "%2$s</callee>\n"
+					 "%2$s<args/>\n"
+				 "%1$s</call>",
+				 indentation(indent), indentation(indent + 1), indentation(indent + 2),
+				 callee);
+	}
+	
+	free(callee);
 	return ret;
 }
 

@@ -287,7 +287,7 @@ Examples of verbose printing:
 	>>> ? 3 + 4 - 2
 	((3 + 4) - 2)
 	5
-	>>> ?? 8 - 9(6^2 + 3/7)^3
+	>>> ?rt 8 - 9(6^2 + 3/7)^3
 	- (
 	  [a] 8
 	  [b] * (
@@ -315,10 +315,13 @@ Another usage of SuperCalc's verbose output is with functions. For verbosity >= 
 Examples of printing functions verbosely:
 
 	>>> f(x) = 3x
-	>>> ?f
+	>>> ? f
 	f(x) = (3 * x)
+	>>> ?p sqrt(4)
+	√(4)
+	2
 	>>> g(x, y) = x^2 - 2x*y + 1
-	>>> ??g
+	>>> ?rt g
 	g(x, y) {
 	  + (
 	    [a] - (
@@ -338,6 +341,33 @@ Examples of printing functions verbosely:
 	  )
 	}
 	g(x, y) = (((x ^ 2) - ((2 * x) * y)) + 1)
+	>>> ?x g
+	<vardata name="g">
+	  <func>
+	    <argnames>
+	      <arg name="x"/>
+	      <arg name="y"/>
+	    </argnames>
+	    <expr>
+	      <add>
+	        <sub>
+	          <pow>
+	            <var name="x"/>
+	            <int>2</int>
+	          </pow>
+	          <mul>
+	            <mul>
+	              <int>2</int>
+	              <var name="x"/>
+	            </mul>
+	            <var name="y"/>
+	          </mul>
+	        </sub>
+	        <int>1</int>
+	      </add>
+	    </expr>
+	  </func>
+	</vardata>
 
 ##Building
 

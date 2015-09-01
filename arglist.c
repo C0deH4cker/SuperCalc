@@ -181,72 +181,112 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	return ret;
 }
 
-char* ArgList_verbose(const ArgList* arglist, int indent) {
+char* ArgList_repr(const ArgList* arglist, bool pretty) {
+	if(arglist->count == 0) {
+		return strdup("");
+	}
+	
 	char* ret;
-	
-	size_t size = 32;
-	
-	ret = fmalloc(size + 1);
-	
-	ret[0] = '\0';
-	
-	char* spacing = spaces(indent);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* arg = arglist->args[i];
-		char* argstr = Value_verbose(arg, indent);
-		char* curarg;
+		char* argstr = Value_repr(arglist->args[i], pretty);
 		
-		asprintf(&curarg, "%s[%d] %s\n", spacing, i, argstr);
-		
-		free(argstr);
-		
-		/* Double the string size if it's too short */
-		size_t newlen = strlen(ret) + strlen(curarg);
-		if(newlen > size) {
-			size = newlen;
-			ret = frealloc(ret, (size + 1) * sizeof(*ret));
+		if(i == 0) {
+			ret = argstr;
 		}
-		
-		strncat(ret, curarg, size);
-		
-		free(curarg);
+		else {
+			char* tmp;
+			asprintf(&tmp,
+					 "%s, %s",
+					 ret, argstr);
+			free(ret);
+			free(argstr);
+			ret = tmp;
+		}
 	}
-	
-	free(spacing);
 	
 	return ret;
 }
 
-char* ArgList_repr(const ArgList* arglist, bool pretty) {
+char* ArgList_verbose(const ArgList* arglist, unsigned indent) {
 	char* ret;
-	
-	size_t size = 32;
-	
-	ret = fmalloc(size + 1);
-	
-	ret[0] = '\0';
+	const char* current = indentation(indent);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* arg = arglist->args[i];
-		char* argstr = Value_repr(arg, pretty);
+		char* argstr = Value_verbose(arglist->args[i], indent);
 		
-		/* Double the string size if it's too short */
-		size_t newlen = strlen(ret) + 2 + strlen(argstr);
-		if(newlen > size) {
-			size = newlen;
-			ret = frealloc(ret, (size + 1) * sizeof(*ret));
+		if(i == 0) {
+			asprintf(&ret,
+					 "[%d] %s",
+					 i, argstr);
 		}
-		
-		if(i > 0) {
-			strncat(ret, ", ", size);
+		else {
+			char* tmp;
+			asprintf(&tmp,
+					 "%s\n"
+					 "%s[%d] %s",
+					 ret,
+					 current, i, argstr);
+			free(ret);
+			ret = tmp;
 		}
-		
-		strncat(ret, argstr, size);
 		
 		free(argstr);
+	}
+	
+	return ret;
+}
+
+char* ArgList_xml(const ArgList* arglist, unsigned indent) {
+	/*
+	 sc> ?x logbase(22/7, 0.5pi)
+	 
+	 <call>
+	   <callee>
+	     <var name="logbase"/>
+	   </callee>
+	   <args>
+	     <div>
+	       <int>22</int>
+	       <int>7</int>
+	     </div>
+	     <mul>
+	       <real>0.5</real>
+	       <var name="pi"/>
+	     </mul>
+	   </args>
+	 </call>
+	*/
+	if(arglist->count == 0) {
+		return NULL;
+	}
+	
+	char* ret;
+	const char* spacing = indentation(indent);
+	
+	unsigned i;
+	for(i = 0; i < arglist->count; i++) {
+		char* arg = Value_xml(arglist->args[i], indent);
+		
+		if(i == 0) {
+			asprintf(&ret,
+					 "%s%s", /* first arg */
+					 spacing, arg);
+		}
+		else {
+			char* tmp;
+			asprintf(&tmp,
+					 "%s\n"  /* preceding args */
+					 "%s%s", /* current arg */
+					 ret,
+					 spacing, arg);
+			free(ret);
+			ret = tmp;
+		}
+		
+		free(arg);
 	}
 	
 	return ret;

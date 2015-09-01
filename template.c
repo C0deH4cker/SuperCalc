@@ -13,6 +13,7 @@
 #include <string.h>
 #include "generic.h"
 #include "error.h"
+#include "placeholder.h"
 
 struct Template {
 	Value* tree;
@@ -24,89 +25,72 @@ struct Template {
 /*
  Example: "@1i*4 + @1i - @2f"
  
-      Value* tree;
-            -          unsigned num_placeholders = 2;
-          /   \        unsigned capacity = 4;
-         +    @2v           0           1         2      3
-        / \    |       +-----------+-----------+------+------+
-       *  @1v  |       | VAL_PLACE | VAL_PLACE | NULL | NULL | <-- Value** placeholders;
-      / \  |   +--+    +-----------+-----------+------+------+
-    @1v  4 |      |         |           |
-      |    +----------------+           |
-      |    |      |                     |
-      +----+      +---------------------+
-      |           |
-      V           V
- +-----------+------------+
- | VAL_PLACE | VAL_PLACE  |
- | (VAL_INT) | (VAL_FRAC) |
- +-----------+------------+
+       Value* tree;
+             -          unsigned num_placeholders = 2;
+           /   \        unsigned capacity = 4;
+          +    @2v          0        1       2      3
+         / \    |       +--------+--------+------+------+
+        *  @1v  |       | Value* | Value* | NULL | NULL | <-- Value** placeholders;
+       / \  |   +--+    +--------+--------+------+------+
+     @1v  4 |      |        |        |
+      |     +---------------+        |
+      |     |      |                 |
+      +-----+      +-----------------+
+      |            |
+      V            V
+ +------------+-------------+
+ | VAL_PLACE  | VAL_PLACE   |
+ | (PH_INT:1) | (PH_FRAC:2) |
+ +------------+-------------+
 */
 
-
-static VALTYPE get_placeholder_type(char type) {
-	switch(type) {
-		case 'i': return VAL_INT;
-		case 'r': return VAL_REAL;
-		case 'f': return VAL_FRAC;
-		case 'x': return VAL_EXPR;
-		case 'u': return VAL_UNARY;
-		case 'c': return VAL_CALL;
-		case 'n': return VAL_VAR;
-		case 'v': return VAL_VEC;
-		case '@': return VAL_PLACE;
-		
-		default: return VAL_ERR;
-	}
-}
-
-static Value* parse_placeholder(const char** expr, void* data) {
+static Value* parse_internalName(const char** expr) {
 	if(**expr != '@') {
 		RAISE(badChar(**expr), true);
 	}
 	
-	Template* tp = data;
+	/* Must match regex "@[a-zA-Z]{2,}" */
+	if(!(isalpha((*expr)[1]) && isalpha((*expr)[2]))){
+		return NULL;
+	}
 	
-	/* Move past the @ character */
+	/* Move past '@' */
 	(*expr)++;
 	
-	unsigned index = tp->num_placeholders;
-	if(isdigit(**expr)) {
-		/* Like @1v or @4@ */
-		char* end;
-		errno = 0;
-		
-		/* Read the number after the '@' */
-		index = (unsigned)strtoul(*expr, &end, 10);
-		if(errno != 0 || index == 0 || *expr == end) {
-			/* An error occurred (EINVAL, ERANGE) */
-			RAISE(syntaxError("Invalid number in placeholder"), true);
-		}
-		
-		/* Because it's one-based in the format string but the array is zero-based */
-		--index;
-		
-		/* Advance past the number */
-		*expr = end;
+	/* Read name */
+	char* token = nextToken(expr);
+	char* varname;
+	asprintf(&varname, "@%s", token);
+	free(token);
+	
+	/* Wrap in Value object */
+	Value* ret = ValVar(varname);
+	free(varname);
+	return ret;
+}
+
+static Value* parse_extra(const char** expr, void* data) {
+	/* Try to parse as an internal name, like @sqrt */
+	Value* ret = parse_internalName(expr);
+	if(ret != NULL) {
+		return ret;
 	}
-	else if(isalpha(**expr) || **expr == '_') {
-		/* Like @sqrt() or @v */
-		char next = (*expr)[1];
-		if(isalnum(next) || next == '_') {
-			/* Like @sqrt(), for internal calls. Name must be at least 2 chars long! */
-			char* token = nextToken(expr);
-			char* varname;
-			asprintf(&varname, "@%s", token);
-			free(token);
-			
-			Value* ret = ValVar(varname);
-			free(varname);
-			return ret;
-		}
+	
+	/* Must be a placeholder */
+	Template* tp = data;
+	Placeholder* ph = Placeholder_parse(expr);
+	if(ph->type == PH_ERR) {
+		RAISE(syntaxError("Unable to parse placeholder"), true);
+	}
+	
+	unsigned index = ph->index > 0 ? ph->index - 1 : tp->num_placeholders;
+	
+	if(index >= tp->num_placeholders) {
+		tp->num_placeholders = index + 1;
 	}
 	
 	/* Check if the placeholders array needs to expand to fit the next one */
-	if(index + 1 > tp->capacity) {
+	if(tp->num_placeholders > tp->capacity) {
 		/* Never expand by less than 150% */
 		unsigned oldcap = tp->capacity;
 		unsigned newcap = MAX(3 * oldcap / 2, index + 1);
@@ -116,20 +100,20 @@ static Value* parse_placeholder(const char** expr, void* data) {
 		memset(tp->placeholders + oldcap, 0, (newcap - oldcap) * sizeof(*tp->placeholders));
 		
 		tp->capacity = newcap;
-		tp->num_placeholders = index + 1;
 	}
 	
 	/* Already encountered a format code with the specified index, so use same ptr */
 	if(tp->placeholders[index] != NULL) {
-		if(get_placeholder_type(*(*expr)++) != tp->placeholders[index]->fill) {
+		if(ph->type != tp->placeholders[index]->ph->type) {
 			RAISE(typeError("Type mismatch of numbered placeholders."), true);
 		}
 		
+		Placeholder_free(ph);
 		return tp->placeholders[index];
 	}
 	
 	/* Create a new placeholder at the specified index */
-	return tp->placeholders[index] = ValPlace(get_placeholder_type(*(*expr)++));
+	return tp->placeholders[index] = ValPlace(ph);
 }
 
 
@@ -137,8 +121,12 @@ Template* Template_create(const char* fmt) {
 	Template* ret = fcalloc(1, sizeof(*ret));
 	
 	/* Like normal parsing but handle '@' specially by building placeholders */
-	parser_cb cb = {&parse_placeholder, ret};
+	parser_cb cb = {&parse_extra, ret};
 	ret->tree = Value_parse(&fmt, 0, 0, &cb);
+	
+	if(ret->tree->type == VAL_ERR) {
+		RAISE(ret->tree->err, true);
+	}
 	
 	if(ret->capacity > ret->num_placeholders) {
 		ret->capacity = ret->num_placeholders;
@@ -167,17 +155,17 @@ Value* Template_fill(const Template* tp, ...) {
 	return ret;
 }
 
-static Value* next_value(VALTYPE type, va_list args) {
+static Value* next_value(PLACETYPE type, va_list args) {
 	switch(type) {
-		case VAL_INT:   return ValInt(va_arg(args, int));
-		case VAL_REAL:  return ValReal(va_arg(args, double));
-		case VAL_FRAC:  return ValFrac(va_arg(args, Fraction*));
-		case VAL_EXPR:  return ValExpr(va_arg(args, BinOp*));
-		case VAL_UNARY: return ValUnary(va_arg(args, UnOp*));
-		case VAL_CALL:  return ValCall(va_arg(args, FuncCall*));
-		case VAL_VAR:   return ValVar(strdup(va_arg(args, const char*)));
-		case VAL_VEC:   return ValVec(va_arg(args, Vector*));
-		case VAL_PLACE: return va_arg(args, Value*);
+		case PH_INT:   return ValInt(va_arg(args, int));
+		case PH_REAL:  return ValReal(va_arg(args, double));
+		case PH_FRAC:  return ValFrac(va_arg(args, Fraction*));
+		case PH_EXPR:  return ValExpr(va_arg(args, BinOp*));
+		case PH_UNARY: return ValUnary(va_arg(args, UnOp*));
+		case PH_CALL:  return ValCall(va_arg(args, FuncCall*));
+		case PH_VAR:   return ValVar(strdup(va_arg(args, const char*)));
+		case PH_VEC:   return ValVec(va_arg(args, Vector*));
+		case PH_VAL:   return va_arg(args, Value*);
 			
 		default:
 			return ValErr(typeError("Unexpected placeholder type", type));
@@ -187,10 +175,10 @@ static Value* next_value(VALTYPE type, va_list args) {
 Value* Template_fillv(const Template* tp, va_list args) {
 	Value* ret = NULL;
 	
-	/* Backup placeholder types array */
-	VALTYPE* orig_types = fmalloc(tp->num_placeholders * sizeof(*orig_types));
+	/* Backup placeholder array */
+	Placeholder** orig = fmalloc(tp->num_placeholders * sizeof(*orig));
 	
-	/* Fill in placholders */
+	/* Fill in placeholders */
 	unsigned i;
 	for(i = 0; i < tp->num_placeholders; i++) {
 		Value* cur = tp->placeholders[i];
@@ -204,8 +192,8 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		}
 		
 		/* Replace the placeholder with the value of the argument */
-		orig_types[i] = cur->fill;
-		Value* arg = next_value(cur->fill, args);
+		orig[i] = cur->ph;
+		Value* arg = next_value(cur->ph->type, args);
 		memcpy(cur, arg, sizeof(*cur));
 		free(arg);
 	}
@@ -225,7 +213,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 			Value_free(onDeathRow);
 			
 			cur->type = VAL_PLACE;
-			cur->fill = orig_types[i];
+			cur->ph = orig[i];
 		}
 	}
 	
@@ -247,22 +235,6 @@ Value* Template_evalv(const Template* tp, const Context* ctx, va_list args) {
 	Value* ret = Value_eval(filled, ctx);
 	Value_free(filled);
 	return ret;
-}
-
-char Template_placeholderChar(VALTYPE type) {
-	switch(type) {
-		case VAL_INT:    return 'i';
-		case VAL_REAL:   return 'r';
-		case VAL_FRAC:   return 'f';
-		case VAL_EXPR:   return 'x';
-		case VAL_UNARY:  return 'u';
-		case VAL_CALL:   return 'c';
-		case VAL_VAR:    return 'n';
-		case VAL_VEC:    return 'v';
-		case VAL_PLACE:  return '@';
-			
-		default:         return '\0';
-	}
 }
 
 unsigned Template_placeholderCount(const Template* tp) {

@@ -57,6 +57,9 @@ static const char* _binop_pretty[] = {
 static const char* _binop_repr[] = {
 	"+", "-", "*", "/", "%", "^"
 };
+static const char* _binop_xml[] = {
+	"add", "sub", "mul", "div", "mod", "pow"
+};
 
 const char* binop_verb[] = {
 	"add", "subtract", "multiply", "divide", "modulo", "exponentiate"
@@ -524,50 +527,72 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 	return _binop_cmp[a][b];
 }
 
-char* BinOp_verbose(const BinOp* op, int indent) {
-	char* ret;
-	
-	if(op == NULL) {
-		return strNULL();
-	}
-	
-	char* spacing = spaces(indent + IWIDTH);
-	char* current = spaces(indent);
-	
-	char* a = Value_verbose(op->a, indent + IWIDTH);
-	char* b = Value_verbose(op->b, indent + IWIDTH);
-	
-	asprintf(&ret, "%s (\n%s[a] %s\n%s[b] %s\n%s)",
-			 _binop_repr[op->type],
-			 spacing, a,
-			 spacing, b,
-			 current);
-	
-	free(spacing);
-	free(current);
-	free(a);
-	free(b);
-	
-	return ret;
-}
-
 char* BinOp_repr(const BinOp* node, bool pretty) {
 	char* ret;
-	
-	if(node == NULL) {
-		return strNULL();
-	}
-	
 	char* a = Value_repr(node->a, pretty);
 	char* b = Value_repr(node->b, pretty);
-	
 	const char* opstr = (pretty ? _binop_pretty : _binop_repr)[node->type];
 	
 	asprintf(&ret, "%s %s %s", a, opstr, b);
 	
-	free(a);
 	free(b);
+	free(a);
+	return ret;
+}
+
+char* BinOp_verbose(const BinOp* node, unsigned indent) {
+	char* ret;
+	char* a = Value_verbose(node->a, indent + 1);
+	char* b = Value_verbose(node->b, indent + 1);
 	
+	asprintf(&ret,
+			 "%3$s (\n"           /* BinOp type */
+				 "%2$s[a] %4$s\n" /* a */
+				 "%2$s[b] %5$s\n" /* b */
+			 "%1$s)",
+			 indentation(indent), indentation(indent + 1),
+			 _binop_repr[node->type],
+			 a,
+			 b);
+	
+	free(b);
+	free(a);
+	return ret;
+}
+
+char* BinOp_xml(const BinOp* node, unsigned indent) {
+	/*
+	 sc> ?x 4 + 1 - 3 * 7
+	 
+	 <sub>
+	   <add>
+	     <int>4</int>
+	     <int>1</int>
+	   </add>
+	   <mul>
+	     <int>3</int>
+	     <int>7</int>
+	   </mul>
+	 </sub>
+	 
+	 -16
+	*/
+	char* ret;
+	char* a = Value_xml(node->a, indent + 1);
+	char* b = Value_xml(node->b, indent + 1);
+	
+	asprintf(&ret,
+			 "<%3$s>\n"
+				 "%2$s%4$s\n" /* a */
+				 "%2$s%5$s\n" /* b */
+			 "%1$s</%3$s>",
+			 indentation(indent), indentation(indent + 1),
+			 _binop_xml[node->type],
+			 a,
+			 b);
+	
+	free(b);
+	free(a);
 	return ret;
 }
 

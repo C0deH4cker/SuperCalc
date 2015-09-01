@@ -22,54 +22,53 @@
 #include "arglist.h"
 
 
-static Variable* allocVar(VARTYPE type, const char* name) {
-	Variable* ret = fmalloc(sizeof(*ret));
-	
-	memset(ret, 0, sizeof(*ret));
+static Variable* allocVar(VARTYPE type, char* name) {
+	Variable* ret = fcalloc(1, sizeof(*ret));
 	
 	ret->type = type;
-	ret->name = name ? strdup(name) : NULL;
+	ret->name = name;
 	
 	return ret;
 }
 
 Variable* VarErr(Error* err) {
-	Variable* ret = allocVar(VAR_ERR, "error");
-	
+	Variable* ret = allocVar(VAR_ERR, strdup("error"));
 	ret->err = err;
-	
 	return ret;
 }
 
-Variable* VarBuiltin(const char* name, Builtin* blt) {
+Variable* VarBuiltin(char* name, Builtin* blt) {
 	Variable* ret = allocVar(VAR_BUILTIN, name);
-	
 	ret->blt = blt;
-	
 	return ret;
 }
 
-Variable* VarValue(const char* name, Value* val) {
+Variable* VarConstant(char* name, Builtin* blt) {
+	Variable* ret = allocVar(VAR_CONSTANT, name);
+	ret->blt = blt;
+	return ret;
+}
+
+Variable* VarValue(char* name, Value* val) {
 	Variable* ret = allocVar(VAR_VALUE, name);
-	
 	ret->val = val;
-	
 	return ret;
 }
 
-Variable* VarFunc(const char* name, Function* func) {
+Variable* VarFunc(char* name, Function* func) {
 	Variable* ret = allocVar(VAR_FUNC, name);
-	
 	ret->func = func;
-	
 	return ret;
 }
 
 void Variable_free(Variable* var) {
-	if(!var) return;
+	if(!var) {
+		return;
+	}
 	
 	switch(var->type) {
 		case VAR_BUILTIN:
+		case VAR_CONSTANT:
 			Builtin_free(var->blt);
 			break;
 		
@@ -95,18 +94,22 @@ void Variable_free(Variable* var) {
 
 Variable* Variable_copy(const Variable* var) {
 	Variable* ret;
+	char* name = var->name ? strdup(var->name) : NULL;
 	
 	switch(var->type) {
 		case VAR_BUILTIN:
-			ret = VarBuiltin(var->name, Builtin_copy(var->blt));
+			ret = VarBuiltin(name, Builtin_copy(var->blt));
 			break;
 		
+		case VAR_CONSTANT:
+			ret = VarConstant(name, Builtin_copy(var->blt));
+		
 		case VAR_VALUE:
-			ret = VarValue(var->name, Value_copy(var->val));
+			ret = VarValue(name, Value_copy(var->val));
 			break;
 		
 		case VAR_FUNC:
-			ret = VarFunc(var->name, Function_copy(var->func));
+			ret = VarFunc(name, Function_copy(var->func));
 			break;
 		
 		case VAR_ERR:
@@ -126,6 +129,10 @@ Value* Variable_eval(const Variable* var, const Context* ctx) {
 	switch(var->type) {
 		case VAR_VALUE:
 			ret = Value_copy(var->val);
+			break;
+		
+		case VAR_CONSTANT:
+			ret = Builtin_eval(var->blt, ctx, NULL, false);
 			break;
 		
 		case VAR_FUNC:
@@ -226,38 +233,6 @@ void Variable_update(Variable* dst, Variable* src) {
 	free(src);
 }
 
-char* Variable_verbose(const Variable* var) {
-	char* ret;
-	
-	if(var->type == VAR_FUNC) {
-		char* func = Function_verbose(var->func);
-		asprintf(&ret, "%s%s", var->name, func);
-		free(func);
-	}
-	else if(var->type == VAR_BUILTIN) {
-		char* blt = Builtin_verbose(var->blt, 0);
-		if(var->name == NULL) {
-			ret = blt;
-		}
-		else {
-			asprintf(&ret, "%s = %s", var->name, blt);
-			free(blt);
-		}
-	}
-	else {
-		char* val = Value_verbose(var->val, 0);
-		if(var->name == NULL) {
-			ret = val;
-		}
-		else {
-			asprintf(&ret, "%s = %s", var->name, val);
-			free(val);
-		}
-	}
-	
-	return ret;
-}
-
 char* Variable_repr(const Variable* var, bool pretty) {
 	char* ret;
 	
@@ -292,6 +267,90 @@ char* Variable_repr(const Variable* var, bool pretty) {
 		}
 	}
 	
+	return ret;
+}
+
+char* Variable_verbose(const Variable* var) {
+	char* ret;
+	
+	if(var->type == VAR_FUNC) {
+		char* func = Function_verbose(var->func);
+		asprintf(&ret, "%s%s", var->name, func);
+		free(func);
+	}
+	else if(var->type == VAR_BUILTIN) {
+		char* blt = Builtin_verbose(var->blt, 0);
+		if(var->name == NULL) {
+			ret = blt;
+		}
+		else {
+			asprintf(&ret, "%s = %s", var->name, blt);
+			free(blt);
+		}
+	}
+	else {
+		char* val = Value_verbose(var->val, 0);
+		if(var->name == NULL) {
+			ret = val;
+		}
+		else {
+			asprintf(&ret, "%s = %s", var->name, val);
+			free(val);
+		}
+	}
+	
+	return ret;
+}
+
+char* Variable_xml(const Variable* var) {
+	/*
+	 sc> ?x f(x) = 3x + 4
+	 
+	 <vardata name="f">
+	   <func>
+	     <argnames>
+		   <arg name="x"/>
+	     </argnames>
+	     <expr>
+	       <add>
+	         <mul>
+	           <int>3</int>
+	           <var name="x"/>
+	         </mul>
+	         <int>4</int>
+		   </add>
+	     </expr>
+	   </func>
+	 </vardata>
+	*/
+	char* ret;
+	char* val;
+	
+	unsigned indent = var->name == NULL ? 0 : 1;
+	
+	if(var->type == VAR_FUNC) {
+		val = Function_xml(var->func, indent);
+	}
+	else if(var->type == VAR_BUILTIN) {
+		val = Builtin_xml(var->blt, indent);
+	}
+	else {
+		val = Value_xml(var->val, indent);
+	}
+	
+	if(var->name == NULL) {
+		return val;
+	}
+	
+	asprintf(&ret,
+			 "<vardata name=\"%2$s\">\n" /* name */
+				 "%1$s%3$s\n"            /* value */
+			 "</vardata>",
+			 indentation(1),
+			 var->name,
+			 val);
+	
+	free(val);
 	return ret;
 }
 

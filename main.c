@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[]) {
 	SuperCalc* sc = SC_new(stdout);
-	SC_runInteractive(sc, stdin);
+	SC_run(sc, stdin);
 	SC_free(sc);
 	
 	return 0;

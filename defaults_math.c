@@ -43,32 +43,34 @@ static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal
 	}
 	
 	Value* val = Value_coerce(arglist->args[0], ctx);
-	
 	if(val->type == VAL_ERR) {
 		return val;
 	}
 	
+	Value* ret;
 	switch(val->type) {
 		case VAL_INT:
-			return ValInt(ABS(val->ival));
+			ret = ValInt(ABS(val->ival));
+			break;
 		
 		case VAL_REAL:
-			return ValReal(ABS(val->rval));
+			ret = ValReal(ABS(val->rval));
+			break;
 		
 		case VAL_FRAC:
-			return ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
+			ret = ValFrac(Fraction_new(ABS(val->frac->n), val->frac->d));
+			break;
 			
 		case VAL_VEC:
-			if(internal) {
-				return Vector_magnitude(val->vec, ctx);
-			}
-			return ValCall(FuncCall_create("@map", ArgList_create(2, ValVar("abs"), Value_copy(val))));
+			ret = Vector_magnitude(val->vec, ctx);
+			break;
 		
 		default:
 			badValType(val->type);
 	}
 	
 	Value_free(val);
+	return ret;
 }
 
 static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal) {
@@ -76,7 +78,7 @@ static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}
 	
-	return ValExpr(BinOp_new(BIN_POW, ValReal(M_E), Value_copy(arglist->args[0])));
+	return TP_EVAL("e^@@", ctx, Value_copy(arglist->args[0]));
 }
 
 /* Trigonometric */
