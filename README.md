@@ -170,6 +170,9 @@ Vector specific builtins:
 * `dot(vector1, vector2)`
 * `cross(vector1, vector2)`
 * `map(function, vector)`
+* `elem(vector, index)` -> `vector[index]`
+* `mag(vector)` -> `|vector|`
+* `norm(vector)` -> Normalize the vector (`vector / |vector|`)
 
 Vector functions:
 	
