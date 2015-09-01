@@ -61,108 +61,108 @@ SuperCalc likes to be as precise as it knows how, so floating point values are a
 
 Example of using fractions:
 
-	>>> (2 / 7) ^ 2
+	sc> (2 / 7) ^ 2
 	4/49 (0.0816326530612245)
-	>>> -(3 + 4!/7)^3
+	sc> -(3 + 4!/7)^3
 	-91125/343 (-265.67055393586)
 
 Variables are supported:
 
-	>>> a = 5
+	sc> a = 5
 	5
-	>>> a * 3
+	sc> a * 3
 	15
-	>>> b = 2 * a + 4
+	sc> b = 2 * a + 4
 	14
-	>>> ans + 4
+	sc> ans + 4
 	18
 
 Variable names may only contain alphanumeric characters and '_', but the first character may not be a number.
 
 Shorthand notations for variable modification work as well using any of the binary operators:
 
-	>>> x = 4
+	sc> x = 4
 	4
-	>>> x += 3
+	sc> x += 3
 	7
-	>>> x *= 2
+	sc> x *= 2
 	14
-	>>> x /= 3
+	sc> x /= 3
 	14/3 (4.66666666666667)
-	>>> x *= 6
+	sc> x *= 6
 	28
-	>>> x %= 2
+	sc> x %= 2
 	0
-	>>> x += 8
+	sc> x += 8
 	8
-	>>> x ^= 2
+	sc> x ^= 2
 	64
 
 Functions are also supported:
 
-	>>> f(x) = 3x + 4
-	>>> f(7)
+	sc> f(x) = 3x + 4
+	sc> f(7)
 	25
 
 Even with multiple arguments:
 
-	>>> f(x, y) = x + y
-	>>> f(3, 5)
+	sc> f(x, y) = x + y
+	sc> f(3, 5)
 	8
-	>>> g(x, y, z) = f(x, y) * z
-	>>> g(1, 2, 3)
+	sc> g(x, y, z) = f(x, y) * z
+	sc> g(1, 2, 3)
 	9
 
 Function arguments do not affect variables:
 
-	>>> x = 7
+	sc> x = 7
 	7
-	>>> f(x) = 4x
-	>>> f(6)
+	sc> f(x) = 4x
+	sc> f(6)
 	24
-	>>> x
+	sc> x
 	7
 
 Functions can use global variables:
 
-	>>> myFunc(arg) = 3 * arg + glb
-	>>> glb = 7
+	sc> myFunc(arg) = 3 * arg + glb
+	sc> glb = 7
 	7
-	>>> myFunc(4)
+	sc> myFunc(4)
 	19
-	>>> glb += 3
+	sc> glb += 3
 	10
-	>>> myFunc(4)
+	sc> myFunc(4)
 	22
-	>>> other(x) = x + ans
-	>>> 8
+	sc> other(x) = x + ans
+	sc> 8
 	8
-	>>> other(4)
+	sc> other(4)
 	12
-	>>> other(4)
+	sc> other(4)
 	16
 
 Functions *are* variables:
 
-	>>> f(x, y) = x^2 - y^2
-	>>> g = f
-	>>> g(4, 3)
+	sc> f(x, y) = x^2 - y^2
+	sc> g = f
+	sc> g(4, 3)
 	7
-	>>> h(x) = x^2
-	>>> getFunc() = h
-	>>> func = getFunc()
-	>>> func(3)
+	sc> h(x) = x^2
+	sc> getFunc() = h
+	sc> func = getFunc()
+	sc> func(3)
 	9
 
 Vectors are supported as well:
 
-	>>> a = <1, 2, 3>
+	sc> a = <1, 2, 3>
 	<1, 2, 3>
-	>>> b = <6, 5, 3>
+	sc> b = <6, 5, 3>
 	<6, 5, 3>
-	>>> a - b
+	sc> a - b
 	<-5, -3, 0>
-	>>> 6 * a - b
+	sc> 6 * a - b
 	<0, 7, 15>
 
 Vector specific builtins:
@@ -173,121 +173,121 @@ Vector specific builtins:
 
 Vector functions:
 	
-	>>> a = <1, 2, 3>
+	sc> a = <1, 2, 3>
 	<1, 2, 3>
-	>>> b = <6, 5, 3>
+	sc> b = <6, 5, 3>
 	<6, 5, 3>
-	>>> cross(a, b)
+	sc> cross(a, b)
 	<-9, 15, -7>
-	>>> dot(a, b)
+	sc> dot(a, b)
 	25
 
 Function calls and vector subscripting is recursive:
 
-	>>> getVec() = <1, 2, 3, <4, 5>>
-	>>> getVec()[3][1]
+	sc> getVec() = <1, 2, 3, <4, 5>>
+	sc> getVec()[3][1]
 	5
-	>>> getFunc() = getVec
-	>>> getFunc()()[3][0]
+	sc> getFunc() = getVec
+	sc> getFunc()()[3][0]
 	4
 
 Examples using `map`:
 
-	>>> a = <3, 4, 5>
+	sc> a = <3, 4, 5>
 	<3, 4, 5>
-	>>> f(x) = 2x + 1
-	>>> map(f, a)
+	sc> f(x) = 2x + 1
+	sc> map(f, a)
 	<7, 9, 11>
-	>>> angles = <0, pi/2, pi, 3pi/2, 2pi>
+	sc> angles = <0, pi/2, pi, 3pi/2, 2pi>
 	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
-	>>> map(sin, angles)
+	sc> map(sin, angles)
 	<0, 1, 0, -1, 0>
-	>>> add1(x) = 1 + x
-	>>> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
+	sc> add1(x) = 1 + x
+	sc> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
 	<2, 3, 4, 5, 5.47213595499958, 7/3>
 
 
 Vectors can have any dimension greater than one:
 
-	>>> a = <7, 2, 5.5, 7.6>
+	sc> a = <7, 2, 5.5, 7.6>
 	<7, 2, 5.5, 7.6>
-	>>> dot(a, <1, 2, 3, 4>)
+	sc> dot(a, <1, 2, 3, 4>)
 	57.9
-	>>> c = <1, 2>
+	sc> c = <1, 2>
 	<1, 2>
 	
 Multiplying or dividing two vectors uses their components:
 
-	>>> <1, 2, 3> * <4, 7, 2>
+	sc> <1, 2, 3> * <4, 7, 2>
 	<4, 14, 6>
-	>>> <1, 4, 5> / <4, 6, 2>
+	sc> <1, 4, 5> / <4, 6, 2>
 	<1/4, 2/3, 5/2>
 
 Vectors even support scalar operations:
 
-	>>> a = <4, 7, -3>
+	sc> a = <4, 7, -3>
 	<4, 7, -3>
-	>>> a + 2
+	sc> a + 2
 	<4.92998110995055, 8.62746694241347, -3.69748583246292>
-	>>> ans / 3
+	sc> ans / 3
 	<1.64332703665018, 2.87582231413782, -1.23249527748764>
-	>>> ans ^ 2
+	sc> ans ^ 2
 	<2.70052374938548, 8.27035398249302, 1.51904460902933>
-	>>> 2 / ans
+	sc> 2 / ans
 	<0.740597078790777, 0.241827617564335, 1.31661702896138>
 
 Variables can be deleted using `~`:
 
-	>>> a = 4
+	sc> a = 4
 	4
-	>>> ~a
-	>>> a
+	sc> ~a
+	sc> a
 	Name Error: No variable named 'a' found.
-	>>> f(x) = 2x + 5
-	>>> ~f
-	>>> f(3)
+	sc> f(x) = 2x + 5
+	sc> ~f
+	sc> f(3)
 	Name Error: No variable named 'f' found.
 
 And the interpreter can be reset using `~~~`:
 
-	>>> a = 4
+	sc> a = 4
 	4
-	>>> b = 7
+	sc> b = 7
 	7
-	>>> f(x) = 4x - 3!
-	>>> ~~~
-	>>> a
+	sc> f(x) = 4x - 3!
+	sc> ~~~
+	sc> a
 	Name Error: No variable named 'a' found.
-	>>> f(3)
+	sc> f(3)
 	Name Error: No variable named 'f' found.
 
 Error messages attempt to be clear:
 
-	>>> 3 / (1 - 1)
+	sc> 3 / (1 - 1)
 	Math Error: Division by zero.
-	>>> sqrt()
+	sc> sqrt()
 	Type Error: Builtin 'sqrt' expects 1 argument, not 0.
-	>>> sqrt(4, 3)
+	sc> sqrt(4, 3)
 	Type Error: Builtin 'sqrt' expects 1 argument, not 2.
-	>>> sqrt(-1)
+	sc> sqrt(-1)
 	Math Error: Builtin function 'sqrt' returned an invalid value.
-	>>> a
+	sc> a
 	Name Error: No variable named 'a' found.
-	>>> 17 $ 8
+	sc> 17 $ 8
 	Syntax Error: Unexpected character: '$'.
-	>>> 8 +
+	sc> 8 +
 	Syntax Error: Premature end of input.
-	>>> pi(1, 2)
+	sc> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
 For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree. Verbosity >= 3 will force pretty printing (with unicode characters).
 
 Examples of verbose printing:
 
-	>>> ? 3 + 4 - 2
+	sc> ? 3 + 4 - 2
 	((3 + 4) - 2)
 	5
-	>>> ?rt 8 - 9(6^2 + 3/7)^3
+	sc> ?rt 8 - 9(6^2 + 3/7)^3
 	- (
 	  [a] 8
 	  [b] * (
@@ -314,14 +314,14 @@ Another usage of SuperCalc's verbose output is with functions. For verbosity >= 
 
 Examples of printing functions verbosely:
 
-	>>> f(x) = 3x
-	>>> ? f
+	sc> f(x) = 3x
+	sc> ? f
 	f(x) = (3 * x)
-	>>> ?p sqrt(4)
+	sc> ?p sqrt(4)
 	√(4)
 	2
-	>>> g(x, y) = x^2 - 2x*y + 1
-	>>> ?rt g
+	sc> g(x, y) = x^2 - 2x*y + 1
+	sc> ?rt g
 	g(x, y) {
 	  + (
 	    [a] - (
@@ -341,7 +341,7 @@ Examples of printing functions verbosely:
 	  )
 	}
 	g(x, y) = (((x ^ 2) - ((2 * x) * y)) + 1)
-	>>> ?x g
+	sc> ?x g
 	<vardata name="g">
 	  <func>
 	    <argnames>
