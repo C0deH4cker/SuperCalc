@@ -14,6 +14,7 @@
 #include <math.h>
 #include <ctype.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "context.h"

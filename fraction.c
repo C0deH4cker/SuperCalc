@@ -13,6 +13,7 @@
 #include <math.h>
 #include <float.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "value.h"

@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "support.h"
 #include "generic.h"
 
 
@@ -123,6 +124,6 @@ void die(const char* file, const char* function, int line, const char* fmt, ...)
 	Error_raise(err, true);
 	/* Error_raise will cause the program to die */
 	
-	__builtin_unreachable();
+	UNREACHABLE();
 }
 

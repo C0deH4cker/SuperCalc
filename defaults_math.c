@@ -34,7 +34,8 @@ static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool interna
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
 	
-	return TP_EVAL("@@^(1/2)", ctx, Value_copy(arglist->args[0]));
+	TP(tp);
+	return TP_EVAL(tp, ctx, "@@^(1/2)", Value_copy(arglist->args[0]));
 }
 
 static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal) {
@@ -78,7 +79,8 @@ static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}
 	
-	return TP_EVAL("e^@@", ctx, Value_copy(arglist->args[0]));
+	TP(tp);
+	return TP_EVAL(tp, ctx, "e^@@", Value_copy(arglist->args[0]));
 }
 
 /* Trigonometric */

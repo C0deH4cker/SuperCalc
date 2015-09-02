@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "support.h"
+
 typedef struct Error Error;
 
 typedef enum {
@@ -33,20 +35,24 @@ struct Error {
 
 /* Allocate, print, free */
 #define RAISE(err, death) do { \
+	bool _death = (death); \
 	Error* _err = (err); \
-	Error_raise(_err, (death)); \
+	Error_raise(_err, _death); \
+	if(_death) { \
+		UNREACHABLE(); \
+	} \
 	Error_free(_err); \
 } while(0)
 
 /* Convenience constructors */
 #define ignoreError()               Error_new(ERR_IGN, "")
-#define mathError(fmt, args...)     Error_new(ERR_MATH, fmt, ##args)
-#define syntaxError(fmt, args...)   Error_new(ERR_SYNTAX, fmt, ##args)
-#define fatalError(fmt, args...)    Error_new(ERR_FATAL, fmt, ##args)
-#define nameError(fmt, args...)     Error_new(ERR_NAME, fmt, ##args)
-#define typeError(fmt, args...)     Error_new(ERR_TYPE, fmt, ##args)
-#define internalError(fmt, args...) Error_new(ERR_INTERNAL, fmt, ##args)
-#define unknownError(fmt, args...)  Error_new(ERR_UNK, fmt, ##args)
+#define mathError(...)              Error_new(ERR_MATH, __VA_ARGS__)
+#define syntaxError(...)            Error_new(ERR_SYNTAX, __VA_ARGS__)
+#define fatalError(...)             Error_new(ERR_FATAL, __VA_ARGS__)
+#define nameError(...)              Error_new(ERR_NAME, __VA_ARGS__)
+#define typeError(...)              Error_new(ERR_TYPE, __VA_ARGS__)
+#define internalError(...)          Error_new(ERR_INTERNAL, __VA_ARGS__)
+#define unknownError(...)           Error_new(ERR_UNK, __VA_ARGS__)
 
 const char* kNullErrStr;
 const char* kDivByZeroStr;
@@ -77,7 +83,7 @@ const char* kBadVarStr;
 #define missingPlaceholder(n)       nameError(kMissingPlaceholderStr, (n))
 
 /* Death macros */
-#define DIE(args...)                die(__FILE__, __FUNCTION__, __LINE__, ##args)
+#define DIE(...)                    die(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #define allocError()                DIE(kAllocErrStr)
 #define badValType(type)            DIE(kBadValStr, (type))
 #define badVarType(type)            DIE(kBadVarStr, (type))
@@ -99,6 +105,6 @@ void Error_raise(const Error* err, bool forceDeath);
 bool Error_canRecover(const Error* err);
 
 /* Death function */
-void die(const char* file, const char* function, int line, const char* fmt, ...) __attribute__((__noreturn__));
+NORETURN void die(const char* file, const char* function, int line, const char* fmt, ...);
 
 #endif

@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "context.h"

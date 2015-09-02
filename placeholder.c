@@ -11,6 +11,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#include "support.h"
 #include "generic.h"
 #include "error.h"
 

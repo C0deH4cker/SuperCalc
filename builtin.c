@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "value.h"

@@ -16,46 +16,55 @@
 #include "error.h"
 
 
-#define ABS(x) ({ \
+#ifdef _MSC_VER
+
+# define ABS(x) ((x) < 0 ? -(x) : (x))
+# define CMP(op, a, b) (((a) op (b)) ? (a) : (b))
+
+#else /* _MSC_VER */
+
+# define ABS(x) ({ \
 	__typeof__(x) _x = (x); \
 	_x < 0 ? -_x : _x; \
 })
 
-#define CMP(op, a, b) ({ \
+# define CMP(op, a, b) ({ \
 	__typeof__(a) _a = (a); \
 	__typeof__(b) _b = (b); \
 	(_a op _b) ? _a : _b; \
 })
+
+#endif /* _MSC_VER */
+
 #define MIN(a, b) CMP(<, a, b)
 #define MAX(a, b) CMP(>, a, b)
-
 #define CLAMP(x, lo, hi) MAX(lo, MIN(x, hi))
 
 #define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#define fmalloc(size) ({ \
-	void* _mem = malloc((size)); \
-	if(_mem == NULL) { \
-		allocError(); \
-	} \
-	_mem; \
-})
+static inline void* fmalloc(size_t size) {
+	void* ret = malloc(size);
+	if(ret == NULL) {
+		allocError();
+	}
+	return ret;
+}
 
-#define fcalloc(count, size) ({ \
-	void* _mem = calloc((count), (size)); \
-	if(_mem == NULL) { \
-		allocError(); \
-	} \
-	_mem; \
-})
+static inline void* fcalloc(size_t count, size_t size) {
+	void* ret = calloc(count, size);
+	if(ret == NULL) {
+		allocError();
+	}
+	return ret;
+}
 
-#define frealloc(mem, size) ({ \
-	__typeof__(mem) _mem = realloc((mem), (size)); \
-	if(_mem == NULL) { \
-		allocError(); \
-	} \
-	_mem; \
-})
+static inline void* frealloc(void* mem, size_t size) {
+	void* ret = realloc(mem, size);
+	if(ret == NULL) {
+		allocError();
+	}
+	return ret;
+}
 
 typedef enum {
 	V_REPR   = 1<<0,
@@ -65,7 +74,7 @@ typedef enum {
 } VERBOSITY;
 
 /* Hacky, I know */
-char line[1024];
+char line[4096];
 
 /* Tokenization */
 void trimSpaces(const char** str);
@@ -87,4 +96,4 @@ long long ipow(long long base, long long exp);
 long long gcd(long long a, long long b);
 double approx(double real);
 
-#endif
+#endif /* _SC_GENERIC_H_ */

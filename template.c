@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+#include "support.h"
 #include "generic.h"
 #include "error.h"
 #include "placeholder.h"
@@ -220,6 +222,20 @@ Value* Template_fillv(const Template* tp, va_list args) {
 	return ret;
 }
 
+Value* Template_staticFill(Template** ptp, const char* fmt, ...) {
+	if(*ptp == NULL) {
+		*ptp = Template_create(fmt);
+	}
+	
+	va_list args;
+	va_start(args, fmt);
+	
+	Value* ret = Template_fillv(*ptp, args);
+	
+	va_end(args);
+	return ret;
+}
+
 Value* Template_eval(const Template* tp, const Context* ctx, ...) {
 	va_list args;
 	va_start(args, ctx);
@@ -234,6 +250,20 @@ Value* Template_evalv(const Template* tp, const Context* ctx, va_list args) {
 	Value* filled = Template_fillv(tp, args);
 	Value* ret = Value_eval(filled, ctx);
 	Value_free(filled);
+	return ret;
+}
+
+Value* Template_staticEval(Template** ptp, const Context* ctx, const char* fmt, ...) {
+	if(*ptp == NULL) {
+		*ptp = Template_create(fmt);
+	}
+	
+	va_list args;
+	va_start(args, fmt);
+	
+	Value* ret = Template_evalv(*ptp, ctx, args);
+	
+	va_end(args);
 	return ret;
 }
 

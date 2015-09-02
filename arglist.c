@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <math.h>
 
+#include "support.h"
 #include "generic.h"
 #include "error.h"
 #include "value.h"

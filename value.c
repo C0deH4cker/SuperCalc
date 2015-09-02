@@ -16,6 +16,7 @@
 #include <math.h>
 #include <float.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "binop.h"
@@ -492,7 +493,8 @@ static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 	}
 	
 	/* Use builtin function from vector.c */
-	return TP_FILL("@elem(@@, @@)", val, index);
+	TP(tp);
+	return TP_FILL(tp, "@elem(@@, @@)", val, index);
 }
 
 static Value* callFunc(Value* val, const char** expr, parser_cb* cb) {
@@ -580,7 +582,8 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 		}
 		
 		/* Use absolute value builtin */
-		ret = TP_FILL("abs(@@)", val);
+		TP(tp);
+		ret = TP_FILL(tp, "@abs(@@)", val);
 	}
 	else if(**expr == '@') {
 		/* Invoke callback to handle special value */

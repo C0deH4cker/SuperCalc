@@ -10,10 +10,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h>
+
+#ifdef _MSC_VER
+# include <io.h>
+# define ISATTY(fp) _isatty(fp)
+#else
+# include <unistd.h>
+# define ISATTY(fp) isatty(fp)
+#endif
 
 #include "supercalc.h"
 
@@ -36,7 +43,7 @@ void readLine(FILE* fp, const char* prompt) {
 }
 
 bool isInteractive(FILE* fp) {
-	return isatty(fileno(fp));
+	return ISATTY(fileno(fp));
 }
 
 VERBOSITY getVerbosity(const char** str) {

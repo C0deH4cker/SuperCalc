@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <limits.h>
 
+#include "support.h"
 #include "generic.h"
 #include "error.h"
 #include "arglist.h"
@@ -262,7 +263,8 @@ Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* c
 		}
 		
 		/* accum += v1[i] * val2 */
-		accum = TP_EVAL("@@+@@*@@", ctx,
+		TP(tp);
+		accum = TP_EVAL(tp, ctx, "@@+@@*@@",
 		                accum,
 		                Value_copy(vector1->vals->args[i]),
 		                Value_copy(val2));
@@ -273,17 +275,19 @@ Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* c
 
 Value* Vector_cross(const Vector* u, const Vector* v, const Context* ctx) {
 	/* Down to one statement from almost 100 lines because of TP_EVAL :) */
-	return TP_EVAL(
+	/* Now up to two statements because MSVC doesn't support statement expressions :( */
+	TP(tp);
+	return TP_EVAL(tp, ctx,
 		"<@2@*@6@ - @3@*@5@,"
 		" @3@*@4@ - @1@*@6@,"
 		" @1@*@5@ - @2@*@4@>",
-		ctx,
 		Value_copy(u->vals->args[0]), Value_copy(u->vals->args[1]), Value_copy(u->vals->args[2]),
 		Value_copy(v->vals->args[0]), Value_copy(v->vals->args[1]), Value_copy(v->vals->args[2]));
 }
 
 Value* Vector_magnitude(const Vector* vec, const Context* ctx) {
-	return TP_EVAL("sqrt(dot(@1v,@1v))", ctx, Vector_copy(vec));
+	TP(tp);
+	return TP_EVAL(tp, ctx, "sqrt(dot(@1v,@1v))", Vector_copy(vec));
 }
 
 Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx) {

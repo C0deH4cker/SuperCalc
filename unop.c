@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "support.h"
 #include "error.h"
 #include "generic.h"
 #include "context.h"

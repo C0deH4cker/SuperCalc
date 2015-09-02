@@ -125,7 +125,8 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 	
 	unsigned i;
 	for(i = 0; i < mapping->count; i++) {
-		mapping->args[i] = TP_EVAL("@n(@@)", ctx,
+		TP(tp);
+		mapping->args[i] = TP_EVAL(tp, ctx, "@n(@@)",
 								   func->name,
 								   Value_copy(vec->vec->vals->args[i]));
 	}
@@ -183,7 +184,8 @@ static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool interna
 		return ValErr(typeError("Can only normalize a vector."));
 	}
 	
-	return TP_EVAL("@1v/mag(@1v)", ctx, Vector_copy(val->vec));
+	TP(tp);
+	return TP_EVAL(tp, ctx, "@1v/mag(@1v)", Vector_copy(val->vec));
 }
 
 static const char* _vector_names[] = {

@@ -46,5 +46,6 @@ depcomp
 missing
 mdate-sh
 install-sh
+compile
 texinfo.tex
-supercalc
+sc

@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "support.h"
 #include "generic.h"
 #include "error.h"
 #include "value.h"
