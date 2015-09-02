@@ -16,7 +16,7 @@
 #include "generic.h"
 #include "value.h"
 #include "context.h"
-#include "expression.h"
+#include "statement.h"
 #include "defaults.h"
 
 
@@ -126,21 +126,21 @@ Value* SC_runString(const SuperCalc* sc, const char* str, VERBOSITY v) {
 	}
 	
 	/* Parse the user's input */
-	Expression* expr = Expression_parse(&p);
+	Statement* stmt = Statement_parse(&p);
 	free(code);
 	
-	/* Print expression depending on verbosity */
-	Expression_print(expr, sc, v);
+	/* Print statement depending with specified level of verbosity */
+	Statement_print(stmt, sc, v);
 	
 	/* Error? Go to next loop iteration */
-	if(Expression_didError(expr)) {
-		Expression_free(expr);
+	if(Statement_didError(stmt)) {
+		Statement_free(stmt);
 		return NULL;
 	}
 	
-	/* Evaluate expression */
-	Value* result = Expression_eval(expr, sc->ctx, v);
-	Expression_free(expr);
+	/* Evaluate statement */
+	Value* result = Statement_eval(stmt, sc->ctx, v);
+	Statement_free(stmt);
 	
 	return result;
 }

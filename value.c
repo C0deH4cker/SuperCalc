@@ -373,7 +373,7 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 			
 			return ValErr(badChar(**expr));
 		}
-		/* End of the expression? */
+		/* End of the statement? */
 		else if(op == BIN_END) {
 			/* Only skip end character if there's only one value to parse */
 			if(!sep && **expr && **expr == end) {

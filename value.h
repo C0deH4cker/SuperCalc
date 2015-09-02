@@ -90,7 +90,7 @@ void Value_free(Value* val);
 Value* Value_copy(const Value* val);
 
 /* Evaluation */
-Value* Value_eval(const Value* expr, const Context* ctx);
+Value* Value_eval(const Value* val, const Context* ctx);
 Value* Value_coerce(const Value* val, const Context* ctx);
 
 /* Conversion */

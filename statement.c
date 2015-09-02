@@ -1,12 +1,12 @@
 /*
-  expression.c
+  statement.c
   SuperCalc
 
   Created by C0deH4cker on 11/11/13.
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#include "expression.h"
+#include "statement.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -21,21 +21,21 @@
 #include "binop.h"
 
 
-Expression* Expression_new(Variable* var) {
-	Expression* ret = fmalloc(sizeof(*ret));
+Statement* Statement_new(Variable* var) {
+	Statement* ret = fmalloc(sizeof(*ret));
 	
 	ret->var = var;
 	
 	return ret;
 }
 
-void Expression_free(Expression* expr) {
-	Variable_free(expr->var);
-	free(expr);
+void Statement_free(Statement* stmt) {
+	Variable_free(stmt->var);
+	free(stmt);
 }
 
-Expression* Expression_parse(const char** expr) {
-	Expression* ret = NULL;
+Statement* Statement_parse(const char** expr) {
+	Statement* ret = NULL;
 	Variable* var;
 	Value* val;
 	
@@ -57,7 +57,7 @@ Expression* Expression_parse(const char** expr) {
 			var = VarValue(NULL, val);
 		}
 		
-		return Expression_new(var);
+		return Statement_new(var);
 	}
 	
 	/* There is an assignment */
@@ -69,20 +69,20 @@ Expression* Expression_parse(const char** expr) {
 		/* A parse error occurred */
 		var = VarErr(Error_copy(val->err));
 		Value_free(val);
-		return Expression_new(var);
+		return Statement_new(var);
 	}
 	
 	if(val->type == VAL_END) {
 		/* Empty input */
 		Value_free(val);
-		return Expression_new(VarErr(earlyEnd()));
+		return Statement_new(VarErr(earlyEnd()));
 	}
 	
 	/* Now parse the left side */
 	char* name = nextToken(expr);
 	if(name == NULL) {
 		Value_free(val);
-		return Expression_new(VarErr(syntaxError("No variable to assign to.")));
+		return Statement_new(VarErr(syntaxError("No variable to assign to.")));
 	}
 	
 	trimSpaces(expr);
@@ -108,7 +108,7 @@ Expression* Expression_parse(const char** expr) {
 			Value_free(val);
 			free(args);
 			free(name);
-			return Expression_new(VarErr(badChar(**expr)));
+			return Statement_new(VarErr(badChar(**expr)));
 		}
 		
 		trimSpaces(expr);
@@ -149,7 +149,7 @@ Expression* Expression_parse(const char** expr) {
 						free(args[i]);
 					}
 					free(args);
-					return Expression_new(VarErr(badChar(**expr)));
+					return Statement_new(VarErr(badChar(**expr)));
 				}
 				
 				trimSpaces(expr);
@@ -174,7 +174,7 @@ Expression* Expression_parse(const char** expr) {
 				free(args);
 			}
 			
-			return Expression_new(VarErr(badChar(**expr)));
+			return Statement_new(VarErr(badChar(**expr)));
 		}
 		
 		/* Skip closing parenthesis */
@@ -193,12 +193,12 @@ Expression* Expression_parse(const char** expr) {
 				free(args);
 			}
 			
-			return Expression_new(VarErr(badChar(**expr)));
+			return Statement_new(VarErr(badChar(**expr)));
 		}
 		
 		/* Construct function and return it */
 		Function* func = Function_new(len, args, val);
-		ret = Expression_new(VarFunc(name, func));
+		ret = Statement_new(VarFunc(name, func));
 	}
 	else {
 		/* Defining a variable */
@@ -210,21 +210,21 @@ Expression* Expression_parse(const char** expr) {
 			if(**expr != '=') {
 				Value_free(val);
 				free(name);
-				return Expression_new(VarErr(badChar(**expr)));
+				return Statement_new(VarErr(badChar(**expr)));
 			}
 			
 			val = ValExpr(BinOp_new(bin, ValVar(name), val));
 		}
 		
-		ret = Expression_new(VarValue(name, val));
+		ret = Statement_new(VarValue(name, val));
 	}
 	
 	return ret;
 }
 
-Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
+Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 	Value* ret;
-	Variable* var = expr->var;
+	Variable* var = stmt->var;
 	
 	if(var->type == VAR_VALUE) {
 		/* Evaluate right side */
@@ -235,7 +235,7 @@ Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
 			return ret;
 		}
 		
-		/* Expression result is a variable? */
+		/* Statement result is a variable? */
 		if(ret->type == VAL_VAR) {
 			Variable* func = Variable_get(ctx, ret->name);
 			if(func == NULL) {
@@ -286,83 +286,83 @@ Value* Expression_eval(const Expression* expr, Context* ctx, VERBOSITY v) {
 	return ret;
 }
 
-bool Expression_didError(const Expression* expr) {
-	return (expr->var->type == VAR_ERR);
+bool Statement_didError(const Statement* stmt) {
+	return (stmt->var->type == VAR_ERR);
 }
 
-char* Expression_repr(const Expression* expr, const Context* ctx, bool pretty) {
+char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty) {
 	/* I think I toungued my twist trying to read this aloud */
-	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
+	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
-		Variable* var = Variable_get(ctx, expr->var->val->name);
+		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
 			/* If the variable doesn't exist, just return its name */
 			if(pretty) {
-				return strdup(getPretty(expr->var->val->name));
+				return strdup(getPretty(stmt->var->val->name));
 			}
 			
-			return strdup(expr->var->val->name);
+			return strdup(stmt->var->val->name);
 		}
 		
 		return Variable_repr(var, pretty);
 	}
 	
-	return Variable_repr(expr->var, pretty);
+	return Variable_repr(stmt->var, pretty);
 }
 
-char* Expression_verbose(const Expression* expr, const Context* ctx) {
-	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
+char* Statement_verbose(const Statement* stmt, const Context* ctx) {
+	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
-		Variable* var = Variable_get(ctx, expr->var->val->name);
+		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
 			/* If the variable doesn't exist, just return its name */
-			return Value_verbose(expr->var->val, 0);
+			return Value_verbose(stmt->var->val, 0);
 		}
 		
 		return Variable_verbose(var);
 	}
 	
-	return Variable_verbose(expr->var);
+	return Variable_verbose(stmt->var);
 }
 
-char* Expression_xml(const Expression* expr, const Context* ctx) {
-	if(expr->var->type == VAR_VALUE && expr->var->val->type == VAL_VAR) {
-		/* Return the verbose representation of the variable in ctx */
-		Variable* var = Variable_get(ctx, expr->var->val->name);
+char* Statement_xml(const Statement* stmt, const Context* ctx) {
+	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+		/* Return the xml representation of the variable in ctx */
+		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
 			/* If the variable doesn't exist, just return its name */
-			return Value_xml(expr->var->val, 0);
+			return Value_xml(stmt->var->val, 0);
 		}
 		
 		return Variable_xml(var);
 	}
 	
-	return Variable_xml(expr->var);
+	return Variable_xml(stmt->var);
 }
 
-void Expression_print(const Expression* expr, const SuperCalc* sc, VERBOSITY v) {
+void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 	/* Error parsing? */
-	if(Expression_didError(expr)) {
-		Error_raise(expr->var->err, false);
+	if(Statement_didError(stmt)) {
+		Error_raise(stmt->var->err, false);
 		return;
 	}
 	
 	if(v & V_XML) {
-		char* xml = Expression_xml(expr, sc->ctx);
+		char* xml = Statement_xml(stmt, sc->ctx);
 		fprintf(sc->fout, "%s\n", xml);
 		free(xml);
 	}
 	
 	if(v & V_TREE) {
-		/* Dump expression tree */
-		char* tree = Expression_verbose(expr, sc->ctx);
+		/* Dump parse tree */
+		char* tree = Statement_verbose(stmt, sc->ctx);
 		fprintf(sc->fout, "%s\n", tree);
 		free(tree);
 	}
 	
 	if(v & V_REPR) {
-		/* Print parenthesized expression */
-		char* reprinted = Expression_repr(expr, sc->ctx, v & V_PRETTY);
+		/* Print parenthesized statement */
+		char* reprinted = Statement_repr(stmt, sc->ctx, v & V_PRETTY);
 		fprintf(sc->fout, "%s\n", reprinted);
 		free(reprinted);
 	}
