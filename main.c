@@ -9,7 +9,6 @@
 #include "supercalc.h"
 #include <stdio.h>
 
-
 int main(int argc, char* argv[]) {
 	SuperCalc* sc = SC_new(stdout);
 	SC_run(sc, stdin);
