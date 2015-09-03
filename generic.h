@@ -20,6 +20,7 @@
 
 # define ABS(x) ((x) < 0 ? -(x) : (x))
 # define CMP(op, a, b) (((a) op (b)) ? (a) : (b))
+# define HAS_ALL(flags, flag) (((flags) & (flag)) == (flag))
 
 #else /* _MSC_VER */
 
@@ -34,12 +35,17 @@
 	(_a op _b) ? _a : _b; \
 })
 
+# define HAS_ALL(flags, flag) ({ \
+    __typeof__(flag) _flag = (flag); \
+    ((flags) & _flag) == _flag; \
+})
+
 #endif /* _MSC_VER */
 
 #define MIN(a, b) CMP(<, a, b)
 #define MAX(a, b) CMP(>, a, b)
 #define CLAMP(x, lo, hi) MAX(lo, MIN(x, hi))
-
+#define HAS_ANY(flags, flag) (((flags) & (flag)) != 0)
 #define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 static inline void* fmalloc(size_t size) {
@@ -67,10 +73,12 @@ static inline void* frealloc(void* mem, size_t size) {
 }
 
 typedef enum {
-	V_REPR   = 1<<0,
+	V_ERR    = 1<<0,
 	V_PRETTY = 1<<1,
-	V_TREE   = 1<<2,
-	V_XML    = 1<<3
+	V_REPR   = 1<<2,
+	V_WRAP   = 1<<3,
+	V_TREE   = 1<<4,
+	V_XML    = 1<<5
 } VERBOSITY;
 
 /* Hacky, I know */
@@ -83,7 +91,7 @@ char* nextToken(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
-void readLine(FILE* fp, const char* prompt);
+char* readLine(FILE* fout, const char* prompt, FILE* fin);
 bool isInteractive(FILE* fp);
 VERBOSITY getVerbosity(const char** str);
 

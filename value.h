@@ -101,7 +101,8 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb);
 Value* Value_next(const char** expr, char end, parser_cb* cb);
 
 /* Printing */
-char* Value_repr(const Value* val, bool pretty);
+char* Value_repr(const Value* val, bool pretty, bool top);
+char* Value_wrap(const Value* val, bool top);
 char* Value_verbose(const Value* val, unsigned indent);
 char* Value_xml(const Value* val, unsigned indent);
 void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v);

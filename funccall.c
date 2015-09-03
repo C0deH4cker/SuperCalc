@@ -25,10 +25,10 @@
 
 
 static Value* callVar(const Context* ctx, const char* name, const ArgList* args);
-static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent);
-static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent);
 static char* reprFunc(const char* name, const ArgList* arglist, bool pretty);
 static char* specialRepr(const char* name, const ArgList* arglist, bool pretty);
+static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent);
+static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent);
 
 
 FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
@@ -129,7 +129,7 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 		case VAL_REAL:
 		case VAL_FRAC:
 		case VAL_VEC: {
-			char* repr = Value_repr(call->func, ctx);
+			char* repr = Value_repr(call->func, false, false);
 			ret = ValErr(typeError("Value %s is not a callable.", repr));
 			free(repr);
 			break;
@@ -174,8 +174,8 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 			RAISE(internalError("Invalid argument count passed to internal call of elem"), true);
 		}
 		
-		char* vec = Value_repr(arglist->args[0], pretty);
-		char* index = Value_repr(arglist->args[1], pretty);
+		char* vec = Value_repr(arglist->args[0], pretty, false);
+		char* index = Value_repr(arglist->args[1], pretty, false);
 		
 		asprintf(&ret, "%s[%s]", vec, index);
 		
@@ -196,10 +196,21 @@ char* FuncCall_repr(const FuncCall* call, bool pretty) {
 		return specialRepr(call->func->name + 1, call->arglist, pretty);
 	}
 	
-	char* ret;
-	char* callable = Value_repr(call->func, pretty);
-	ret = reprFunc(callable, call->arglist, pretty);
+	char* callable = Value_repr(call->func, pretty, false);
+	char* ret = reprFunc(callable, call->arglist, pretty);
 	
+	free(callable);
+	return ret;
+}
+
+char* FuncCall_wrap(const FuncCall* call) {
+	char* ret;
+	char* callable = Value_wrap(call->func, false);
+	char* argstr = ArgList_wrap(call->arglist);
+	
+	asprintf(&ret, "%s(%s)", callable, argstr);
+	
+	free(argstr);
 	free(callable);
 	return ret;
 }

@@ -1,7 +1,8 @@
 # Features to add
 
-* **GraphViz output** - Easy
+* **GraphViz output** - Easy to medium. Probably time consuming
 * **Matrices** - Easy but time consuming
+* **Integer** - Moderate to difficult
 * **Expression simplification** - Relatively difficult
 
 
@@ -11,11 +12,6 @@
 * **Reference counted objects** - Very difficult, huge project-wide refactor required
 * **Figure out a better way of handling builtin constants** - Easy
 * **Finish implementing sqrt and power simplification** - Moderate
-
-
-# Bugs to fix
-
-* **Superfluous parentheses in repr output (#10)** - Easy
 
 
 # Miscellaneous

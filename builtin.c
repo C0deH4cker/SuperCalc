@@ -49,7 +49,10 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
 	Value* ret = blt->evaluator(ctx, arglist, internal);
-	if((ret->type == VAL_ERR && ret->err->type == ERR_MATH) || (ret->type == VAL_REAL && isnan(ret->rval))) {
+	if(ret->type == VAL_ERR && ret->err->type == ERR_MATH) {
+		return ret;
+	}
+	else if(ret->type == VAL_REAL && isnan(ret->rval)) {
 		Value_free(ret);
 		return ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));
 	}

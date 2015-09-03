@@ -33,7 +33,7 @@ static Value* binop_mod(const Context* ctx, const Value* a, const Value* b);
 static Value* binop_pow(const Context* ctx, const Value* a, const Value* b);
 static BINTYPE nextSpecialOp(const char** expr);
 
-static binop_t _binop_table[] = {
+static binop_t _binop_table[BIN_COUNT] = {
 	&binop_add,
 	&binop_sub,
 	&binop_mul,
@@ -43,26 +43,28 @@ static binop_t _binop_table[] = {
 };
 
 /* Operator comparison table */
-static const int _binop_cmp[6][6] = {
-	{0, 0, -1, -1, -1, -1}, /* ADD */
-	{0, 0, -1, -1, -1, -1}, /* SUB */
-	{1, 1,  0,  0,  0, -1}, /* MUL */
-	{1, 1,  0,  0,  0, -1}, /* DIV */
-	{1, 1,  0,  0,  0, -1}, /* MOD */
-	{1, 1,  1,  1,  0, -1}  /* POW */
+static const int _binop_cmp[BIN_COUNT+1][BIN_COUNT+1] = {
+	             /* ADD  SUB  MUL  DIV  MOD  POW  HIGHEST */
+	/* ADD */     {   0,   0,  -1,  -1,  -1,  -1,  -1},
+	/* SUB */     {   0,   0,  -1,  -1,  -1,  -1,  -1},
+	/* MUL */     {   1,   1,   0,   0,   0,  -1,  -1},
+	/* DIV */     {   1,   1,   0,   0,   0,  -1,  -1},
+	/* MOD */     {   1,   1,   0,   0,   0,  -1,  -1},
+	/* POW */     {   1,   1,   1,   1,   0,  -1,  -1},
+	/* HIGHEST */ {   1,   1,   1,   1,   1,   1,   1}
 };
 
-static const char* _binop_pretty[] = {
+static const char* _binop_pretty[BIN_COUNT] = {
 	"+", "-", "×", "÷", "%", "^"
 };
-static const char* _binop_repr[] = {
+static const char* _binop_repr[BIN_COUNT] = {
 	"+", "-", "*", "/", "%", "^"
 };
-static const char* _binop_xml[] = {
+static const char* _binop_xml[BIN_COUNT] = {
 	"add", "sub", "mul", "div", "mod", "pow"
 };
 
-const char* binop_verb[] = {
+const char* binop_verb[BIN_COUNT] = {
 	"add", "subtract", "multiply", "divide", "modulo", "exponentiate"
 };
 
@@ -530,14 +532,65 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 
 char* BinOp_repr(const BinOp* node, bool pretty) {
 	char* ret;
-	char* a = Value_repr(node->a, pretty);
-	char* b = Value_repr(node->b, pretty);
 	const char* opstr = (pretty ? _binop_pretty : _binop_repr)[node->type];
 	
-	asprintf(&ret, "%s %s %s", a, opstr, b);
+	char* strs[2] = {Value_repr(node->a, pretty, false), Value_repr(node->b, pretty, false)};
+	BINTYPE types[2] = {BIN_HIGHEST, BIN_HIGHEST};
 	
-	free(b);
-	free(a);
+	/* Determine expr type of a */
+	if(node->a->type == VAL_FRAC) {
+		types[0] = BIN_DIV;
+	}
+	else if(node->a->type == VAL_EXPR) {
+		types[0] = node->a->expr->type;
+	}
+	
+	/* Determine expr type of b */
+	if(node->b->type == VAL_FRAC) {
+		types[1] = BIN_DIV;
+	}
+	else if(node->b->type == VAL_EXPR) {
+		types[1] = node->b->expr->type;
+	}
+	
+	/* Determine whether the subexpression needs to be parenthesized */
+	unsigned i;
+	for(i = 0; i < 2; i++) {
+		if(BinOp_cmp(node->type, types[i]) > 0) {
+			char* tmp;
+			asprintf(&tmp, "(%s)", strs[i]);
+			free(strs[i]);
+			strs[i] = tmp;
+		}
+	}
+	
+	asprintf(&ret, "%s %s %s", strs[0], opstr, strs[1]);
+	
+	free(strs[0]);
+	free(strs[1]);
+	return ret;
+}
+
+char* BinOp_wrap(const BinOp* node) {
+	char* ret;
+	Value* nodes[2] = {node->a, node->b};
+	char* strs[2] = {Value_wrap(node->a, false), Value_wrap(node->b, false)};
+	
+	/* Always parenthesize subexpressions */
+	unsigned i;
+	for(i = 0; i < 2; i++) {
+		if(nodes[i]->type == VAL_EXPR) {
+			char* tmp;
+			asprintf(&tmp, "(%s)", strs[i]);
+			free(strs[i]);
+			strs[i] = tmp;
+		}
+	}
+	
+	asprintf(&ret, "%s %s %s", strs[0], _binop_repr[node->type], strs[1]);
+	
+	free(strs[0]);
+	free(strs[1]);
 	return ret;
 }
 

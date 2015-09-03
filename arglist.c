@@ -21,6 +21,9 @@
 #include "context.h"
 
 
+static char* arglistToString(const ArgList* arglist, char** argstrs);
+
+
 ArgList* ArgList_new(unsigned count) {
 	ArgList* ret = fmalloc(sizeof(*ret));
 	
@@ -182,32 +185,56 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	return ret;
 }
 
-char* ArgList_repr(const ArgList* arglist, bool pretty) {
-	if(arglist->count == 0) {
-		return strdup("");
-	}
-	
+static char* arglistToString(const ArgList* arglist, char** argstrs) {
 	char* ret;
-	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		char* argstr = Value_repr(arglist->args[i], pretty);
-		
 		if(i == 0) {
-			ret = argstr;
+			ret = argstrs[i];
 		}
 		else {
 			char* tmp;
 			asprintf(&tmp,
 					 "%s, %s",
-					 ret, argstr);
+					 ret, argstrs[i]);
 			free(ret);
-			free(argstr);
+			free(argstrs[i]);
 			ret = tmp;
 		}
 	}
 	
+	free(argstrs);
 	return ret;
+}
+
+char* ArgList_repr(const ArgList* arglist, bool pretty) {
+	if(arglist->count == 0) {
+		return strdup("");
+	}
+	
+	char** argstrs = fmalloc(arglist->count * sizeof(*argstrs));
+	
+	unsigned i;
+	for(i = 0; i < arglist->count; i++) {
+		argstrs[i] = Value_repr(arglist->args[i], pretty, false);
+	}
+	
+	return arglistToString(arglist, argstrs);
+}
+
+char* ArgList_wrap(const ArgList* arglist) {
+	if(arglist->count == 0) {
+		return strdup("");
+	}
+	
+	char** argstrs = fmalloc(arglist->count * sizeof(*argstrs));
+	
+	unsigned i;
+	for(i = 0; i < arglist->count; i++) {
+		argstrs[i] = Value_wrap(arglist->args[i], false);
+	}
+	
+	return arglistToString(arglist, argstrs);
 }
 
 char* ArgList_verbose(const ArgList* arglist, unsigned indent) {

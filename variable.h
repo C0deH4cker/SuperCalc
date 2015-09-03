@@ -70,6 +70,7 @@ void Variable_update(Variable* dst, Variable* src);
 
 /* Printing */
 char* Variable_repr(const Variable* var, bool pretty);
+char* Variable_wrap(const Variable* var);
 char* Variable_verbose(const Variable* var);
 char* Variable_xml(const Variable* var);
 

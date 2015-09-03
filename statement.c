@@ -310,6 +310,22 @@ char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty) {
 	return Variable_repr(stmt->var, pretty);
 }
 
+char* Statement_wrap(const Statement* stmt, const Context* ctx) {
+	/* I think I toungued my twist trying to read this aloud */
+	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+		/* Return the reprint of the variable in ctx */
+		Variable* var = Variable_get(ctx, stmt->var->val->name);
+		if(var == NULL) {
+			/* If the variable doesn't exist, just return its name */
+			return strdup(stmt->var->val->name);
+		}
+		
+		return Variable_wrap(var);
+	}
+	
+	return Variable_wrap(stmt->var);
+}
+
 char* Statement_verbose(const Statement* stmt, const Context* ctx) {
 	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
@@ -347,24 +363,52 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		return;
 	}
 	
+	int needNewline = 0;
+	
 	if(v & V_XML) {
+		needNewline++;
+		
+		/* Dump XML output because why not? */
 		char* xml = Statement_xml(stmt, sc->ctx);
 		fprintf(sc->fout, "%s\n", xml);
 		free(xml);
 	}
 	
 	if(v & V_TREE) {
+		if(needNewline++ && sc->interactive) {
+			fputc('\n', sc->fout);
+		}
+		
 		/* Dump parse tree */
 		char* tree = Statement_verbose(stmt, sc->ctx);
 		fprintf(sc->fout, "%s\n", tree);
 		free(tree);
 	}
 	
+	if(v & V_WRAP) {
+		if(needNewline++ && sc->interactive) {
+			fputc('\n', sc->fout);
+		}
+		
+		/* Wrap lots of stuff in parentheses for clarity */
+		char* wrapped = Statement_wrap(stmt, sc->ctx);
+		fprintf(sc->fout, "%s\n", wrapped);
+		free(wrapped);
+	}
+	
 	if(v & V_REPR) {
+		if(needNewline++ && sc->interactive) {
+			fputc('\n', sc->fout);
+		}
+		
 		/* Print parenthesized statement */
 		char* reprinted = Statement_repr(stmt, sc->ctx, v & V_PRETTY);
 		fprintf(sc->fout, "%s\n", reprinted);
 		free(reprinted);
+	}
+	
+	if(needNewline++ && sc->interactive) {
+		fputc('\n', sc->fout);
 	}
 }
 

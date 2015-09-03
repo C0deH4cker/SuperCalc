@@ -230,7 +230,7 @@ void Variable_update(Variable* dst, Variable* src) {
 	}
 	
 	dst->type = src->type;
-	
+	free(src->name);
 	free(src);
 }
 
@@ -258,7 +258,40 @@ char* Variable_repr(const Variable* var, bool pretty) {
 		}
 	}
 	else {
-		char* val = Value_repr(var->val, pretty);
+		char* val = Value_repr(var->val, pretty, false);
+		if(name == NULL) {
+			ret = val;
+		}
+		else {
+			asprintf(&ret, "%s = %s", name, val);
+			free(val);
+		}
+	}
+	
+	return ret;
+}
+
+char* Variable_wrap(const Variable* var) {
+	char* ret;
+	const char* name = var->name;
+	
+	if(var->type == VAR_FUNC) {
+		char* func = Function_wrap(var->func);
+		asprintf(&ret, "%s%s", name, func);
+		free(func);
+	}
+	else if(var->type == VAR_BUILTIN) {
+		char* blt = Builtin_repr(var->blt, false);
+		if(name == NULL) {
+			ret = blt;
+		}
+		else {
+			asprintf(&ret, "%s = %s", name, blt);
+			free(blt);
+		}
+	}
+	else {
+		char* val = Value_wrap(var->val, true);
 		if(name == NULL) {
 			ret = val;
 		}

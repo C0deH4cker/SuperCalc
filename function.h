@@ -40,6 +40,7 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 
 /* Printing */
 char* Function_repr(const Function* func, bool pretty);
+char* Function_wrap(const Function* func);
 char* Function_verbose(const Function* func);
 char* Function_xml(const Function* func, unsigned indent);
 

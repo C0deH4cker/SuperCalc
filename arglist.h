@@ -43,6 +43,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb);
 
 /* Printing */
 char* ArgList_repr(const ArgList* arglist, bool pretty);
+char* ArgList_wrap(const ArgList* arglist);
 char* ArgList_verbose(const ArgList* arglist, unsigned indent);
 char* ArgList_xml(const ArgList* arglist, unsigned indent);
 

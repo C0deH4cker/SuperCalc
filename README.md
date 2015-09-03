@@ -287,10 +287,10 @@ For curious users, there is a verbose printing feature. The level of verbosity i
 
 Examples of verbose printing:
 
-	sc> ? 3 + 4 - 2
-	((3 + 4) - 2)
+	sc> ?w 3 + 4 - 2
+	(3 + 4) - 2
 	5
-	sc> ?rt 8 - 9(6^2 + 3/7)^3
+	sc> ?rwt 8 - 9(6^2 + 3/7)^3
 	- (
 	  [a] 8
 	  [b] * (
@@ -310,7 +310,8 @@ Examples of verbose printing:
 	    )
 	  )
 	)
-	(8 - (9 * (((6 ^ 2) + (3 / 7)) ^ 3)))
+	8 - (9 * (((6 ^ 2) + (3 / 7)) ^ 3))
+	8 - 9 * (6 ^ 2 + 3 / 7) ^ 3
 	-149229631/343 (-435071.810495627)
 
 Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of its body.
@@ -319,7 +320,7 @@ Examples of printing functions verbosely:
 
 	sc> f(x) = 3x
 	sc> ? f
-	f(x) = (3 * x)
+	f(x) = 3 * x
 	sc> ?p sqrt(4)
 	√(4)
 	2

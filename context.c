@@ -82,7 +82,6 @@ static void freeStack(struct ContextStack* stack) {
 void Context_free(Context* ctx) {
 	freeVars(ctx->globals);
 	freeStack(ctx->locals);
-	
 	free(ctx);
 }
 
@@ -183,7 +182,6 @@ void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
 	}
 	
 	Variable* dst = findVar(ctx->globals, name);
-	
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
 		/* Make sure we are assigning the correct variable */
@@ -192,7 +190,6 @@ void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
 		}
 		
 		var->name = strdup(name);
-		
 		Context_addGlobal(ctx, var);
 	}
 	else {

@@ -41,6 +41,7 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx);
 
 /* Printing */
 char* FuncCall_repr(const FuncCall* call, bool pretty);
+char* FuncCall_wrap(const FuncCall* call);
 char* FuncCall_verbose(const FuncCall* call, unsigned indent);
 char* FuncCall_xml(const FuncCall* call, unsigned indent);
 

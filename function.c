@@ -21,7 +21,7 @@
 #include "variable.h"
 
 
-static char* argsVerbose(const Function* func);
+static char* argsToString(const Function* func);
 
 
 Function* Function_new(unsigned argcount, char** argnames, Value* body) {
@@ -110,20 +110,8 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 	return ret;
 }
 
-char* Function_repr(const Function* func, bool pretty) {
-	char* ret;
-	char* args = argsVerbose(func);
-	char* body = Value_repr(func->body, pretty);
-	
-	asprintf(&ret, "(%s) = %s", args, body);
-	
-	free(body);
-	free(args);
-	return ret;
-}
-
-static char* argsVerbose(const Function* func) {
-	char* ret;
+static char* argsToString(const Function* func) {
+	char* ret = NULL;
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
 		if(i == 0) {
@@ -140,16 +128,40 @@ static char* argsVerbose(const Function* func) {
 	return ret;
 }
 
+char* Function_repr(const Function* func, bool pretty) {
+	char* ret;
+	char* args = argsToString(func);
+	char* body = Value_repr(func->body, pretty, false);
+	
+	asprintf(&ret, "(%s) = %s", args ?: "", body);
+	
+	free(body);
+	free(args);
+	return ret;
+}
+
+char* Function_wrap(const Function* func) {
+	char* ret;
+	char* args = argsToString(func);
+	char* body = Value_wrap(func->body, false);
+	
+	asprintf(&ret, "(%s) = %s", args ?: "", body);
+	
+	free(body);
+	free(args);
+	return ret;
+}
+
 char* Function_verbose(const Function* func) {
 	char* ret;
-	char* args = argsVerbose(func);
+	char* args = argsToString(func);
 	char* body = Value_verbose(func->body, 1);
 	
 	asprintf(&ret,
 			 "(%s) {\n"
 				 "%s%s\n"
 			 "}",
-			 args,
+			 args ?: "",
 			 indentation(1), body);
 	
 	free(body);
@@ -203,24 +215,39 @@ char* Function_xml(const Function* func, unsigned indent) {
 	 </vardata>
 	*/
 	char* ret;
-	char* args = argsXml(func, indent + 2);
 	char* body = Value_xml(func->body, indent + 2);
 	
-	asprintf(&ret,
-			 "<func>\n"
-				 "%2$s<argnames>\n"
-					 "%4$s\n" /* args */
-				 "%2$s</argnames>\n"
-				 "%2$s<expr>\n"
-					 "%3$s%5$s\n" /* body */
-				 "%2$s</expr>\n"
-			 "%1$s</func>",
-			 indentation(indent), indentation(indent + 1), indentation(indent + 2),
-			 args,
-			 body);
+	if(func->argcount > 0) {
+		char* args = argsXml(func, indent + 2);
+		
+		asprintf(&ret,
+				 "<func>\n"
+					 "%2$s<argnames>\n"
+						 "%4$s\n" /* args */
+					 "%2$s</argnames>\n"
+					 "%2$s<expr>\n"
+						 "%3$s%5$s\n" /* body */
+					 "%2$s</expr>\n"
+				 "%1$s</func>",
+				 indentation(indent), indentation(indent + 1), indentation(indent + 2),
+				 args,
+				 body);
+		
+		free(args);
+	}
+	else {
+		asprintf(&ret,
+				 "<func>\n"
+					 "%2$s<argnames/>\n"
+					 "%2$s<expr>\n"
+						 "%3$s%4$s\n" /* body */
+					 "%2$s</expr>\n"
+				 "%1$s</func>",
+				 indentation(indent), indentation(indent + 1), indentation(indent + 2),
+				 body);
+	}
 	
 	free(body);
-	free(args);
 	return ret;
 }
 

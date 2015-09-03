@@ -25,8 +25,11 @@ typedef enum {
 	BIN_MUL,
 	BIN_DIV,
 	BIN_MOD,
-	BIN_POW
+	BIN_POW,
+	BIN_HIGHEST /* pseudo type with highest precedence */
 } BINTYPE;
+
+#define BIN_COUNT (BIN_HIGHEST)
 
 struct BinOp {
 	BINTYPE type;
@@ -35,7 +38,7 @@ struct BinOp {
 };
 
 /* Contains strings such as "multiply" for index BIN_ADD */
-const char* binop_verb[6];
+const char* binop_verb[BIN_COUNT];
 
 /* Constructor */
 /* This method consumes both the `a` and `b` arguments */
@@ -58,6 +61,7 @@ int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
 char* BinOp_repr(const BinOp* node, bool pretty);
+char* BinOp_wrap(const BinOp* node);
 char* BinOp_verbose(const BinOp* node, unsigned indent);
 char* BinOp_xml(const BinOp* node, unsigned indent);
 

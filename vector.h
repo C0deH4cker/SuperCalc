@@ -10,6 +10,7 @@
 #define _SC_VECTOR_H_
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 typedef struct Vector Vector;
 #include "value.h"
@@ -57,7 +58,8 @@ Value* Vector_normalize(const Vector* vec, const Context* ctx);
 Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx);
 
 /* Printing */
-char* Vector_repr(const Vector* vec);
+char* Vector_repr(const Vector* vec, bool pretty);
+char* Vector_wrap(const Vector* vec);
 char* Vector_verbose(const Vector* vec, unsigned indent);
 char* Vector_xml(const Vector* vec, unsigned indent);
 

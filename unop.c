@@ -93,22 +93,27 @@ Value* UnOp_eval(const UnOp* term, const Context* ctx) {
 	return ret;
 }
 
-char* UnOp_repr(const UnOp* term, bool pretty) {
+static char* unopToString(const UnOp* term, char* val) {
 	char* ret;
-	char* val = Value_repr(term->a, pretty);
-	
-	switch(term->type) {
-		case UN_FACT:
-			asprintf(&ret, "%s%s", val, _unop_repr[term->type]);
-			break;
-			
-		default:
-			/* Shouldn't be reached */
-			DIE("Unknown unary operator type: %d.", term->type);
+	if(term->a->type == VAL_FRAC || term->a->type == VAL_EXPR) {
+		char* tmp;
+		asprintf(&tmp, "(%s)", val);
+		free(val);
+		val = tmp;
 	}
+	
+	asprintf(&ret, "%s%s", val, _unop_repr[term->type]);
 	
 	free(val);
 	return ret;
+}
+
+char* UnOp_repr(const UnOp* term, bool pretty) {
+	return unopToString(term, Value_repr(term->a, pretty, false));
+}
+
+char* UnOp_wrap(const UnOp* term) {
+	return unopToString(term, Value_wrap(term->a, false));
 }
 
 char* UnOp_verbose(const UnOp* term, unsigned indent) {

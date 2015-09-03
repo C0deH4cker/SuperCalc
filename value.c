@@ -370,7 +370,6 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 			}
 			
 			Value_free(val);
-			
 			return ValErr(badChar(**expr));
 		}
 		/* End of the statement? */
@@ -444,12 +443,10 @@ static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val) {
 
 static Value* parseNum(const char** expr) {
 	Value* ret;
-	
 	char* end1;
 	char* end2;
 	
 	errno = 0;
-	
 	double dbl = strtod(*expr, &end1);
 	if(errno != 0 || *expr == end1) {
 		/* An error occurred (EINVAL, ERANGE) */
@@ -486,7 +483,6 @@ static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 	
 	/* Parse inside of brackets */
 	Value* index = Value_parse(expr, 0, ']', cb);
-	
 	if(index->type == VAL_ERR) {
 		Value_free(val);
 		return index;
@@ -512,9 +508,7 @@ static Value* callFunc(Value* val, const char** expr, parser_cb* cb) {
 		return ValErr(ignoreError());
 	}
 	
-	FuncCall* call = FuncCall_new(val, args);
-	
-	return ValCall(call);
+	return ValCall(FuncCall_new(val, args));
 }
 
 static Value* parseToken(const char** expr, parser_cb* cb) {
@@ -542,7 +536,6 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 	}
 	
 	free(token);
-	
 	return ret;
 }
 
@@ -638,9 +631,8 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	return ret;
 }
 
-char* Value_repr(const Value* val, bool pretty) {
+char* Value_repr(const Value* val, bool pretty, bool top) {
 	char* ret;
-	char* str;
 	
 	switch(val->type) {
 		case VAL_INT:
@@ -657,19 +649,15 @@ char* Value_repr(const Value* val, bool pretty) {
 			break;
 			
 		case VAL_FRAC:
-			ret = Fraction_repr(val->frac, pretty);
+			ret = Fraction_repr(val->frac, top);
 			break;
 			
 		case VAL_UNARY:
-			str = UnOp_repr(val->term, pretty);
-			asprintf(&ret, "(%s)", str);
-			free(str);
+			ret = UnOp_repr(val->term, pretty);
 			break;
 			
 		case VAL_EXPR:
-			str = BinOp_repr(val->expr, pretty);
-			asprintf(&ret, "(%s)", str);
-			free(str);
+			ret = BinOp_repr(val->expr, pretty);
 			break;
 			
 		case VAL_CALL:
@@ -681,7 +669,55 @@ char* Value_repr(const Value* val, bool pretty) {
 			break;
 			
 		case VAL_VEC:
-			ret = Vector_repr(val->vec);
+			ret = Vector_repr(val->vec, pretty);
+			break;
+			
+		case VAL_PLACE:
+			ret = Placeholder_repr(val->ph);
+			break;
+			
+		default:
+			/* Shouldn't be reached */
+			badValType(val->type);
+	}
+	
+	return ret;
+}
+
+char* Value_wrap(const Value* val, bool top) {
+	char* ret;
+	
+	switch(val->type) {
+		case VAL_INT:
+			asprintf(&ret, "%lld", val->ival);
+			break;
+			
+		case VAL_REAL:
+			asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
+			break;
+			
+		case VAL_FRAC:
+			ret = Fraction_repr(val->frac, top);
+			break;
+			
+		case VAL_UNARY:
+			ret = UnOp_wrap(val->term);
+			break;
+			
+		case VAL_EXPR:
+			ret = BinOp_wrap(val->expr);
+			break;
+			
+		case VAL_CALL:
+			ret = FuncCall_wrap(val->call);
+			break;
+			
+		case VAL_VAR:
+			ret = strdup(val->name);
+			break;
+			
+		case VAL_VEC:
+			ret = Vector_wrap(val->vec);
 			break;
 			
 		case VAL_PLACE:
@@ -709,7 +745,7 @@ char* Value_verbose(const Value* val, unsigned indent) {
 			break;
 		
 		case VAL_FRAC:
-			ret = Fraction_repr(val->frac, false);
+			ret = Fraction_repr(val->frac, indent == 0);
 			break;
 		
 		case VAL_UNARY:
@@ -807,7 +843,7 @@ void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v) {
 	}
 	
 	/* Print the value */
-	char* valString = Value_repr(val, v & V_PRETTY);
+	char* valString = Value_repr(val, v & V_PRETTY, true);
 	if(valString) {
 		fprintf(sc->fout, "%s", valString);
 		free(valString);

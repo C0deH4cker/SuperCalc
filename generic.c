@@ -24,22 +24,22 @@
 
 #include "supercalc.h"
 
-#define PROMPT  "sc> "
 #define ICHAR   ' '
 #define IWIDTH  2
 #define EPSILON 1e-12
 
 typedef enum {
-	VC_REPR   = 'r',
 	VC_PRETTY = 'p',
+	VC_REPR   = 'r',
+	VC_WRAP   = 'w',
 	VC_TREE   = 't',
 	VC_XML    = 'x'
 } VERBOSITY_CHAR;
 
 
-void readLine(FILE* fp, const char* prompt) {
-	printf("%s", prompt);
-	fgets(line, sizeof(line), fp);
+char* readLine(FILE* fout, const char* prompt, FILE* fin) {
+	fprintf(fout, "%s", prompt);
+	return fgets(line, sizeof(line), fin);
 }
 
 bool isInteractive(FILE* fp) {
@@ -59,33 +59,35 @@ VERBOSITY getVerbosity(const char** str) {
 	bool again = true;
 	while(again) {
 		switch(**str) {
+#define ADD_V(lvl) do { \
+	if(ret & V_##lvl) { \
+		RAISE(syntaxError("Specified " #lvl " verbosity more than once."), false); \
+		return V_ERR; \
+	} \
+	ret |= V_##lvl; \
+} while(0)
+			
 			case VC_REPR:
-				if(ret & V_REPR) {
-					RAISE(syntaxError("Specified repr verbosity more than once."), false);
-				}
-				ret |= V_REPR;
+				ADD_V(REPR);
 				break;
 			
 			case VC_PRETTY:
-				if(ret & V_PRETTY) {
-					RAISE(syntaxError("Specified pretty verbosity more than once."), false);
-				}
+				ADD_V(PRETTY);
 				/* Pretty implies repr */
-				ret |= V_PRETTY | V_REPR;
+				ret |= V_REPR;
+				break;
+			
+			case VC_WRAP:
+				ADD_V(WRAP);
 				break;
 			
 			case VC_TREE:
-				if(ret & V_TREE) {
-					RAISE(syntaxError("Specified tree verbosity more than once."), false);
-				}
-				ret |= V_TREE;
+				ADD_V(TREE);
 				break;
 			
 			case VC_XML:
-				if(ret & V_XML) {
-					RAISE(syntaxError("Specified XML verbosity more than once."), false);
-				}
-				ret |= V_XML;
+				ADD_V(XML);
+				break;
 			
 			case ' ':
 			case '\t':
@@ -95,8 +97,10 @@ VERBOSITY getVerbosity(const char** str) {
 			
 			default:
 				RAISE(badChar(**str), false);
-				return ret;
+				return V_ERR;
 		}
+		
+#undef ADD_V
 		
 		(*str)++;
 	}

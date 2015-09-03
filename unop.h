@@ -43,6 +43,7 @@ Value* UnOp_eval(const UnOp* term, const Context* ctx);
 
 /* Printing */
 char* UnOp_repr(const UnOp* term, bool pretty);
+char* UnOp_wrap(const UnOp* term);
 char* UnOp_verbose(const UnOp* term, unsigned indent);
 char* UnOp_xml(const UnOp* term, unsigned indent);
 

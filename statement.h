@@ -45,6 +45,7 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v);
 
 /* Printing */
 char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty);
+char* Statement_wrap(const Statement* stmt, const Context* ctx);
 char* Statement_verbose(const Statement* stmt, const Context* ctx);
 char* Statement_xml(const Statement* stmt, const Context* ctx);
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v);

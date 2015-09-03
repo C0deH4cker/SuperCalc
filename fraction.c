@@ -548,10 +548,10 @@ double Fraction_asReal(const Fraction* frac) {
 	return (double)frac->n / (double)frac->d;
 }
 
-char* Fraction_repr(const Fraction* f, bool pretty) {
+char* Fraction_repr(const Fraction* f, bool approx) {
 	char* ret;
 	
-	if(pretty) {
+	if(approx) {
 		asprintf(&ret, "%lld/%lld (%.*g)", f->n, f->d, DBL_DIG, Fraction_asReal(f));
 	}
 	else {

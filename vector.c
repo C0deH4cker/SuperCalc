@@ -312,9 +312,19 @@ Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx) {
 	return Value_copy(vec->vals->args[index->ival]);
 }
 
-char* Vector_repr(const Vector* vec) {
+char* Vector_repr(const Vector* vec, bool pretty) {
 	char* ret;
-	char* vals = ArgList_repr(vec->vals, false);
+	char* vals = ArgList_repr(vec->vals, pretty);
+	
+	asprintf(&ret, "<%s>", vals);
+	
+	free(vals);
+	return ret;
+}
+
+char* Vector_wrap(const Vector* vec) {
+	char* ret;
+	char* vals = ArgList_wrap(vec->vals);
 	
 	asprintf(&ret, "<%s>", vals);
 	
