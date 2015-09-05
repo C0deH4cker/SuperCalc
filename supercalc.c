@@ -50,7 +50,7 @@ Value* SC_run(SuperCalc* sc, FILE* fin) {
 	Value* ret = SC_runFile(sc, fin, prompt);
 	
 	if(sc->interactive) {
-		fputc('\n', fin);
+		fputc('\n', sc->fout);
 	}
 	
 	return ret;
