@@ -205,9 +205,9 @@ Examples using `map`:
 	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
 	sc> map(sin, angles)
 	<0, 1, 0, -1, 0>
-	sc> add1(x) = 1 + x
+	sc> 
 	sc> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
-	<2, 3, 4, 5, 5.47213595499958, 7/3>
+	<2, 3, 4, 5, 5.472add1(x) = 1 + x13595499958, 7/3>
 
 
 Vectors can have any dimension greater than one:
@@ -283,12 +283,19 @@ Error messages attempt to be clear:
 	sc> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
-For curious users, there is a verbose printing feature. The level of verbosity is determined by the number of `?`s prepended to the input string. For verbosity >= 1, SuperCalc will print a parenthesized version of the parsed input before evaluation. This is useful to check the order of operations being evaluated. Also, for verbosity >= 2, SuperCalc will also print a verbose dump of the internal parse tree. Verbosity >= 3 will force pretty printing (with unicode characters).
+For curious users, there is a verbose printing feature. Starting the input with a `?` will enable verbose printing of some form. Directly following the `?` will be character codes to specify which types of verbose printing to use. A single `?` by itself is the same as `?r`. There must be at least one space after all character codes in the `?` group before the expression to calculate starts. Multiple printing codes can be mixed in a single grouping.
+
+* `r` - Reprint output. Prints the expression out in normal mathematical form, using as few parentheses as possible.
+* `p` - Pretty reprint output. Same as `r` but will use certain Unicode characters instead of function names, such as `√` for `sqrt` or `π` for `pi`.
+* `w` - Wrapped reprint output. Same as reprint, but wraps every binary operation in parentheses to clarify order of operations.
+* `t` - Tree output. Outputs the expression tree as parsed and stored internally.
+* `x` - XML output. Outputs the expression tree in XML format. More info coming soon.
 
 Examples of verbose printing:
 
 	sc> ?w 3 + 4 - 2
 	(3 + 4) - 2
+	
 	5
 	sc> ?rwt 8 - 9(6^2 + 3/7)^3
 	- (
@@ -310,8 +317,11 @@ Examples of verbose printing:
 	    )
 	  )
 	)
+	
 	8 - (9 * (((6 ^ 2) + (3 / 7)) ^ 3))
+	
 	8 - 9 * (6 ^ 2 + 3 / 7) ^ 3
+	
 	-149229631/343 (-435071.810495627)
 
 Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of its body.
@@ -344,7 +354,8 @@ Examples of printing functions verbosely:
 	    [b] 1
 	  )
 	}
-	g(x, y) = (((x ^ 2) - ((2 * x) * y)) + 1)
+	
+	g(x, y) = x ^ 2 - 2 * x * y + 1
 	sc> ?x g
 	<vardata name="g">
 	  <func>
