@@ -38,7 +38,7 @@ struct BinOp {
 };
 
 /* Contains strings such as "multiply" for index BIN_ADD */
-const char* binop_verb[BIN_COUNT];
+extern const char* binop_verb[BIN_COUNT];
 
 /* Constructor */
 /* This method consumes both the `a` and `b` arguments */

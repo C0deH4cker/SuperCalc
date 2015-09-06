@@ -54,21 +54,21 @@ struct Error {
 #define internalError(...)          Error_new(ERR_INTERNAL, __VA_ARGS__)
 #define unknownError(...)           Error_new(ERR_UNK, __VA_ARGS__)
 
-const char* kNullErrStr;
-const char* kDivByZeroStr;
-const char* kModByZeroStr;
-const char* kVarNotFoundStr;
-const char* kBadOpTypeStr;
-const char* kBadCharStr;
-const char* kBuiltinArgsStr;
-const char* kBuiltinNotFuncStr;
-const char* kBadConversionStr;
-const char* kEarlyEndStr;
-const char* kMissingPlaceholderStr;
+extern const char* kNullErrStr;
+extern const char* kDivByZeroStr;
+extern const char* kModByZeroStr;
+extern const char* kVarNotFoundStr;
+extern const char* kBadOpTypeStr;
+extern const char* kBadCharStr;
+extern const char* kBuiltinArgsStr;
+extern const char* kBuiltinNotFuncStr;
+extern const char* kBadConversionStr;
+extern const char* kEarlyEndStr;
+extern const char* kMissingPlaceholderStr;
 
-const char* kAllocErrStr;
-const char* kBadValStr;
-const char* kBadVarStr;
+extern const char* kAllocErrStr;
+extern const char* kBadValStr;
+extern const char* kBadVarStr;
 
 #define nullError()                 unknownError(kNullErrStr)
 #define zeroDivError()              mathError(kDivByZeroStr)
