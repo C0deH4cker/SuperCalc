@@ -82,7 +82,7 @@ typedef enum {
 } VERBOSITY;
 
 /* Hacky, I know */
-char line[4096];
+extern char line[4096];
 
 /* Tokenization */
 void trimSpaces(const char** str);

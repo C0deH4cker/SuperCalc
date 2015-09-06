@@ -36,6 +36,7 @@ typedef enum {
 	VC_XML    = 'x'
 } VERBOSITY_CHAR;
 
+char line[4096];
 
 char* readLine(FILE* fout, const char* prompt, FILE* fin) {
 	fprintf(fout, "%s", prompt);

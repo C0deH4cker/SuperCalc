@@ -66,7 +66,7 @@ struct Value {
 };
 
 /* Default parser callback errors on '@' */
-parser_cb default_cb;
+extern parser_cb default_cb;
 
 /* Value constructors */
 /* Each method which takes an object pointer as an argument consumes it */
