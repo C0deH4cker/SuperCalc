@@ -3,6 +3,9 @@ class SuperCalc < Formula
   homepage "https://github.com/ctrezevant/SuperCalc"
   url "https://github.com/ctrezevant/SuperCalc.git"
   version "1.0.0"
+ 
+  # Needed to override Brew's Superenv
+  env :std
 
   def install
     system "./autogen.sh"
