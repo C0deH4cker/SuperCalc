@@ -142,9 +142,7 @@ const char* getPretty(const char* name) {
 }
 
 void trimSpaces(const char** str) {
-	const char* p = *str;
-	while(*p && isspace(*p)) p++;
-	*str = p;
+	*str += strspn(*str, " \t");
 }
 
 const char* indentation(unsigned level) {
@@ -237,8 +235,8 @@ char* nextToken(const char** expr) {
 		return NULL;
 	}
 	
-	/* Count consecutive number of chars matching [a-zA-Z0-9_] */
-	while(isalnum(p[len]) || p[len] == '_') {
+	/* Count consecutive number of chars matching [a-zA-Z0-9_'] */
+	while(isalnum(p[len]) || p[len] == '_' || p[len] == '\'') {
 		len++;
 	}
 	

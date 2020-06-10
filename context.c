@@ -300,10 +300,15 @@ void Context_clear(Context* ctx) {
 			Variable_free(cur->var);
 			free(cur);
 		}
+		else {
+			prev = prev->next;
+		}
 		
-		prev = prev->next;
 		cur = prev->next;
 	}
+	
+	/* Set ans to 0 */
+	Context_setGlobal(ctx, "ans", VarValue(strdup("ans"), ValInt(0)));
 }
 
 static struct VarNode* findNode(struct VarNode* cur, const char* name) {
@@ -337,12 +342,18 @@ Variable* Context_get(const Context* ctx, const char* name) {
 }
 
 Variable* Context_getAbove(const Context* ctx, const char* name) {
-	Variable* ret = NULL;
-	
-	if(ctx->locals != NULL && ctx->locals->next != NULL) {
-		ret = findVar(ctx->locals->next->vars, name);
+	if(ctx->locals != NULL) {
+		/* Skip the current frame and walk up the call stack */
+		struct ContextStack* frame;
+		for(frame = ctx->locals->next; frame != NULL; frame = frame->next) {
+			Variable* var = findVar(frame->vars, name);
+			if(var != NULL) {
+				return var;
+			}
+		}
 	}
 	
-	return ret ?: findVar(ctx->globals, name);
+	/* Last resort, try to find a global with this name */
+	return findVar(ctx->globals, name);
 }
 

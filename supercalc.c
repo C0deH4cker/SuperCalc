@@ -12,7 +12,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef WITH_LINENOISE
 #include "linenoise/linenoise.h"
+#endif
+
 #include "error.h"
 #include "generic.h"
 #include "value.h"
@@ -39,24 +42,52 @@ void SuperCalc_free(SuperCalc* sc) {
 	free(sc);
 }
 
+static char* SC_readLine(const char* prompt) {
+#ifdef WITH_LINENOISE
+	
+	if(g_line != NULL) {
+		free(g_line);
+		g_line = NULL;
+	}
+	
+	g_line = linenoise(prompt);
+	if(g_line != NULL) {
+		linenoiseHistoryAdd(g_line);
+	}
+	
+#else /* WITH_LINENOISE */
+	
+	if(g_line == NULL) {
+		g_line = calloc(1000, 1);
+	}
+	
+	printf("%s", prompt);
+	if(fgets(g_line, 1000, stdin) == NULL) {
+		return NULL;
+	}
+	
+#endif /* WITH_LINENOISE */
+	
+	return g_line;
+}
+
 void SuperCalc_run(SuperCalc* sc) {
 	const char* prompt = "";
 	
 	if(isInteractive(stdin)) {
 		sc->interactive = true;
 		prompt = "sc> ";
+		
+#ifdef WITH_LINENOISE
 		linenoiseHistorySetMaxLen(100);
+#endif
 	}
 	
-	while((g_line = linenoise(prompt))) {
-		linenoiseHistoryAdd(g_line);
-		
+	while((g_line = SC_readLine(prompt))) {
 		const char* p = g_line;
 		
 		VERBOSITY v = getVerbosity(&p);
 		if(v & V_ERR) {
-			free(g_line);
-			g_line = NULL;
 			continue;
 		}
 		
@@ -68,9 +99,6 @@ void SuperCalc_run(SuperCalc* sc) {
 			Value_free(ret);
 			ret = NULL;
 		}
-		
-		free(g_line);
-		g_line = NULL;
 	}
 	
 	putchar('\n');
@@ -79,11 +107,8 @@ void SuperCalc_run(SuperCalc* sc) {
 Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
 	char* code = strdup(str);
 	
-	/* Strip trailing newline */
-	char* end;
-	if((end = strchr(code, '\n')) != NULL) *end = '\0';
-	if((end = strchr(code, '\r')) != NULL) *end = '\0';
-	if((end = strchr(code, '#')) != NULL) *end = '\0';
+	/* Strip trailing newline and comments */
+	code = strsep(&code, "#\r\n");
 	
 	const char* p = code;
 	trimSpaces(&p);

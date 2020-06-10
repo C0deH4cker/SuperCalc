@@ -9,7 +9,6 @@
 #ifndef SC_VALUE_H
 #define SC_VALUE_H
 
-#include <stdio.h>
 #include <stdbool.h>
 
 typedef struct Value Value;
@@ -29,6 +28,8 @@ typedef struct parser_cb {
 #include "error.h"
 #include "generic.h"
 #include "vector.h"
+#include "function.h"
+#include "builtin.h"
 #include "placeholder.h"
 #include "supercalc.h"
 
@@ -45,6 +46,8 @@ typedef enum {
 	VAL_CALL,
 	VAL_VAR,
 	VAL_VEC,
+	VAL_FUNC,
+	VAL_BUILTIN,
 	VAL_PLACE
 } VALTYPE;
 
@@ -61,6 +64,8 @@ struct Value {
 		FuncCall*    call;
 		char*        name;
 		Error*       err;
+		Function*    func;
+		Builtin*     blt;
 		Placeholder* ph;
 	};
 };

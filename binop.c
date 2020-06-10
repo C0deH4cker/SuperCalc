@@ -363,7 +363,11 @@ static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
 static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
-	if(a->type == VAL_INT && b->type == VAL_INT) {
+	if(b->type == VAL_INT && b->ival == 0) {
+		// Shortcut execution of x^0 to not evaluate x
+		ret = ValInt(1);
+	}
+	else if(a->type == VAL_INT && b->type == VAL_INT) {
 		ret = val_ipow(a->ival, b->ival);
 	}
 	else if(a->type == VAL_VEC) {
@@ -464,13 +468,13 @@ Value* BinOp_eval(const BinOp* node, const Context* ctx) {
 
 /* Like Rambo */
 static BINTYPE nextSpecialOp(const char** expr) {
-	unsigned i;
-	for(i = 0; i < ARRSIZE(_binop_pretty); i++) {
+	BINTYPE i;
+	for(i = BIN_ADD; i < BIN_AFTERMAX; i++) {
 		size_t len = strlen(_binop_pretty[i]);
 		
 		if(strncmp(_binop_pretty[i], *expr, len) == 0) {
 			*expr += len;
-			return (BINTYPE)i;
+			return i;
 		}
 	}
 	
@@ -537,7 +541,7 @@ char* BinOp_repr(const BinOp* node, bool pretty) {
 	const char* opstr = (pretty ? _binop_pretty : _binop_repr)[node->type];
 	
 	char* strs[2] = {Value_repr(node->a, pretty, false), Value_repr(node->b, pretty, false)};
-	BINTYPE types[2] = {BIN_HIGHEST, BIN_HIGHEST};
+	BINTYPE types[2] = {BIN_AFTERMAX, BIN_AFTERMAX};
 	
 	/* Determine expr type of a */
 	if(node->a->type == VAL_FRAC) {

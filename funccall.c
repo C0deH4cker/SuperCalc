@@ -125,6 +125,14 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 			ret = callVar(ctx, func->name, call->arglist);
 			break;
 		
+		case VAL_FUNC:
+			ret = Function_eval(func->func, ctx, call->arglist);
+			break;
+		
+		case VAL_BUILTIN:
+			ret = Builtin_eval(func->blt, ctx, call->arglist, false);
+			break;
+		
 		case VAL_INT:
 		case VAL_REAL:
 		case VAL_FRAC:

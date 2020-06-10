@@ -30,11 +30,11 @@ struct Template {
        Value* tree;
              -          unsigned num_placeholders = 2;
            /   \        unsigned capacity = 4;
-          +    @2v          0        1       2      3
+          +    @2f          0        1       2      3
          / \    |       +--------+--------+------+------+
-        *  @1v  |       | Value* | Value* | NULL | NULL | <-- Value** placeholders;
+        *  @1i  |       | Value* | Value* | NULL | NULL | <-- Value** placeholders;
        / \  |   +--+    +--------+--------+------+------+
-     @1v  4 |      |        |        |
+     @1i  4 |      |        |        |
       |     +---------------+        |
       |     |      |                 |
       +-----+      +-----------------+

@@ -1,6 +1,6 @@
 # Target specific variables
 TARGET := sc
-CFLAGS += -Wall -Wextra -Werror
+CFLAGS += -Wall -Wextra -Werror -DWITH_LINENOISE
 LDFLAGS += -lm
 
 ifndef OFLAGS

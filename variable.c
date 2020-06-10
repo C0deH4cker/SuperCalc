@@ -161,10 +161,15 @@ Value* Variable_coerce(const Variable* var, const Context* ctx) {
 	else if(var->type == VAR_FUNC) {
 		ret = ValErr(typeError("Variable '%s' is a function.", var->name));
 	}
-	else if(var->type == VAR_BUILTIN && !var->blt->isFunction) {
-		ArgList* noArgs = ArgList_new(0);
-		ret = Builtin_eval(var->blt, ctx, noArgs, false);
-		ArgList_free(noArgs);
+	else if(var->type == VAR_BUILTIN) {
+		if(!var->blt->isFunction) {
+			ArgList* noArgs = ArgList_new(0);
+			ret = Builtin_eval(var->blt, ctx, noArgs, false);
+			ArgList_free(noArgs);
+		}
+		else {
+			ret = ValErr(typeError("Variable '%s' is a builtin function.", var->name));
+		}
 	}
 	else {
 		badVarType(var->type);

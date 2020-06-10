@@ -52,7 +52,7 @@
 
 static inline void* fmalloc(size_t size) {
 	void* ret = malloc(size);
-	if(ret == NULL) {
+	if(ret == NULL && size > 0) {
 		allocError();
 	}
 	return ret;
@@ -60,7 +60,7 @@ static inline void* fmalloc(size_t size) {
 
 static inline void* fcalloc(size_t count, size_t size) {
 	void* ret = calloc(count, size);
-	if(ret == NULL) {
+	if(ret == NULL && count > 0 && size > 0) {
 		allocError();
 	}
 	return ret;
@@ -68,7 +68,7 @@ static inline void* fcalloc(size_t count, size_t size) {
 
 static inline void* frealloc(void* mem, size_t size) {
 	void* ret = realloc(mem, size);
-	if(ret == NULL) {
+	if(ret == NULL && size > 0) {
 		allocError();
 	}
 	return ret;
