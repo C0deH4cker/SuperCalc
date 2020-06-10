@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_FRACTION_H_
-#define _SC_FRACTION_H_
+#ifndef SC_FRACTION_H
+#define SC_FRACTION_H
 
 typedef struct Fraction Fraction;
 #include "value.h"
@@ -49,4 +49,4 @@ double Fraction_asReal(const Fraction* frac);
 char* Fraction_repr(const Fraction* frac, bool approx);
 char* Fraction_xml(const Fraction* frac);
 
-#endif
+#endif /* SC_FRACTION_H */

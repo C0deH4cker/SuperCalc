@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SUPERCALC_H_
-#define _SUPERCALC_H_
+#ifndef SC_SUPERCALC_H
+#define SC_SUPERCALC_H
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -27,4 +27,4 @@ void SuperCalc_free(SuperCalc* sc);
 void SuperCalc_run(SuperCalc* sc);
 Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v);
 
-#endif
+#endif /* SC_SUPERCALC_H */

@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_BINOP_H_
-#define _SC_BINOP_H_
+#ifndef SC_BINOP_H
+#define SC_BINOP_H
 
 #include <stdbool.h>
 
@@ -65,4 +65,4 @@ char* BinOp_wrap(const BinOp* node);
 char* BinOp_verbose(const BinOp* node, unsigned indent);
 char* BinOp_xml(const BinOp* node, unsigned indent);
 
-#endif
+#endif /* SC_BINOP_H */

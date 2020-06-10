@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_BUILTIN_H_
-#define _SC_BUILTIN_H_
+#ifndef SC_BUILTIN_H
+#define SC_BUILTIN_H
 
 #include <stdbool.h>
 
@@ -45,4 +45,4 @@ char* Builtin_verbose(const Builtin* blt, unsigned indent);
 char* Builtin_xml(const Builtin* blt, unsigned indent);
 
 
-#endif
+#endif /* SC_BUILTIN_H */

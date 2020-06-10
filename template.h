@@ -6,8 +6,8 @@
   Copyright (c) 2015 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_TEMPLATE_H_
-#define _SC_TEMPLATE_H_
+#ifndef SC_TEMPLATE_H
+#define SC_TEMPLATE_H
 
 #include <stdarg.h>
 
@@ -43,4 +43,4 @@ Value* Template_staticEval(Template** ptp, const Context* ctx, const char* fmt, 
 /* Number of placeholders that must be filled */
 unsigned Template_placeholderCount(const Template* tp);
 
-#endif /* _SC_TEMPLATE_H_ */
+#endif /* SC_TEMPLATE_H */

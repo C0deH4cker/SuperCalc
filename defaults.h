@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_DEFAULTS_H_
-#define _SC_DEFAULTS_H_
+#ifndef SC_DEFAULTS_H
+#define SC_DEFAULTS_H
 
 #include "context.h"
 
@@ -45,4 +45,4 @@ void register_math(Context* ctx);
 void register_vector(Context* ctx);
 
 
-#endif
+#endif /* SC_DEFAULTS_H */

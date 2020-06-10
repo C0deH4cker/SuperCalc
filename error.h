@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_ERROR_H_
-#define _SC_ERROR_H_
+#ifndef SC_ERROR_H
+#define SC_ERROR_H
 
 #include <stdbool.h>
 #include <stdarg.h>
@@ -107,4 +107,4 @@ bool Error_canRecover(const Error* err);
 /* Death function */
 NORETURN void die(const char* file, const char* function, int line, const char* fmt, ...);
 
-#endif
+#endif /* SC_ERROR_H */

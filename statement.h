@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_EXPRESSION_H_
-#define _SC_EXPRESSION_H_
+#ifndef SC_STATEMENT_H
+#define SC_STATEMENT_H
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -50,4 +50,4 @@ char* Statement_verbose(const Statement* stmt, const Context* ctx);
 char* Statement_xml(const Statement* stmt, const Context* ctx);
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v);
 
-#endif
+#endif /* SC_STATEMENT_H */

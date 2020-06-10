@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_VALUE_H_
-#define _SC_VALUE_H_
+#ifndef SC_VALUE_H
+#define SC_VALUE_H
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -107,4 +107,4 @@ char* Value_verbose(const Value* val, unsigned indent);
 char* Value_xml(const Value* val, unsigned indent);
 void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v);
 
-#endif
+#endif /* SC_VALUE_H */

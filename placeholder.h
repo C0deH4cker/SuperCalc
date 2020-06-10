@@ -6,8 +6,8 @@
   Copyright (c) 2015 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_PLACEHOLDER_H_
-#define _SC_PLACEHOLDER_H_
+#ifndef SC_PLACEHOLDER_H
+#define SC_PLACEHOLDER_H
 
 typedef struct Placeholder Placeholder;
 #include "value.h"
@@ -48,4 +48,4 @@ Placeholder* Placeholder_parse(const char** expr);
 char* Placeholder_repr(const Placeholder* ph);
 char* Placeholder_xml(const Placeholder* ph, unsigned indent);
 
-#endif /* _SC_PLACEHOLDER_H_ */
+#endif /* SC_PLACEHOLDER_H */

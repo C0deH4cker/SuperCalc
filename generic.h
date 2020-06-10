@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_GENERIC_H_
-#define _SC_GENERIC_H_
+#ifndef SC_GENERIC_H
+#define SC_GENERIC_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -105,4 +105,4 @@ long long ipow(long long base, long long exp);
 long long gcd(long long a, long long b);
 double approx(double real);
 
-#endif /* _SC_GENERIC_H_ */
+#endif /* SC_GENERIC_H */

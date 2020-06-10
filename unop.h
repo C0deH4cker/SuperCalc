@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_UNOP_H_
-#define _SC_UNOP_H_
+#ifndef SC_UNOP_H
+#define SC_UNOP_H
 
 #include <stdbool.h>
 
@@ -47,4 +47,4 @@ char* UnOp_wrap(const UnOp* term);
 char* UnOp_verbose(const UnOp* term, unsigned indent);
 char* UnOp_xml(const UnOp* term, unsigned indent);
 
-#endif
+#endif /* SC_UNOP_H */

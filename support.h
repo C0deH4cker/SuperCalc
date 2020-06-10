@@ -6,8 +6,8 @@
   Copyright (c) 2015 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_SUPPORT_H_
-#define _SC_SUPPORT_H_
+#ifndef SC_SUPPORT_H
+#define SC_SUPPORT_H
 
 #include <stdarg.h>
 
@@ -27,4 +27,4 @@ int vasprintf(char** buffer, const char* fmt, va_list ap);
 
 #endif /* _MSC_VER */
 
-#endif /* _SC_SUPPORT_H_ */
+#endif /* SC_SUPPORT_H */

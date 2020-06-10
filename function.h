@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_FUNCTION_H_
-#define _SC_FUNCTION_H_
+#ifndef SC_FUNCTION_H
+#define SC_FUNCTION_H
 
 #include <stdbool.h>
 
@@ -44,4 +44,4 @@ char* Function_wrap(const Function* func);
 char* Function_verbose(const Function* func);
 char* Function_xml(const Function* func, unsigned indent);
 
-#endif
+#endif /* SC_FUNCTION_H */

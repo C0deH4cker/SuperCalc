@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_VARIABLE_H_
-#define _SC_VARIABLE_H_
+#ifndef SC_VARIABLE_H
+#define SC_VARIABLE_H
 
 #include <stdbool.h>
 
@@ -74,4 +74,4 @@ char* Variable_wrap(const Variable* var);
 char* Variable_verbose(const Variable* var);
 char* Variable_xml(const Variable* var);
 
-#endif
+#endif /* SC_VARIABLE_H */

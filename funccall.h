@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_FUNCCALL_H_
-#define _SC_FUNCCALL_H_
+#ifndef SC_FUNCCALL_H
+#define SC_FUNCCALL_H
 
 #include <stdbool.h>
 
@@ -45,4 +45,4 @@ char* FuncCall_wrap(const FuncCall* call);
 char* FuncCall_verbose(const FuncCall* call, unsigned indent);
 char* FuncCall_xml(const FuncCall* call, unsigned indent);
 
-#endif
+#endif /* SC_FUNCCALL_H */

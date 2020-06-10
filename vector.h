@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker and Silas Schwarz. All rights reserved.
 */
 
-#ifndef _SC_VECTOR_H_
-#define _SC_VECTOR_H_
+#ifndef SC_VECTOR_H
+#define SC_VECTOR_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -63,4 +63,4 @@ char* Vector_wrap(const Vector* vec);
 char* Vector_verbose(const Vector* vec, unsigned indent);
 char* Vector_xml(const Vector* vec, unsigned indent);
 
-#endif
+#endif /* SC_VECTOR_H */

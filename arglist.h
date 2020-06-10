@@ -6,8 +6,8 @@
   Copyright (c) 2013 C0deH4cker. All rights reserved.
 */
 
-#ifndef _SC_ARGLIST_H_
-#define _SC_ARGLIST_H_
+#ifndef SC_ARGLIST_H
+#define SC_ARGLIST_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -47,4 +47,4 @@ char* ArgList_wrap(const ArgList* arglist);
 char* ArgList_verbose(const ArgList* arglist, unsigned indent);
 char* ArgList_xml(const ArgList* arglist, unsigned indent);
 
-#endif
+#endif /* SC_ARGLIST_H */
