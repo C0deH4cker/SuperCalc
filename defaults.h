@@ -14,11 +14,15 @@
 
 #define EVAL_CONST(name, val) \
 static Value* eval_##name(const Context* ctx, const ArgList* arglist, bool internal) { \
+	UNREFERENCED_PARAMETER(ctx); \
+	UNREFERENCED_PARAMETER(arglist); \
+	UNREFERENCED_PARAMETER(internal); \
 	return ValReal((val)); \
 }
 
 #define EVAL_FUNC(name, func, nargs) \
 static Value* eval_##name(const Context* ctx, const ArgList* arglist, bool internal) { \
+	UNREFERENCED_PARAMETER(internal); \
 	if(arglist->count != (nargs)) { \
 		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
 	} \

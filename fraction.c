@@ -137,7 +137,6 @@ Value* Fraction_sub(const Fraction* a, const Value* b) {
 			
 		default:
 			badValType(b->type);
-			break;
 	}
 	
 	return ret;
@@ -172,7 +171,6 @@ Value* Fraction_mul(const Fraction* a, const Value* b) {
 			
 		default:
 			badValType(b->type);
-			break;
 	}
 	
 	return ret;
@@ -207,7 +205,6 @@ Value* Fraction_div(const Fraction* a, const Value* b) {
 			
 		default:
 			badValType(b->type);
-			break;
 	}
 	
 	return ret;
@@ -268,7 +265,6 @@ Value* Fraction_mod(const Fraction* a, const Value* b) {
 				
 			default:
 				badValType(b->type);
-				break;
 		}
 	}
 	
@@ -476,7 +472,6 @@ Value* Fraction_pow(const Fraction* base, const Value* exp) {
 			
 		default:
 			badValType(exp->type);
-			break;
 	}
 	
 	return ret;
@@ -505,7 +500,6 @@ Value* Fraction_rpow(const Fraction* exp, const Value* base) {
 			
 		default:
 			badValType(base->type);
-			break;
 	}
 	
 	return ret;

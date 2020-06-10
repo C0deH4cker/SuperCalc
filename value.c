@@ -40,7 +40,9 @@ static Value* parseToken(const char** expr, parser_cb* cb);
 
 
 /* By default, the '@' character is illegal */
-Value* _default_cb(const char** expr, void* data) {
+static Value* _default_cb(const char** expr, void* data) {
+	UNREFERENCED_PARAMETER(data);
+	
 	return ValErr(badChar(**expr));
 }
 parser_cb default_cb = {&_default_cb, NULL};

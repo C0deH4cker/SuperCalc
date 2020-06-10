@@ -48,6 +48,8 @@
 #define HAS_ANY(flags, flag) (((flags) & (flag)) != 0)
 #define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define UNREFERENCED_PARAMETER(param) do { param = param; } while(0)
+
 static inline void* fmalloc(size_t size) {
 	void* ret = malloc(size);
 	if(ret == NULL) {
@@ -73,6 +75,7 @@ static inline void* frealloc(void* mem, size_t size) {
 }
 
 typedef enum {
+	V_NONE   = 0,
 	V_ERR    = 1<<0,
 	V_PRETTY = 1<<1,
 	V_REPR   = 1<<2,

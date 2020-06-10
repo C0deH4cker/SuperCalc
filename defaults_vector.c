@@ -6,6 +6,7 @@
   Copyright (c) 2014 C0deH4cker. All rights reserved.
 */
 
+#include "defaults.h"
 #include "vector.h"
 #include <stdbool.h>
 
@@ -18,6 +19,8 @@
 #include "template.h"
 
 static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	Value* ret;
 	
 	if(arglist->count != 2) {
@@ -50,6 +53,8 @@ static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal
 }
 
 static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 2) {
 		/* Two vectors are required for a cross product */
 		return ValErr(builtinArgs("cross", 2, arglist->count));
@@ -88,6 +93,8 @@ static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool intern
 }
 
 static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("map", 2, arglist->count));
 	}
@@ -137,6 +144,8 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 }
 
 static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("elem", 2, arglist->count));
 	}
@@ -160,6 +169,8 @@ static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool interna
 }
 
 static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("mag", 1, arglist->count));
 	}
@@ -174,6 +185,8 @@ static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal
 }
 
 static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("norm", 1, arglist->count));
 	}

@@ -291,6 +291,8 @@ Value* Vector_magnitude(const Vector* vec, const Context* ctx) {
 }
 
 Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx) {
+	UNREFERENCED_PARAMETER(ctx);
+	
 	if(index->type != VAL_INT) {
 		return ValErr(typeError("Subscript index must be an integer."));
 	}

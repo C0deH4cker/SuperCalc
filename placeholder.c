@@ -130,6 +130,8 @@ char* Placeholder_repr(const Placeholder* ph) {
 }
 
 char* Placeholder_xml(const Placeholder* ph, unsigned indent) {
+	UNREFERENCED_PARAMETER(indent);
+	
 	/*
 	 "@1i^(1/2)"
 	 <pow>

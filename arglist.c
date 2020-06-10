@@ -101,6 +101,8 @@ ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx) {
 }
 
 double* ArgList_toReals(const ArgList* arglist, const Context* ctx) {
+	UNREFERENCED_PARAMETER(ctx);
+	
 	double* ret = fmalloc(arglist->count * sizeof(*ret));
 	
 	unsigned i;

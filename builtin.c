@@ -69,12 +69,16 @@ char* Builtin_repr(const Builtin* blt, bool pretty) {
 }
 
 char* Builtin_verbose(const Builtin* blt, unsigned indent) {
+	UNREFERENCED_PARAMETER(indent);
+	
 	char* ret;
 	asprintf(&ret, "<builtin %s>", blt->name);
 	return ret;
 }
 
 char* Builtin_xml(const Builtin* blt, unsigned indent) {
+	UNREFERENCED_PARAMETER(indent);
+	
 	/*
 	 sc> ?x sqrt
 	 

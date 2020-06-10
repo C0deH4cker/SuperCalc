@@ -48,10 +48,10 @@ bool isInteractive(FILE* fp) {
 }
 
 VERBOSITY getVerbosity(const char** str) {
-	VERBOSITY ret = 0;
+	VERBOSITY ret = V_NONE;
 	
 	if(**str != '?') {
-		return 0;
+		return ret;
 	}
 	
 	/* Move past the '?' */

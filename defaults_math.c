@@ -30,6 +30,8 @@ EVAL_CONST(phi, PHI);
 
 
 static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
@@ -39,6 +41,8 @@ static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool interna
 }
 
 static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
@@ -75,6 +79,8 @@ static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal
 }
 
 static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal) {
+	UNREFERENCED_PARAMETER(internal);
+	
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}

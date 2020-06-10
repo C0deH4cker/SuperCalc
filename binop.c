@@ -300,6 +300,8 @@ static Value* binop_div(const Context* ctx, const Value* a, const Value* b) {
 }
 
 static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
+	UNREFERENCED_PARAMETER(ctx);
+	
 	Value* ret;
 	
 	if(a->type == VAL_VEC || b->type == VAL_VEC) {
@@ -468,7 +470,7 @@ static BINTYPE nextSpecialOp(const char** expr) {
 		
 		if(strncmp(_binop_pretty[i], *expr, len) == 0) {
 			*expr += len;
-			return i;
+			return (BINTYPE)i;
 		}
 	}
 	

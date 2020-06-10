@@ -43,6 +43,8 @@ static long long fact(long long n) {
 }
 
 static Value* unop_fact(const Context* ctx, const Value* a) {
+	UNREFERENCED_PARAMETER(ctx);
+	
 	if(a->type != VAL_INT) {
 		return ValErr(typeError("Factorial operand must be an integer."));
 	}
