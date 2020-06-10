@@ -28,6 +28,8 @@ const char* kBuiltinNotFuncStr      = "Builtin '%s' is not a function.";
 const char* kBadConversionStr       = "One or more arguments to builtin '%s' couldn't be converted to numbers.";
 const char* kEarlyEndStr            = "Premature end of input.";
 const char* kMissingPlaceholderStr  = "Missing placeholder number %z.";
+const char* kBadImportDepthStr      = "Exceeded max allowed import depth when trying to import file '%s'.";
+const char* kImportErrorStr         = "Failed to import file '%s': %s.";
 
 const char* kAllocErrStr            = "Unable to allocate memory.";
 const char* kBadValStr              = "Unexpected value type: %d.";
@@ -41,6 +43,7 @@ static const char* error_messages[] = {
 	"Fatal Error: %s\n",
 	"Name Error: %s\n",
 	"Type Error: %s\n",
+	"Runtime Error: %s\n",
 	"Internal Error: %s\n",
 	"Unknown Error: %s\n"
 };
@@ -102,6 +105,7 @@ bool Error_canRecover(const Error* err) {
 		case ERR_SYNTAX:
 		case ERR_TYPE:
 		case ERR_IGN:
+		case ERR_RUNTIME:
 			return true;
 		
 		case ERR_FATAL:

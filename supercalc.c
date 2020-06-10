@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #ifdef WITH_LINENOISE
 #include "linenoise/linenoise.h"
@@ -22,6 +23,9 @@
 #include "context.h"
 #include "statement.h"
 #include "defaults.h"
+
+
+#define SC_LINE_SIZE 1000
 
 
 SuperCalc* SuperCalc_new(void) {
@@ -58,11 +62,11 @@ static char* SC_readLine(const char* prompt) {
 #else /* WITH_LINENOISE */
 	
 	if(g_line == NULL) {
-		g_line = calloc(1000, 1);
+		g_line = fmalloc(SC_LINE_SIZE);
 	}
 	
 	printf("%s", prompt);
-	if(fgets(g_line, 1000, stdin) == NULL) {
+	if(fgets(g_line, SC_LINE_SIZE, stdin) == NULL) {
 		return NULL;
 	}
 	
@@ -104,7 +108,24 @@ void SuperCalc_run(SuperCalc* sc) {
 	putchar('\n');
 }
 
-Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
+static Value* SC_importFile(SuperCalc* sc, FILE* fp) {
+	Value* ret = NULL;
+	char* old_g_line = g_line;
+	char* new_line = fmalloc(SC_LINE_SIZE);
+	g_line = new_line;
+	
+	while(fgets(new_line, SC_LINE_SIZE, fp) != NULL) {
+		ret = SuperCalc_runLine(sc, new_line, V_NONE);
+		if(ret != NULL && ret->type == VAL_ERR) {
+			break;
+		}
+	}
+	
+	g_line = old_g_line;
+	return ret;
+}
+
+Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
 	char* code = strdup(str);
 	
 	/* Strip trailing newline and comments */
@@ -129,13 +150,12 @@ Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
 			
 			if(*p == '\0') {
 				free(code);
-				RAISE(earlyEnd(), false);
-				return NULL;
+				return ValErr(earlyEnd());
 			}
 			
-			RAISE(badChar(*p), false);
+			Value* err = ValErr(badChar(*p));
 			free(code);
-			return NULL;
+			return err;
 		}
 		
 		Context_del(sc->ctx, name);
@@ -144,8 +164,30 @@ Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
 		free(code);
 		return NULL;
 	}
-	
-	if(*p == '\0') {
+	else if(*p == '@') {
+		/* File import */
+		p++;
+		
+		if(sc->importDepth > 9) {
+			Value* err = ValErr(badImportDepth(p));
+			free(code);
+			return err;
+		}
+		
+		errno = 0;
+		FILE* fp = fopen(p, "r");
+		if(fp == NULL) {
+			Value* err = ValErr(importError(p, strerror(errno)));
+			free(code);
+			return err;
+		}
+		
+		++sc->importDepth;
+		Value* ret = SC_importFile(sc, fp);
+		--sc->importDepth;
+		return ret;
+	}
+	else if(*p == '\0') {
 		free(code);
 		return NULL;
 	}
@@ -169,4 +211,3 @@ Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
 	
 	return result;
 }
-

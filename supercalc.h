@@ -20,11 +20,12 @@ typedef struct SuperCalc SuperCalc;
 struct SuperCalc {
 	Context* ctx;
 	bool interactive;
+	uint8_t importDepth;
 };
 
 SuperCalc* SuperCalc_new(void);
 void SuperCalc_free(SuperCalc* sc);
 void SuperCalc_run(SuperCalc* sc);
-Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v);
+Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v);
 
 #endif /* SC_SUPERCALC_H */

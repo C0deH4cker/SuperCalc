@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "error.h"
 
@@ -55,6 +56,7 @@ static inline void* fmalloc(size_t size) {
 	if(ret == NULL && size > 0) {
 		allocError();
 	}
+	memset(ret, 0, size);
 	return ret;
 }
 

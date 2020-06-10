@@ -23,6 +23,7 @@ typedef enum {
 	ERR_FATAL,
 	ERR_NAME,
 	ERR_TYPE,
+	ERR_RUNTIME,
 	ERR_INTERNAL,
 	ERR_UNK
 } ERRTYPE;
@@ -51,6 +52,7 @@ struct Error {
 #define fatalError(...)             Error_new(ERR_FATAL, __VA_ARGS__)
 #define nameError(...)              Error_new(ERR_NAME, __VA_ARGS__)
 #define typeError(...)              Error_new(ERR_TYPE, __VA_ARGS__)
+#define runtimeError(...)           Error_new(ERR_RUNTIME, __VA_ARGS__)
 #define internalError(...)          Error_new(ERR_INTERNAL, __VA_ARGS__)
 #define unknownError(...)           Error_new(ERR_UNK, __VA_ARGS__)
 
@@ -65,6 +67,8 @@ extern const char* kBuiltinNotFuncStr;
 extern const char* kBadConversionStr;
 extern const char* kEarlyEndStr;
 extern const char* kMissingPlaceholderStr;
+extern const char* kBadImportDepthStr;
+extern const char* kImportErrorStr;
 
 extern const char* kAllocErrStr;
 extern const char* kBadValStr;
@@ -81,6 +85,8 @@ extern const char* kBadVarStr;
 #define badConversion(name)         typeError(kBadConversionStr, (name))
 #define earlyEnd()                  syntaxError(kEarlyEndStr)
 #define missingPlaceholder(n)       nameError(kMissingPlaceholderStr, (n))
+#define badImportDepth(filename)    runtimeError(kBadImportDepthStr, (filename))
+#define importError(filename, err)  runtimeError(kImportErrorStr, (filename), (err))
 
 /* Death macros */
 #define DIE(...)                    die(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
