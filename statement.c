@@ -370,45 +370,45 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		
 		/* Dump XML output because why not? */
 		char* xml = Statement_xml(stmt, sc->ctx);
-		fprintf(sc->fout, "%s\n", xml);
+		printf("%s\n", xml);
 		free(xml);
 	}
 	
 	if(v & V_TREE) {
 		if(needNewline++ && sc->interactive) {
-			fputc('\n', sc->fout);
+			putchar('\n');
 		}
 		
 		/* Dump parse tree */
 		char* tree = Statement_verbose(stmt, sc->ctx);
-		fprintf(sc->fout, "%s\n", tree);
+		printf("%s\n", tree);
 		free(tree);
 	}
 	
 	if(v & V_WRAP) {
 		if(needNewline++ && sc->interactive) {
-			fputc('\n', sc->fout);
+			putchar('\n');
 		}
 		
 		/* Wrap lots of stuff in parentheses for clarity */
 		char* wrapped = Statement_wrap(stmt, sc->ctx);
-		fprintf(sc->fout, "%s\n", wrapped);
+		printf("%s\n", wrapped);
 		free(wrapped);
 	}
 	
 	if(v & V_REPR) {
 		if(needNewline++ && sc->interactive) {
-			fputc('\n', sc->fout);
+			putchar('\n');
 		}
 		
 		/* Print parenthesized statement */
 		char* reprinted = Statement_repr(stmt, sc->ctx, v & V_PRETTY);
-		fprintf(sc->fout, "%s\n", reprinted);
+		printf("%s\n", reprinted);
 		free(reprinted);
 	}
 	
 	if(needNewline++ && sc->interactive) {
-		fputc('\n', sc->fout);
+		putchar('\n');
 	}
 }
 

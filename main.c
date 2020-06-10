@@ -10,9 +10,9 @@
 #include <stdio.h>
 
 int main(void) {
-	SuperCalc* sc = SC_new(stdout);
-	SC_run(sc, stdin);
-	SC_free(sc);
+	SuperCalc* sc = SuperCalc_new();
+	SuperCalc_run(sc);
+	SuperCalc_free(sc);
 	
 	return 0;
 }

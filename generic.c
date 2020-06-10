@@ -36,12 +36,7 @@ typedef enum {
 	VC_XML    = 'x'
 } VERBOSITY_CHAR;
 
-char line[4096];
-
-char* readLine(FILE* fout, const char* prompt, FILE* fin) {
-	fprintf(fout, "%s", prompt);
-	return fgets(line, sizeof(line), fin);
-}
+char* g_line = NULL;
 
 bool isInteractive(FILE* fp) {
 	return ISATTY(fileno(fp));

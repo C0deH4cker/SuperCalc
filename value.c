@@ -838,6 +838,8 @@ char* Value_xml(const Value* val, unsigned indent) {
 }
 
 void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v) {
+	UNREFERENCED_PARAMETER(sc);
+	
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
 		Error_raise(val->err, false);
@@ -847,10 +849,10 @@ void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v) {
 	/* Print the value */
 	char* valString = Value_repr(val, v & V_PRETTY, true);
 	if(valString) {
-		fprintf(sc->fout, "%s", valString);
+		printf("%s", valString);
 		free(valString);
 	}
 	
-	fputc('\n', sc->fout);
+	putchar('\n');
 }
 

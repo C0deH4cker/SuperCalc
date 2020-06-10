@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "linenoise/linenoise.h"
 #include "error.h"
 #include "generic.h"
 #include "value.h"
@@ -20,7 +21,7 @@
 #include "defaults.h"
 
 
-SuperCalc* SC_new(FILE* fout) {
+SuperCalc* SuperCalc_new(void) {
 	SuperCalc* ret = fmalloc(sizeof(*ret));
 	
 	/* Create context */
@@ -30,58 +31,52 @@ SuperCalc* SC_new(FILE* fout) {
 	register_math(ret->ctx);
 	register_vector(ret->ctx);
 	
-	ret->fin = NULL;
-	ret->fout = fout;
 	return ret;
 }
 
-void SC_free(SuperCalc* sc) {
+void SuperCalc_free(SuperCalc* sc) {
 	Context_free(sc->ctx);
 	free(sc);
 }
 
-Value* SC_run(SuperCalc* sc, FILE* fin) {
+void SuperCalc_run(SuperCalc* sc) {
 	const char* prompt = "";
-	if(isInteractive(fin)) {
+	
+	if(isInteractive(stdin)) {
 		sc->interactive = true;
 		prompt = "sc> ";
+		linenoiseHistorySetMaxLen(100);
 	}
 	
-	Value* ret = SC_runFile(sc, fin, prompt);
-	
-	if(sc->interactive) {
-		fputc('\n', sc->fout);
-	}
-	
-	return ret;
-}
-
-Value* SC_runFile(SuperCalc* sc, FILE* fin, const char* prompt) {
-	Value* ret = NULL;
-	const char* p;
-	sc->fin = fin;
-	
-	while((p = readLine(sc->fout, prompt, sc->fin))) {
-		if(ret) {
+	while((g_line = linenoise(prompt))) {
+		linenoiseHistoryAdd(g_line);
+		
+		const char* p = g_line;
+		
+		VERBOSITY v = getVerbosity(&p);
+		if(v & V_ERR) {
+			free(g_line);
+			g_line = NULL;
+			continue;
+		}
+		
+		Value* ret = SuperCalc_runLine(sc, p, v);
+		if(ret != NULL) {
+			if(ret->type != VAL_VAR) {
+				Value_print(ret, sc, v);
+			}
 			Value_free(ret);
 			ret = NULL;
 		}
 		
-		VERBOSITY v = getVerbosity(&p);
-		if(v & V_ERR) {
-			continue;
-		}
-		
-		ret = SC_runString(sc, p, v);
-		if(ret && ret->type != VAL_VAR) {
-			Value_print(ret, sc, v);
-		}
+		free(g_line);
+		g_line = NULL;
 	}
 	
-	return ret;
+	putchar('\n');
 }
 
-Value* SC_runString(const SuperCalc* sc, const char* str, VERBOSITY v) {
+Value* SuperCalc_runLine(const SuperCalc* sc, const char* str, VERBOSITY v) {
 	char* code = strdup(str);
 	
 	/* Strip trailing newline */

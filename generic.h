@@ -84,8 +84,7 @@ typedef enum {
 	V_XML    = 1<<5
 } VERBOSITY;
 
-/* Hacky, I know */
-extern char line[4096];
+extern char* g_line;
 
 /* Tokenization */
 void trimSpaces(const char** str);
@@ -94,7 +93,6 @@ char* nextToken(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
-char* readLine(FILE* fout, const char* prompt, FILE* fin);
 bool isInteractive(FILE* fp);
 VERBOSITY getVerbosity(const char** str);
 

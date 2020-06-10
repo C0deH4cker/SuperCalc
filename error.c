@@ -90,7 +90,7 @@ void Error_raise(const Error* err, bool forceDeath) {
 	
 	if(forceDeath || !Error_canRecover(err)) {
 		/* Useful to set a breakpoint on the next line for debugging */
-		fprintf(stderr, "Crashing line:\n%s", line);
+		fprintf(stderr, "Crashing line:\n%s", g_line);
 		exit(EXIT_FAILURE);
 	}
 }
