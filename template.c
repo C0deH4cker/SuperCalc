@@ -167,7 +167,7 @@ static Value* next_value(PLACETYPE type, va_list args) {
 		case PH_CALL:  return ValCall(va_arg(args, FuncCall*));
 		case PH_VAR:   return ValVar(strdup(va_arg(args, const char*)));
 		case PH_VEC:   return ValVec(va_arg(args, Vector*));
-		case PH_VAL:   return va_arg(args, Value*);
+		case PH_VAL:   return Value_copy(va_arg(args, Value*));
 			
 		default:
 			return ValErr(typeError("Unexpected placeholder type", type));

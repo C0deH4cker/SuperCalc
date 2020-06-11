@@ -76,26 +76,10 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 		
 		if(val->type == VAL_VAR) {
 			Variable* var = Variable_getAbove(frame, val->name);
-			
-			switch(var->type) {
-				case VAR_VALUE:
-					arg = VarValue(argname, Value_copy(var->val));
-					break;
-				
-				case VAR_FUNC:
-					arg = VarFunc(argname, Function_copy(var->func));
-					break;
-				
-				case VAR_BUILTIN:
-					arg = VarBuiltin(argname, Builtin_copy(var->blt));
-					break;
-				
-				default:
-					badVarType(var->type);
-			}
+			arg = Variable_new(argname, Value_copy(var->val));
 		}
 		else {
-			arg = VarValue(argname, Value_copy(val));
+			arg = Variable_new(argname, Value_copy(val));
 		}
 		
 		Context_addLocal(frame, arg);

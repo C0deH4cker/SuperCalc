@@ -19,33 +19,16 @@ typedef struct Variable Variable;
 #include "error.h"
 
 
-typedef enum {
-	VAR_ERR = -1,
-	VAR_BUILTIN = 0,
-	VAR_CONSTANT,
-	VAR_VALUE,
-	VAR_FUNC
-} VARTYPE;
-
 struct Variable {
-	VARTYPE type;
 	char* name;
-	union {
-		Error* err;
-		Builtin* blt;
-		Value* val;
-		Function* func;
-	};
+	Value* val;
 };
 
 
 /* Constructors */
 /* Each of these methods consume its last argument */
+Variable* Variable_new(char* name, Value* val);
 Variable* VarErr(Error* err);
-Variable* VarBuiltin(char* name, Builtin* blt);
-Variable* VarConstant(char* name, Builtin* blt);
-Variable* VarValue(char* name, Value* val);
-Variable* VarFunc(char* name, Function* func);
 
 /* Destructor */
 void Variable_free(Variable* var);
@@ -55,7 +38,6 @@ Variable* Variable_copy(const Variable* var);
 
 /* Evaluation */
 Value* Variable_eval(const Variable* var, const Context* ctx);
-Value* Variable_coerce(const Variable* var, const Context* ctx);
 
 /* Variable accessing */
 Variable* Variable_get(const Context* ctx, const char* name);

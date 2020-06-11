@@ -54,7 +54,7 @@ Statement* Statement_parse(const char** expr) {
 			Value_free(val);
 		}
 		else {
-			var = VarValue(NULL, val);
+			var = Variable_new(NULL, val);
 		}
 		
 		return Statement_new(var);
@@ -198,7 +198,8 @@ Statement* Statement_parse(const char** expr) {
 		
 		/* Construct function and return it */
 		Function* func = Function_new(len, args, val);
-		ret = Statement_new(VarFunc(name, func));
+		Variable* var = Variable_new(name, ValFunc(func));
+		ret = Statement_new(var);
 	}
 	else {
 		/* Defining a variable */
@@ -216,7 +217,7 @@ Statement* Statement_parse(const char** expr) {
 			val = ValExpr(BinOp_new(bin, ValVar(name), val));
 		}
 		
-		ret = Statement_new(VarValue(name, val));
+		ret = Statement_new(Variable_new(name, val));
 	}
 	
 	return ret;
@@ -226,73 +227,63 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 	Value* ret;
 	Variable* var = stmt->var;
 	
-	if(var->type == VAR_VALUE) {
-		/* Evaluate right side */
-		ret = Value_eval(var->val, ctx);
-		
-		/* If an error occurred, bail */
-		if(ret->type == VAL_ERR) {
-			return ret;
-		}
-		
-		/* Statement result is a variable? */
-		if(ret->type == VAL_VAR) {
-			Variable* func = Variable_get(ctx, ret->name);
-			if(func == NULL) {
-				Error* err = varNotFound(ret->name);
-				Value_free(ret);
-				return ValErr(err);
-			}
-			
-			if(var->name != NULL) {
-				/* Assign the variable */
-				if(func->type == VAR_BUILTIN) {
-					Value_free(ret);
-					return ValErr(typeError("Cannot assign a variable to a builtin."));
-				}
-				
-				Context_setGlobal(ctx, var->name, Variable_copy(func));
-			}
-			else if((v & (V_REPR|V_TREE|V_XML)) == 0
-					|| (func->type != VAR_FUNC && func->type != VAR_BUILTIN)) {
-				/* Coerce the variable to a Value */
-				Value* val = Variable_coerce(func, ctx);
-				Value_free(ret);
-				ret = val;
-			}
-		}
-		else {
-			/* This means ret must be a Value */
-			Value_free(var->val);
-			var->val = Value_copy(ret);
-			
-			/* Update ans */
-			Context_setGlobal(ctx, "ans", Variable_copy(var));
-			
-			/* Save the newly evaluated variable */
-			if(var->name != NULL) {
-				Context_setGlobal(ctx, var->name, Variable_copy(var));
-			}
-		}
+	/* Evaluate right side */
+	ret = Value_eval(var->val, ctx);
+	
+	/* If an error occurred, bail */
+	if(ret->type == VAL_ERR) {
+		return ret;
 	}
-	else if(var->type == VAR_FUNC) {
-		ret = ValVar(var->name);
-		Context_setGlobal(ctx, var->name, Variable_copy(var));
+	
+	/* Statement result is a variable? */
+	if(ret->type == VAL_VAR) {
+		Variable* func = Variable_get(ctx, ret->name);
+		if(func == NULL) {
+			Error* err = varNotFound(ret->name);
+			Value_free(ret);
+			return ValErr(err);
+		}
+		
+		if(var->name != NULL) {
+			Context_setGlobal(ctx, var->name, Variable_copy(func));
+		}
+		else if((v & (V_REPR|V_TREE|V_XML)) == 0) {
+			/* Coerce the variable to a Value */
+			Value* val = Variable_eval(func, ctx);
+			Value_free(ret);
+			ret = val;
+		}
 	}
 	else {
-		badVarType(var->type);
+		/* To handle statements like "pi" */
+		if(ret->type == VAL_BUILTIN && !ret->blt->isFunction) {
+			Value* tmp = Value_coerce(ret, ctx);
+			Value_free(ret);
+			ret = tmp;
+		}
+		
+		/* This means ret must be a Value */
+		Value_free(var->val);
+		var->val = Value_copy(ret);
+		
+		/* Update ans */
+		Context_setGlobal(ctx, "ans", Variable_copy(var));
+		
+		/* Save the newly evaluated variable */
+		if(var->name != NULL) {
+			Context_setGlobal(ctx, var->name, Variable_copy(var));
+		}
 	}
 	
 	return ret;
 }
 
 bool Statement_didError(const Statement* stmt) {
-	return (stmt->var->type == VAR_ERR);
+	return (stmt->var->val->type == VAL_ERR);
 }
 
 char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty) {
-	/* I think I toungued my twist trying to read this aloud */
-	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+	if(stmt->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
@@ -311,8 +302,7 @@ char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty) {
 }
 
 char* Statement_wrap(const Statement* stmt, const Context* ctx) {
-	/* I think I toungued my twist trying to read this aloud */
-	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+	if(stmt->var->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
 		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
@@ -327,7 +317,7 @@ char* Statement_wrap(const Statement* stmt, const Context* ctx) {
 }
 
 char* Statement_verbose(const Statement* stmt, const Context* ctx) {
-	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+	if(stmt->var->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
 		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
@@ -342,7 +332,7 @@ char* Statement_verbose(const Statement* stmt, const Context* ctx) {
 }
 
 char* Statement_xml(const Statement* stmt, const Context* ctx) {
-	if(stmt->var->type == VAR_VALUE && stmt->var->val->type == VAL_VAR) {
+	if(stmt->var->val->type == VAL_VAR) {
 		/* Return the xml representation of the variable in ctx */
 		Variable* var = Variable_get(ctx, stmt->var->val->name);
 		if(var == NULL) {
@@ -359,7 +349,7 @@ char* Statement_xml(const Statement* stmt, const Context* ctx) {
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 	/* Error parsing? */
 	if(Statement_didError(stmt)) {
-		Error_raise(stmt->var->err, false);
+		Error_raise(stmt->var->val->err, false);
 		return;
 	}
 	

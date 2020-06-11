@@ -86,6 +86,8 @@ Value* ValUnary(UnOp* term);
 Value* ValCall(FuncCall* call);
 Value* ValVar(const char* name);
 Value* ValVec(Vector* vec);
+Value* ValFunc(Function* func);
+Value* ValBuiltin(Builtin* blt);
 Value* ValPlace(Placeholder* ph);
 
 /* Destructor */
@@ -97,6 +99,7 @@ Value* Value_copy(const Value* val);
 /* Evaluation */
 Value* Value_eval(const Value* val, const Context* ctx);
 Value* Value_coerce(const Value* val, const Context* ctx);
+bool Value_isCallable(const Value* val);
 
 /* Conversion */
 double Value_asReal(const Value* val);

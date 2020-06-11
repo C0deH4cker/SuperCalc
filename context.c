@@ -46,7 +46,7 @@ Context* Context_new(void) {
 	Context* ret = fmalloc(sizeof(*ret));
 	
 	ret->globals = fmalloc(sizeof(*ret->globals));
-	ret->globals->var = VarValue(strdup("ans"), ValInt(0));
+	ret->globals->var = Variable_new(strdup("ans"), ValInt(0));
 	ret->globals->next = NULL;
 	ret->locals = NULL;
 	
@@ -176,11 +176,6 @@ void Context_addLocal(const Context* ctx, Variable* var) {
 }
 
 void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
-	if(var->type == VAR_FUNC && strcmp(name, "ans") == 0) {
-		RAISE(nameError("Cannot redefine special varaible 'ans' as a function."), false);
-		return;
-	}
-	
 	Variable* dst = findVar(ctx->globals, name);
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
@@ -193,11 +188,6 @@ void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
 		Context_addGlobal(ctx, var);
 	}
 	else {
-		if(dst->type == VAR_BUILTIN) {
-			RAISE(typeError("Unable to modify builtin variable '%s'.", dst->name), false);
-			return;
-		}
-		
 		/* Variable already exists, so update it */
 		Variable_update(dst, var);
 	}
@@ -277,11 +267,6 @@ void Context_del(const Context* ctx, const char* name) {
 	
 	cur = prev->next;
 	
-	if(cur->var->type == VAR_BUILTIN) {
-		RAISE(typeError("Cannot delete builtin variable '%s'.", name), false);
-		return;
-	}
-	
 	/* Link previous node to next one */
 	prev->next = cur->next;
 	
@@ -291,24 +276,18 @@ void Context_del(const Context* ctx, const char* name) {
 }
 
 void Context_clear(Context* ctx) {
-	/* Delete all global variables that aren't builtins */
+	/* Delete all global variables */
 	struct VarNode* prev = ctx->globals;
 	struct VarNode* cur = prev->next;
 	while(cur != NULL) {
-		if(cur->var->type != VAR_BUILTIN) {
-			prev->next = cur->next;
-			Variable_free(cur->var);
-			free(cur);
-		}
-		else {
-			prev = prev->next;
-		}
-		
+		prev->next = cur->next;
+		Variable_free(cur->var);
+		free(cur);
 		cur = prev->next;
 	}
 	
 	/* Set ans to 0 */
-	Context_setGlobal(ctx, "ans", VarValue(strdup("ans"), ValInt(0)));
+	Context_setGlobal(ctx, "ans", Variable_new(strdup("ans"), ValInt(0)));
 }
 
 static struct VarNode* findNode(struct VarNode* cur, const char* name) {

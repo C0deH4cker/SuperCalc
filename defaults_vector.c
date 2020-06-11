@@ -99,31 +99,31 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 		return ValErr(builtinArgs("map", 2, arglist->count));
 	}
 	
-	Value* func = Value_copy(arglist->args[0]);
-	if(func->type != VAL_VAR) {
-		Value* val = Value_eval(func, ctx);
-		Value_free(func);
+	Value* callable = Value_copy(arglist->args[0]);
+	if(callable->type != VAL_VAR) {
+		Value* val = Value_eval(callable, ctx);
+		Value_free(callable);
 		
 		if(val->type == VAL_ERR) {
 			return val;
 		}
 		
-		if(val->type != VAL_VAR) {
+		if(!Value_isCallable(val)) {
 			Value_free(val);
 			return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
 		}
 		
-		func = val;
+		callable = val;
 	}
 	
 	Value* vec = Value_coerce(arglist->args[1], ctx);
 	if(vec->type == VAL_ERR) {
-		Value_free(func);
+		Value_free(callable);
 		return vec;
 	}
 	
 	if(vec->type != VAL_VEC) {
-		Value_free(func);
+		Value_free(callable);
 		Value_free(vec);
 		return ValErr(typeError("Builtin 'map' expects a vector as its second argument."));
 	}
@@ -133,12 +133,12 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 	unsigned i;
 	for(i = 0; i < mapping->count; i++) {
 		TP(tp);
-		mapping->args[i] = TP_EVAL(tp, ctx, "@n(@@)",
-								   func->name,
+		mapping->args[i] = TP_EVAL(tp, ctx, "@@(@@)",
+								   callable,
 								   Value_copy(vec->vec->vals->args[i]));
 	}
 	
-	Value_free(func);
+	Value_free(callable);
 	Value_free(vec);
 	return ValVec(Vector_new(mapping));
 }

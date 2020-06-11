@@ -42,7 +42,7 @@ Builtin* Builtin_copy(const Builtin* blt) {
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
-	Variable* var = VarBuiltin(strdup(blt->name), blt);
+	Variable* var = Variable_new(strdup(blt->name), ValBuiltin(blt));
 	Context_addGlobal(ctx, var);
 }
 

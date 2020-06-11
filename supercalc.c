@@ -28,15 +28,19 @@
 #define SC_LINE_SIZE 1000
 
 
+static void SC_registerModules(SuperCalc* sc) {
+	/* Register modules */
+	register_math(sc->ctx);
+	register_vector(sc->ctx);
+}
+
 SuperCalc* SuperCalc_new(void) {
 	SuperCalc* ret = fmalloc(sizeof(*ret));
 	
 	/* Create context */
 	ret->ctx = Context_new();
 	
-	/* Register modules */
-	register_math(ret->ctx);
-	register_vector(ret->ctx);
+	SC_registerModules(ret);
 	
 	return ret;
 }
@@ -108,20 +112,32 @@ void SuperCalc_run(SuperCalc* sc) {
 	putchar('\n');
 }
 
-static Value* SC_importFile(SuperCalc* sc, FILE* fp) {
+static Value* SC_importFile(SuperCalc* sc, const char* filename) {
+	errno = 0;
+	FILE* fp = fopen(filename, "r");
+	if(fp == NULL) {
+		return ValErr(importError(filename, strerror(errno)));
+	}
+	
 	Value* ret = NULL;
 	char* old_g_line = g_line;
 	char* new_line = fmalloc(SC_LINE_SIZE);
 	g_line = new_line;
 	
+	unsigned line = 1;
 	while(fgets(new_line, SC_LINE_SIZE, fp) != NULL) {
 		ret = SuperCalc_runLine(sc, new_line, V_NONE);
 		if(ret != NULL && ret->type == VAL_ERR) {
+			printf("%s:%u: ", filename, line);
 			break;
 		}
+		
+		++line;
 	}
 	
+	fclose(fp);
 	g_line = old_g_line;
+	free(new_line);
 	return ret;
 }
 
@@ -144,6 +160,7 @@ Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
 			if(p[0] == '~' && p[1] == '~') {
 				/* Wipe out context */
 				Context_clear(sc->ctx);
+				SC_registerModules(sc);
 				free(code);
 				return NULL;
 			}
@@ -174,17 +191,11 @@ Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
 			return err;
 		}
 		
-		errno = 0;
-		FILE* fp = fopen(p, "r");
-		if(fp == NULL) {
-			Value* err = ValErr(importError(p, strerror(errno)));
-			free(code);
-			return err;
-		}
-		
 		++sc->importDepth;
-		Value* ret = SC_importFile(sc, fp);
+		Value* ret = SC_importFile(sc, p);
 		--sc->importDepth;
+		
+		free(code);
 		return ret;
 	}
 	else if(*p == '\0') {

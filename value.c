@@ -117,6 +117,18 @@ Value* ValVec(Vector* vec) {
 	return ret;
 }
 
+Value* ValFunc(Function* func) {
+	Value* ret = allocValue(VAL_FUNC);
+	ret->func = func;
+	return ret;
+}
+
+Value* ValBuiltin(Builtin* blt) {
+	Value* ret = allocValue(VAL_BUILTIN);
+	ret->blt = blt;
+	return ret;
+}
+
 Value* ValPlace(Placeholder* ph) {
 	Value* ret = allocValue(VAL_PLACE);
 	ret->ph = ph;
@@ -153,6 +165,14 @@ void Value_free(Value* val) {
 		
 		case VAL_ERR:
 			Error_free(val->err);
+			break;
+		
+		case VAL_FUNC:
+			Function_free(val->func);
+			break;
+		
+		case VAL_BUILTIN:
+			Builtin_free(val->blt);
 			break;
 		
 		default:
@@ -208,10 +228,17 @@ Value* Value_copy(const Value* val) {
 			ret = ValErr(Error_copy(val->err));
 			break;
 		
-		default:
-			typeError("Unknown value type: %d.", val->type);
-			ret = NULL;
+		case VAL_FUNC:
+			ret = ValFunc(Function_copy(val->func));
 			break;
+		
+		case VAL_BUILTIN:
+			ret = ValBuiltin(Builtin_copy(val->blt));
+			break;
+		
+		default:
+			/* Shouldn't be reached */
+			badValType(val->type);
 	}
 	
 	return ret;
@@ -261,6 +288,8 @@ Value* Value_eval(const Value* val, const Context* ctx) {
 		case VAL_REAL:
 		case VAL_NEG:
 		case VAL_ERR:
+		case VAL_FUNC:
+		case VAL_BUILTIN:
 			ret = Value_copy(val);
 			break;
 		
@@ -284,11 +313,30 @@ Value* Value_coerce(const Value* val, const Context* ctx) {
 			ret = tmp;
 		}
 		else {
-			ret = Variable_coerce(var, ctx);
+			Value* tmp = Variable_eval(var, ctx);
+			ret = Value_coerce(tmp, ctx);
+			Value_free(tmp);
 		}
+	}
+	else if(ret->type == VAL_BUILTIN && !ret->blt->isFunction) {
+		Value* tmp = Builtin_eval(ret->blt, ctx, NULL, false);
+		Value_free(ret);
+		ret = tmp;
 	}
 	
 	return ret;
+}
+
+bool Value_isCallable(const Value* val) {
+	switch(val->type) {
+		case VAL_VAR:
+		case VAL_FUNC:
+		case VAL_BUILTIN:
+			return true;
+		
+		default:
+			return false;
+	}
 }
 
 double Value_asReal(const Value* val) {
@@ -677,7 +725,15 @@ char* Value_repr(const Value* val, bool pretty, bool top) {
 		case VAL_PLACE:
 			ret = Placeholder_repr(val->ph);
 			break;
-			
+		
+		case VAL_FUNC:
+			ret = Function_repr(val->func, pretty);
+			break;
+		
+		case VAL_BUILTIN:
+			ret = Builtin_repr(val->blt, pretty);
+			break;
+		
 		default:
 			/* Shouldn't be reached */
 			badValType(val->type);
@@ -693,39 +749,47 @@ char* Value_wrap(const Value* val, bool top) {
 		case VAL_INT:
 			asprintf(&ret, "%lld", val->ival);
 			break;
-			
+		
 		case VAL_REAL:
 			asprintf(&ret, "%.*g", DBL_DIG, approx(val->rval));
 			break;
-			
+		
 		case VAL_FRAC:
 			ret = Fraction_repr(val->frac, top);
 			break;
-			
+		
 		case VAL_UNARY:
 			ret = UnOp_wrap(val->term);
 			break;
-			
+		
 		case VAL_EXPR:
 			ret = BinOp_wrap(val->expr);
 			break;
-			
+		
 		case VAL_CALL:
 			ret = FuncCall_wrap(val->call);
 			break;
-			
+		
 		case VAL_VAR:
 			ret = strdup(val->name);
 			break;
-			
+		
 		case VAL_VEC:
 			ret = Vector_wrap(val->vec);
 			break;
-			
+		
 		case VAL_PLACE:
 			ret = Placeholder_repr(val->ph);
 			break;
-			
+		
+		case VAL_FUNC:
+			ret = Function_wrap(val->func);
+			break;
+		
+		case VAL_BUILTIN:
+			ret = Builtin_repr(val->blt, false);
+			break;
+		
 		default:
 			/* Shouldn't be reached */
 			badValType(val->type);
@@ -828,6 +892,14 @@ char* Value_xml(const Value* val, unsigned indent) {
 			
 		case VAL_PLACE:
 			ret = Placeholder_xml(val->ph, indent);
+			break;
+		
+		case VAL_FUNC:
+			ret = Function_xml(val->func, indent);
+			break;
+		
+		case VAL_BUILTIN:
+			ret = Builtin_xml(val->blt, indent);
 			break;
 			
 		default:

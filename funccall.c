@@ -69,11 +69,11 @@ static Value* callVar(const Context* ctx, const char* name, const ArgList* args)
 		return ValErr(varNotFound(name));
 	}
 	
-	switch(var->type) {
-		case VAR_BUILTIN:
-			ret = Builtin_eval(var->blt, ctx, args, internal);
+	switch(var->val->type) {
+		case VAL_BUILTIN:
+			ret = Builtin_eval(var->val->blt, ctx, args, internal);
 			
-			if(!var->blt->isFunction) {
+			if(!var->val->blt->isFunction) {
 				if(args->count > 1) {
 					Value_free(ret);
 					ret = ValErr(builtinNotFunc(name));
@@ -86,21 +86,18 @@ static Value* callVar(const Context* ctx, const char* name, const ArgList* args)
 			
 			break;
 		
-		case VAR_FUNC:
-			ret = Function_eval(var->func, ctx, args);
+		case VAL_FUNC:
+			ret = Function_eval(var->val->func, ctx, args);
 			break;
 		
-		case VAR_ERR:
+		case VAL_ERR:
 			/* Shouldn't be reached... */
-			ret = ValErr(var->err);
-			break;
-		
-		case VAR_VALUE:
-			ret = ValErr(nameError("Variable '%s' is not a function.", var->name));
+			ret = ValErr(Error_copy(var->val->err));
 			break;
 		
 		default:
-			badVarType(var->type);
+			ret = ValErr(typeError("Variable %s is not callable", name));
+			break;
 	}
 	
 	return ret;
