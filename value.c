@@ -409,33 +409,56 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 			continue;
 		}
 		
-		/* Get next operator if it exists */
-		op = BinOp_nextType(expr, sep, end);
-		
-		/* Invalid operator? Return syntax error */
-		if(op == BIN_UNK) {
-			/* Exit gracefully and return error */
-			if(tree) {
-				BinOp_free(tree);
-			}
+		bool again;
+		bool shouldBreak = false;
+		do {
+			again = false;
 			
-			Value_free(val);
-			return ValErr(badChar(**expr));
-		}
-		/* End of the statement? */
-		else if(op == BIN_END) {
-			/* Only skip end character if there's only one value to parse */
-			if(!sep && **expr && **expr == end) {
-				(*expr)++;
-			}
+			/* Get next operator if it exists */
+			op = BinOp_nextType(expr, sep, end);
 			
-			/* If there was only one value, return it */
-			if(!tree) {
-				return val;
+			/* Invalid operator? Return syntax error */
+			if(op == BIN_UNK) {
+				/* Exit gracefully and return error */
+				if(tree) {
+					BinOp_free(tree);
+				}
+				
+				Value_free(val);
+				return ValErr(badChar(**expr));
 			}
-			
-			/* Otherwise, place the final value into the tree and break out of the parse loop */
-			prev->b = val;
+			/* End of the statement? */
+			else if(op == BIN_END) {
+				/* Currently in some matching punctuation scope, so get more input if necessary */
+				if(end != '\0' && **expr == '\0') {
+					/* Fetch more input in cases like "sqrt(25" */
+					char* line = nextLine(SC_PROMPT_CONTINUE);
+					if(line != NULL) {
+						*expr = line;
+						again = true;
+						continue;
+					}
+					
+					/* Failed to get another line, so fallthrough to continue with the EOF handling */
+				}
+				
+				/* Only skip end character if there's only one value to parse */
+				if(!sep && **expr != '\0' && **expr == end) {
+					(*expr)++;
+				}
+				
+				/* If there was only one value, return it */
+				if(!tree) {
+					return val;
+				}
+				
+				/* Otherwise, place the final value into the tree and break out of the parse loop */
+				prev->b = val;
+				shouldBreak = true;
+				break;
+			}
+		} while(again);
+		if(shouldBreak) {
 			break;
 		}
 		
@@ -592,10 +615,27 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	Value* ret;
 	
-	trimSpaces(expr);
-	if(**expr == end) {
-		return ValEnd();
-	}
+	bool again;
+	do {
+		again = false;
+		
+		trimSpaces(expr);
+		if(**expr == '\0') {
+			/* Fetch more input in cases like "3 +" */
+			char* line = nextLine(SC_PROMPT_CONTINUE);
+			if(line != NULL) {
+				*expr = line;
+				again = true;
+				continue;
+			}
+			
+			/* Failed to read more input, so fallthrough to returning ValEnd */
+		}
+		
+		if(**expr == end || **expr == '\0') {
+			return ValEnd();
+		}
+	} while(again);
 	
 	if(getSign(expr) == -1) {
 		return ValNeg();
@@ -642,7 +682,7 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 	}
 	
 	while(1) {
-		bool again = true;
+		again = true;
 		Value* tmp = NULL;
 		
 		trimSpaces(expr);

@@ -14,6 +14,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef WITH_LINENOISE
+#include "linenoise/linenoise.h"
+#endif
+
 #include "error.h"
 
 
@@ -86,7 +90,12 @@ typedef enum {
 	V_XML    = 1<<5
 } VERBOSITY;
 
+#define SC_PROMPT_NORMAL   "sc> "
+#define SC_PROMPT_CONTINUE "... "
+#define SC_LINE_SIZE 1000
+
 extern char* g_line;
+extern FILE* g_inputFile;
 
 /* Tokenization */
 void trimSpaces(const char** str);
@@ -95,6 +104,7 @@ char* nextToken(const char** expr);
 int getSign(const char** expr);
 
 /* Input */
+char* nextLine(const char* prompt);
 bool isInteractive(FILE* fp);
 VERBOSITY getVerbosity(const char** str);
 

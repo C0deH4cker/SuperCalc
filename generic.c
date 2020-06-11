@@ -37,6 +37,43 @@ typedef enum {
 } VERBOSITY_CHAR;
 
 char* g_line = NULL;
+FILE* g_inputFile = NULL;
+
+char* nextLine(const char* prompt) {
+#ifdef WITH_LINENOISE
+	/* Only use linenoise for the interactive prompt, not for imported files */
+	if(g_inputFile == NULL) {
+		free(g_line);
+		g_line = linenoise(prompt);
+		if(g_line != NULL) {
+			linenoiseHistoryAdd(g_line);
+		}
+		
+		return g_line;
+	}
+#endif /* WITH_LINENOISE */
+	
+	/* Allocate a line buffer if it hasn't been yet */
+	if(g_line == NULL) {
+		g_line = fmalloc(SC_LINE_SIZE);
+	}
+	
+	/* If there is an explicit input file, don't print the prompt for every line */
+	FILE* fp = g_inputFile;
+	if(fp == NULL) {
+		printf("%s", prompt);
+		fp = stdin;
+	}
+	
+	/* Read one line from the input stream (file or stdin) */
+	if(fgets(g_line, SC_LINE_SIZE, fp) == NULL) {
+		return NULL;
+	}
+	
+	/* Strip trailing newline and comments */
+	g_line = strsep(&g_line, "#\r\n");
+	return g_line;
+}
 
 bool isInteractive(FILE* fp) {
 	return ISATTY(fileno(fp));
@@ -180,7 +217,7 @@ const char* indentation(unsigned level) {
 	/* Need to create array of spaces */
 	if(larger[index] == NULL) {
 		larger[index] = fmalloc(count * IWIDTH + 1);
-		memset(larger[index], IWIDTH, count * IWIDTH);
+		memset(larger[index], ICHAR, count * IWIDTH);
 		larger[index][count * IWIDTH] = '\0';
 	}
 	
@@ -222,6 +259,17 @@ char* nextToken(const char** expr) {
 	size_t len = 1;
 	
 	trimSpaces(expr);
+	
+	if(**expr == '\0') {
+		/* Request more input in cases like "3 +" */
+		char* line = nextLine(SC_PROMPT_CONTINUE);
+		if(line != NULL) {
+			*expr = line;
+		}
+		else {
+			return NULL;
+		}
+	}
 	
 	char* special = nextSpecial(expr);
 	if(special) {

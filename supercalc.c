@@ -13,19 +13,12 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#ifdef WITH_LINENOISE
-#include "linenoise/linenoise.h"
-#endif
-
 #include "error.h"
 #include "generic.h"
 #include "value.h"
 #include "context.h"
 #include "statement.h"
 #include "defaults.h"
-
-
-#define SC_LINE_SIZE 1000
 
 
 static void SC_registerModules(SuperCalc* sc) {
@@ -50,48 +43,19 @@ void SuperCalc_free(SuperCalc* sc) {
 	free(sc);
 }
 
-static char* SC_readLine(const char* prompt) {
-#ifdef WITH_LINENOISE
-	
-	if(g_line != NULL) {
-		free(g_line);
-		g_line = NULL;
-	}
-	
-	g_line = linenoise(prompt);
-	if(g_line != NULL) {
-		linenoiseHistoryAdd(g_line);
-	}
-	
-#else /* WITH_LINENOISE */
-	
-	if(g_line == NULL) {
-		g_line = fmalloc(SC_LINE_SIZE);
-	}
-	
-	printf("%s", prompt);
-	if(fgets(g_line, SC_LINE_SIZE, stdin) == NULL) {
-		return NULL;
-	}
-	
-#endif /* WITH_LINENOISE */
-	
-	return g_line;
-}
-
 void SuperCalc_run(SuperCalc* sc) {
 	const char* prompt = "";
 	
 	if(isInteractive(stdin)) {
 		sc->interactive = true;
-		prompt = "sc> ";
+		prompt = SC_PROMPT_NORMAL;
 		
 #ifdef WITH_LINENOISE
 		linenoiseHistorySetMaxLen(100);
 #endif
 	}
 	
-	while((g_line = SC_readLine(prompt))) {
+	while((g_line = nextLine(prompt))) {
 		const char* p = g_line;
 		
 		VERBOSITY v = getVerbosity(&p);
@@ -119,23 +83,33 @@ static Value* SC_importFile(SuperCalc* sc, const char* filename) {
 		return ValErr(importError(filename, strerror(errno)));
 	}
 	
+	/* Save old global line buffer and swap in the new one */
 	Value* ret = NULL;
 	char* old_g_line = g_line;
 	char* new_line = fmalloc(SC_LINE_SIZE);
 	g_line = new_line;
 	
-	unsigned line = 1;
-	while(fgets(new_line, SC_LINE_SIZE, fp) != NULL) {
+	/* Save old input FILE object and swap in the new one */
+	FILE* old_g_inputFile = g_inputFile;
+	g_inputFile = fp;
+	
+	/* Evaluate each line one-by-one */
+	unsigned line_number = 1;
+	while(nextLine("") != NULL) {
 		ret = SuperCalc_runLine(sc, new_line, V_NONE);
 		if(ret != NULL && ret->type == VAL_ERR) {
-			printf("%s:%u: ", filename, line);
+			printf("%s:%u: ", filename, line_number);
 			break;
 		}
 		
-		++line;
+		++line_number;
 	}
 	
+	/* Restore previous global FILE object and free the new one */
+	g_inputFile = old_g_inputFile;
 	fclose(fp);
+	
+	/* Restore previous global line buffer and free the new one */
 	g_line = old_g_line;
 	free(new_line);
 	return ret;

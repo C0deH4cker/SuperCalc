@@ -1,10 +1,10 @@
-//
-//  placeholder.c
-//  SuperCalc
-//
-//  Created by C0deH4cker on 8/31/15.
-//  Copyright (c) 2015 C0deH4cker. All rights reserved.
-//
+/*
+  placeholder.c
+  SuperCalc
+
+  Created by C0deH4cker on 8/31/15.
+  Copyright (c) 2015 C0deH4cker. All rights reserved.
+*/
 
 #include "placeholder.h"
 #include <string.h>
