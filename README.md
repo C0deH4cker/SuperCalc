@@ -1,6 +1,6 @@
-#SuperCalc
+# SuperCalc
 
-#####A mathematical expression parser and evaluator plus more.
+##### A mathematical expression parser and evaluator, plus more.
 
 Currently, SuperCalc supports the following binary operators:
 
@@ -205,7 +205,7 @@ Examples using `map`:
 	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
 	sc> map(sin, angles)
 	<0, 1, 0, -1, 0>
-	sc> 
+	sc>
 	sc> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
 	<2, 3, 4, 5, 5.472add1(x) = 1 + x13595499958, 7/3>
 
@@ -384,10 +384,21 @@ Examples of printing functions verbosely:
 	  </func>
 	</vardata>
 
-##Building
+
+## Installation
+
+##### With Homebrew (on macOS)
+
+```
+  $ brew tap C0deH4cker/SuperCalc https://github.com/C0deH4cker/SuperCalc.git && brew install super-calc
+```
+
+##### Building Manually
 
 To build on Linux or Mac OS X, you can use Automake and Autoconf:
 
+```
 	$ ./autogen.sh
 	$ ./configure
 	$ make
+```
