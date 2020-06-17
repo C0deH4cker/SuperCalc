@@ -31,7 +31,6 @@ typedef struct parser_cb {
 #include "function.h"
 #include "builtin.h"
 #include "placeholder.h"
-#include "supercalc.h"
 
 
 typedef enum {
@@ -55,18 +54,18 @@ typedef enum {
 struct Value {
 	VALTYPE type;
 	union {
-		long long    ival;
-		double       rval;
-		Fraction*    frac;
-		Vector*      vec;
-		UnOp*        term;
-		BinOp*       expr;
-		FuncCall*    call;
-		char*        name;
-		Error*       err;
-		Function*    func;
-		Builtin*     blt;
-		Placeholder* ph;
+		              long long    ival;
+		              double       rval;
+		OWNED NONNULL Fraction*    frac;
+		OWNED NONNULL Vector*      vec;
+		OWNED NONNULL UnOp*        term;
+		OWNED NONNULL BinOp*       expr;
+		OWNED NONNULL FuncCall*    call;
+		OWNED NONNULL char*        name;
+		OWNED NONNULL Error*       err;
+		OWNED NONNULL Function*    func;
+		OWNED NONNULL Builtin*     blt;
+		OWNED NONNULL Placeholder* ph;
 	};
 };
 
@@ -75,44 +74,45 @@ extern parser_cb default_cb;
 
 /* Value constructors */
 /* Each method which takes an object pointer as an argument consumes it */
-Value* ValEnd(void);
-Value* ValErr(Error* err);
-Value* ValNeg(void);
-Value* ValInt(long long val);
-Value* ValReal(double val);
-Value* ValFrac(Fraction* frac);
-Value* ValExpr(BinOp* expr);
-Value* ValUnary(UnOp* term);
-Value* ValCall(FuncCall* call);
-Value* ValVar(const char* name);
-Value* ValVec(Vector* vec);
-Value* ValFunc(Function* func);
-Value* ValBuiltin(Builtin* blt);
-Value* ValPlace(Placeholder* ph);
+OWNED NONNULL Value* ValEnd(void);
+OWNED NONNULL Value* ValErr(OWNED NONNULL Error* err);
+OWNED NONNULL Value* ValNeg(void);
+OWNED NONNULL Value* ValInt(long long val);
+OWNED NONNULL Value* ValReal(double val);
+OWNED NONNULL Value* ValFrac(OWNED NONNULL Fraction* frac);
+OWNED NONNULL Value* ValExpr(OWNED NONNULL BinOp* expr);
+OWNED NONNULL Value* ValUnary(OWNED NONNULL UnOp* term);
+OWNED NONNULL Value* ValCall(OWNED NONNULL FuncCall* call);
+OWNED NONNULL Value* ValVar(OWNED NONNULL char* name);
+OWNED NONNULL Value* ValVec(OWNED NONNULL Vector* vec);
+OWNED NONNULL Value* ValFunc(OWNED NONNULL Function* func);
+OWNED NONNULL Value* ValBuiltin(OWNED NONNULL Builtin* blt);
+OWNED NONNULL Value* ValPlace(OWNED NONNULL Placeholder* ph);
 
 /* Destructor */
-void Value_free(Value* val);
+void Value_free(OWNED NULLABLE Value* val);
 
 /* Copying */
-Value* Value_copy(const Value* val);
+OWNED NULLABLE_WHEN(val == NULL) Value* Value_copy(NULLABLE const Value* val);
 
 /* Evaluation */
-Value* Value_eval(const Value* val, const Context* ctx);
-Value* Value_coerce(const Value* val, const Context* ctx);
-bool Value_isCallable(const Value* val);
+OWNED NONNULL Value* Value_eval(NONNULL const Value* val, NONNULL const Context* ctx);
+OWNED NONNULL Value* Value_coerce(NONNULL const Value* val, NONNULL const Context* ctx);
+bool Value_isCallable(NONNULL const Value* val);
 
 /* Conversion */
-double Value_asReal(const Value* val);
+double Value_asReal(NONNULL const Value* val);
 
 /* Parsing */
-Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb);
-Value* Value_next(const char** expr, char end, parser_cb* cb);
+OWNED NONNULL Value* Value_parseTop(INOUT NONNULL const char** expr);
+OWNED NONNULL Value* Value_parse(INOUT NONNULL const char** expr, char sep, char end, NONNULL parser_cb* cb);
+OWNED NONNULL Value* Value_next(INOUT NONNULL const char** expr, char sep, char end, NONNULL parser_cb* cb);
 
 /* Printing */
-char* Value_repr(const Value* val, bool pretty, bool top);
-char* Value_wrap(const Value* val, bool top);
-char* Value_verbose(const Value* val, unsigned indent);
-char* Value_xml(const Value* val, unsigned indent);
-void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v);
+OWNED NONNULL char* Value_repr(NONNULL const Value* val, bool pretty, bool top);
+OWNED NONNULL char* Value_wrap(NONNULL const Value* val, bool top);
+OWNED NONNULL char* Value_verbose(NONNULL const Value* val, unsigned indent);
+OWNED NONNULL char* Value_xml(NONNULL const Value* val, unsigned indent);
+void Value_print(NONNULL const Value* val, VERBOSITY v);
 
 #endif /* SC_VALUE_H */

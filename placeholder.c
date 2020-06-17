@@ -59,13 +59,17 @@ void Placeholder_free(Placeholder* ph) {
 
 /* Copying */
 Placeholder* Placeholder_copy(const Placeholder* ph) {
+	if(!ph) {
+		return NULL;
+	}
+	
 	return Placeholder_new(ph->type, ph->index);
 }
 
 /* Parse a placeholder from a format string */
 Placeholder* Placeholder_parse(const char** expr) {
 	if(**expr != '@') {
-		RAISE(badChar(**expr), true);
+		RAISE(badChar(*expr), true);
 	}
 	
 	/* Move past '@' */
@@ -81,7 +85,7 @@ Placeholder* Placeholder_parse(const char** expr) {
 		index = (unsigned)strtoul(*expr, &end, 10);
 		if(errno != 0 || index == 0 || *expr == end) {
 			/* An error occurred (EINVAL, ERANGE) */
-			RAISE(syntaxError("Invalid number in placeholder"), true);
+			RAISE(syntaxError(*expr, "Invalid number in placeholder"), true);
 		}
 		
 		/* Advance past the number */
@@ -90,7 +94,7 @@ Placeholder* Placeholder_parse(const char** expr) {
 	
 	PLACETYPE type = getPlaceholderType(**expr);
 	if(type == PH_ERR) {
-		RAISE(badChar(**expr), true);
+		RAISE(badChar(*expr), true);
 	}
 	
 	(*expr)++;
@@ -147,7 +151,7 @@ char* Placeholder_xml(const Placeholder* ph, unsigned indent) {
 	if(ph->index > 0) {
 		asprintf(&ret,
 				 "<placeholder type=\"%c\" index=\"%u\"/>",
-				 ph->index, getFormatChar(ph->type));
+				 getFormatChar(ph->type), ph->index);
 	}
 	else {
 		asprintf(&ret,

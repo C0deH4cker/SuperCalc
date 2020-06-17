@@ -61,40 +61,91 @@ Error* Error_new(ERRTYPE type, const char* fmt, ...) {
 }
 
 Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) {
+	const char* errpos = NULL;
+	
+	if(type == ERR_SYNTAX) {
+		errpos = fmt;
+		fmt = va_arg(args, const char*);
+	}
+	
 	Error* ret = fmalloc(sizeof(*ret));
 	ret->type = type;
 	
 	char* tmp;
 	vasprintf(&tmp, fmt, args);
-	
 	asprintf(&ret->msg, error_messages[type], tmp);
-	
 	free(tmp);
+	
+	if(g_inputFileName != NULL) {
+		ret->filename = strdup(g_inputFileName);
+	}
+	else {
+		ret->filename = NULL;
+	}
+	
+	ret->line = g_lineNumber;
+	
+	if(errpos != NULL) {
+		ret->column = errpos - g_line + 1;
+	}
 	
 	return ret;
 }
 
 void Error_free(Error* err) {
+	if(!err) {
+		return;
+	}
+	
 	free(err->msg);
+	free(err->filename);
 	free(err);
 }
 
 Error* Error_copy(const Error* err) {
+	if(!err) {
+		return NULL;
+	}
+	
 	Error* ret = fmalloc(sizeof(*ret));
 	
 	ret->type = err->type;
 	ret->msg = strdup(err->msg);
 	
+	if(err->filename != NULL) {
+		ret->filename = strdup(err->filename);
+	}
+	ret->line = err->line;
+	ret->column = err->column;
+	
 	return ret;
 }
 
 void Error_raise(const Error* err, bool forceDeath) {
+	bool didPrintPrefix = false;
+	if(err->filename != NULL) {
+		fprintf(stderr, "%s:", err->filename);
+		didPrintPrefix = true;
+	}
+	
+	if(err->line > 0) {
+		fprintf(stderr, "%u:", err->line);
+		if(err->column > 0) {
+			fprintf(stderr, "%u:", err->column);
+		}
+		didPrintPrefix = true;
+	}
+	
+	if(didPrintPrefix) {
+		fprintf(stderr, " ");
+	}
+	
 	fprintf(stderr, "%s", err->msg);
 	
 	if(forceDeath || !Error_canRecover(err)) {
 		/* Useful to set a breakpoint on the next line for debugging */
 		fprintf(stderr, "Crashing line:\n%s", g_line);
-		exit(EXIT_FAILURE);
+		abort();
 	}
 }
 

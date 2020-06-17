@@ -9,7 +9,14 @@
 #ifndef SC_DEFAULTS_H
 #define SC_DEFAULTS_H
 
+#include <stdbool.h>
+#include <stdlib.h>
+
 #include "context.h"
+#include "generic.h"
+#include "value.h"
+#include "arglist.h"
+#include "error.h"
 
 
 #define EVAL_CONST(name, val) \
@@ -41,8 +48,8 @@ static Value* eval_##name(const Context* ctx, const ArgList* arglist, bool inter
 }
 
 
-void register_math(Context* ctx);
-void register_vector(Context* ctx);
+void register_math(UNOWNED NONNULL Context* ctx);
+void register_vector(UNOWNED NONNULL Context* ctx);
 
 
 #endif /* SC_DEFAULTS_H */

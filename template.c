@@ -18,10 +18,10 @@
 #include "placeholder.h"
 
 struct Template {
-	Value* tree;
-	unsigned num_placeholders;
+	OWNED NONNULL Value* tree;
+	INVARIANT(num_placeholders <= capacity) unsigned num_placeholders;
 	unsigned capacity;
-	Value** placeholders;
+	OWNED NONNULL Value* OWNED NULLABLE_WHEN(capacity == 0)* placeholders;
 };
 
 /*
@@ -48,7 +48,7 @@ struct Template {
 
 static Value* parse_internalName(const char** expr) {
 	if(**expr != '@') {
-		RAISE(badChar(**expr), true);
+		RAISE(badChar(*expr), true);
 	}
 	
 	/* Must match regex "@[a-zA-Z]{2,}" */
@@ -67,7 +67,6 @@ static Value* parse_internalName(const char** expr) {
 	
 	/* Wrap in Value object */
 	Value* ret = ValVar(varname);
-	free(varname);
 	return ret;
 }
 
@@ -82,7 +81,7 @@ static Value* parse_extra(const char** expr, void* data) {
 	Template* tp = data;
 	Placeholder* ph = Placeholder_parse(expr);
 	if(ph->type == PH_ERR) {
-		RAISE(syntaxError("Unable to parse placeholder"), true);
+		RAISE(syntaxError(*expr, "Unable to parse placeholder"), true);
 	}
 	
 	unsigned index = ph->index > 0 ? ph->index - 1 : tp->num_placeholders;
@@ -122,24 +121,50 @@ static Value* parse_extra(const char** expr, void* data) {
 Template* Template_create(const char* fmt) {
 	Template* ret = fcalloc(1, sizeof(*ret));
 	
+	char* old_g_line = g_line;
+	unsigned old_g_lineNumber = g_lineNumber;
+	FILE* old_g_inputFile = g_inputFile;
+	const char* old_g_inputFileName = g_inputFileName;
+	
+	/* I pinky promise not to modify fmt's contents */
+	g_line = (char*)fmt;
+	g_lineNumber = 1;
+	g_inputFile = NULL;
+	g_inputFileName = "<template>";
+	
 	/* Like normal parsing but handle '@' specially by building placeholders */
 	parser_cb cb = {&parse_extra, ret};
 	ret->tree = Value_parse(&fmt, 0, 0, &cb);
+	
+	g_line = old_g_line;
+	g_lineNumber = old_g_lineNumber;
+	g_inputFile = old_g_inputFile;
+	g_inputFileName = old_g_inputFileName;
 	
 	if(ret->tree->type == VAL_ERR) {
 		RAISE(ret->tree->err, true);
 	}
 	
+	/*
+	 * The parser callback will have created this array. Shrink it to fit
+	 * just the needed slots.
+	 */
 	if(ret->capacity > ret->num_placeholders) {
 		ret->capacity = ret->num_placeholders;
-		ret->placeholders = frealloc(ret->placeholders,
-		                    ret->capacity * sizeof(*ret->placeholders));
+		ret->placeholders = frealloc(
+			ret->placeholders,
+			ret->capacity * sizeof(*ret->placeholders)
+		);
 	}
 	
 	return ret;
 }
 
 void Template_free(Template* tp) {
+	if(!tp) {
+		return;
+	}
+	
 	Value_free(tp->tree);
 	
 	/* Call release on these */
@@ -165,7 +190,7 @@ static Value* next_value(PLACETYPE type, va_list args) {
 		case PH_EXPR:  return ValExpr(va_arg(args, BinOp*));
 		case PH_UNARY: return ValUnary(va_arg(args, UnOp*));
 		case PH_CALL:  return ValCall(va_arg(args, FuncCall*));
-		case PH_VAR:   return ValVar(strdup(va_arg(args, const char*)));
+		case PH_VAR:   return ValVar(va_arg(args, char*));
 		case PH_VEC:   return ValVec(va_arg(args, Vector*));
 		case PH_VAL:   return Value_copy(va_arg(args, Value*));
 			
@@ -219,6 +244,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		}
 	}
 	
+	free(orig);
 	return ret;
 }
 

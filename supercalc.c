@@ -39,6 +39,10 @@ SuperCalc* SuperCalc_new(void) {
 }
 
 void SuperCalc_free(SuperCalc* sc) {
+	if(!sc) {
+		return;
+	}
+	
 	Context_free(sc->ctx);
 	free(sc);
 }
@@ -56,8 +60,7 @@ void SuperCalc_run(SuperCalc* sc) {
 	}
 	
 	while((g_line = nextLine(prompt))) {
-		const char* p = g_line;
-		
+		char* p = g_line;
 		VERBOSITY v = getVerbosity(&p);
 		if(v & V_ERR) {
 			continue;
@@ -66,7 +69,7 @@ void SuperCalc_run(SuperCalc* sc) {
 		Value* ret = SuperCalc_runLine(sc, p, v);
 		if(ret != NULL) {
 			if(ret->type != VAL_VAR) {
-				Value_print(ret, sc, v);
+				Value_print(ret, v);
 			}
 			Value_free(ret);
 			ret = NULL;
@@ -76,33 +79,38 @@ void SuperCalc_run(SuperCalc* sc) {
 	putchar('\n');
 }
 
-static Value* SC_importFile(SuperCalc* sc, const char* filename) {
+Error* SuperCalc_importFile(SuperCalc* sc, const char* filename) {
 	errno = 0;
 	FILE* fp = fopen(filename, "r");
 	if(fp == NULL) {
-		return ValErr(importError(filename, strerror(errno)));
+		return importError(filename, strerror(errno));
 	}
 	
-	/* Save old global line buffer and swap in the new one */
-	Value* ret = NULL;
+	/* Save old globals and swap in the new ones */
 	char* old_g_line = g_line;
+	unsigned old_g_lineNumber = g_lineNumber;
+	FILE* old_g_inputFile = g_inputFile;
+	const char* old_g_inputFileName = g_inputFileName;
+	
 	char* new_line = fmalloc(SC_LINE_SIZE);
 	g_line = new_line;
-	
-	/* Save old input FILE object and swap in the new one */
-	FILE* old_g_inputFile = g_inputFile;
+	g_lineNumber = 0;
 	g_inputFile = fp;
+	g_inputFileName = filename;
+	
+	Error* ret = NULL;
 	
 	/* Evaluate each line one-by-one */
-	unsigned line_number = 1;
 	while(nextLine("") != NULL) {
-		ret = SuperCalc_runLine(sc, new_line, V_NONE);
-		if(ret != NULL && ret->type == VAL_ERR) {
-			printf("%s:%u: ", filename, line_number);
+		Value* val = SuperCalc_runLine(sc, new_line, V_NONE);
+		if(val != NULL && val->type == VAL_ERR) {
+			ret = val->err;
+			val->err = NULL;
+			Value_free(val);
 			break;
 		}
 		
-		++line_number;
+		Value_free(val);
 	}
 	
 	/* Restore previous global FILE object and free the new one */
@@ -112,12 +120,13 @@ static Value* SC_importFile(SuperCalc* sc, const char* filename) {
 	/* Restore previous global line buffer and free the new one */
 	g_line = old_g_line;
 	free(new_line);
+	g_lineNumber = old_g_lineNumber;
+	g_inputFileName = old_g_inputFileName;
+	
 	return ret;
 }
 
-Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
-	char* code = strdup(str);
-	
+Value* SuperCalc_runLine(SuperCalc* sc, char* code, VERBOSITY v) {
 	/* Strip trailing newline and comments */
 	code = strsep(&code, "#\r\n");
 	
@@ -135,24 +144,20 @@ Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
 				/* Wipe out context */
 				Context_clear(sc->ctx);
 				SC_registerModules(sc);
-				free(code);
 				return NULL;
 			}
 			
 			if(*p == '\0') {
-				free(code);
-				return ValErr(earlyEnd());
+				return ValErr(earlyEnd(p));
 			}
 			
-			Value* err = ValErr(badChar(*p));
-			free(code);
+			Value* err = ValErr(badChar(p));
 			return err;
 		}
 		
 		Context_del(sc->ctx, name);
 		
 		free(name);
-		free(code);
 		return NULL;
 	}
 	else if(*p == '@') {
@@ -161,33 +166,34 @@ Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v) {
 		
 		if(sc->importDepth > 9) {
 			Value* err = ValErr(badImportDepth(p));
-			free(code);
 			return err;
 		}
 		
 		++sc->importDepth;
-		Value* ret = SC_importFile(sc, p);
+		Error* ret = SuperCalc_importFile(sc, p);
 		--sc->importDepth;
 		
-		free(code);
-		return ret;
+		if(ret != NULL) {
+			return ValErr(ret);
+		}
+		return NULL;
 	}
 	else if(*p == '\0') {
-		free(code);
 		return NULL;
 	}
 	
 	/* Parse the user's input */
 	Statement* stmt = Statement_parse(&p);
-	free(code);
 	
 	/* Print statement depending with specified level of verbosity */
 	Statement_print(stmt, sc, v);
 	
 	/* Error? Go to next loop iteration */
 	if(Statement_didError(stmt)) {
+		Value* ret = stmt->var->val;
+		stmt->var->val = NULL;
 		Statement_free(stmt);
-		return NULL;
+		return ret;
 	}
 	
 	/* Evaluate statement */

@@ -80,6 +80,10 @@ static void freeStack(struct ContextStack* stack) {
 }
 
 void Context_free(Context* ctx) {
+	if(!ctx) {
+		return;
+	}
+	
 	freeVars(ctx->globals);
 	freeStack(ctx->locals);
 	free(ctx);
@@ -175,21 +179,16 @@ void Context_addLocal(const Context* ctx, Variable* var) {
 	addVar(&ctx->locals->vars, var);
 }
 
-void Context_setGlobal(const Context* ctx, const char* name, Variable* var) {
+void Context_setGlobal(const Context* ctx, const char* name, Value* val) {
 	Variable* dst = findVar(ctx->globals, name);
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
-		/* Make sure we are assigning the correct variable */
-		if(var->name != NULL) {
-			free(var->name);
-		}
-		
-		var->name = strdup(name);
+		Variable* var = Variable_new(strdup(name), val);
 		Context_addGlobal(ctx, var);
 	}
 	else {
 		/* Variable already exists, so update it */
-		Variable_update(dst, var);
+		Variable_update(dst, val);
 	}
 }
 
@@ -276,7 +275,7 @@ void Context_del(const Context* ctx, const char* name) {
 }
 
 void Context_clear(Context* ctx) {
-	/* Delete all global variables */
+	/* Delete all global variables, skipping "ans" */
 	struct VarNode* prev = ctx->globals;
 	struct VarNode* cur = prev->next;
 	while(cur != NULL) {
@@ -287,7 +286,7 @@ void Context_clear(Context* ctx) {
 	}
 	
 	/* Set ans to 0 */
-	Context_setGlobal(ctx, "ans", Variable_new(strdup("ans"), ValInt(0)));
+	Context_setGlobal(ctx, "ans", ValInt(0));
 }
 
 static struct VarNode* findNode(struct VarNode* cur, const char* name) {

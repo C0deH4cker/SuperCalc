@@ -16,33 +16,33 @@ typedef struct FuncCall FuncCall;
 #include "context.h"
 #include "value.h"
 #include "arglist.h"
+#include "generic.h"
 
 
 struct FuncCall {
-	Value* func;
-	ArgList* arglist;
+	OWNED NONNULL Value* func;
+	OWNED NONNULL ArgList* arglist;
 };
 
 
 /* Constructor */
-/* This method consumes both the `func` and `arglist` arguments */
-FuncCall* FuncCall_new(Value* func, ArgList* arglist);
-/* Used to create specific calls like "sqrt". `arglist` is consumed */
-FuncCall* FuncCall_create(const char* name, ArgList* arglist);
+OWNED NONNULL FuncCall* FuncCall_new(OWNED NONNULL Value* func, OWNED NONNULL ArgList* arglist);
+/* Used to create specific calls like "sqrt" */
+OWNED NONNULL FuncCall* FuncCall_create(OWNED NONNULL char* name, OWNED NONNULL ArgList* arglist);
 
 /* Destructor */
-void FuncCall_free(FuncCall* call);
+void FuncCall_free(OWNED NULLABLE FuncCall* call);
 
 /* Copying */
-FuncCall* FuncCall_copy(const FuncCall* call);
+OWNED NULLABLE_WHEN(call == NULL) FuncCall* FuncCall_copy(NULLABLE const FuncCall* call);
 
 /* Evaluation */
-Value* FuncCall_eval(const FuncCall* call, const Context* ctx);
+OWNED NONNULL Value* FuncCall_eval(NULLABLE const FuncCall* call, NONNULL const Context* ctx);
 
 /* Printing */
-char* FuncCall_repr(const FuncCall* call, bool pretty);
-char* FuncCall_wrap(const FuncCall* call);
-char* FuncCall_verbose(const FuncCall* call, unsigned indent);
-char* FuncCall_xml(const FuncCall* call, unsigned indent);
+OWNED NONNULL char* FuncCall_repr(NONNULL const FuncCall* call, bool pretty);
+OWNED NONNULL char* FuncCall_wrap(NONNULL const FuncCall* call);
+OWNED NONNULL char* FuncCall_verbose(NONNULL const FuncCall* call, unsigned indent);
+OWNED NONNULL char* FuncCall_xml(NONNULL const FuncCall* call, unsigned indent);
 
 #endif /* SC_FUNCCALL_H */

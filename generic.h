@@ -18,8 +18,6 @@
 #include "linenoise/linenoise.h"
 #endif
 
-#include "error.h"
-
 
 #ifdef _MSC_VER
 
@@ -55,7 +53,26 @@
 
 #define UNREFERENCED_PARAMETER(param) do { param = param; } while(0)
 
-static inline void* fmalloc(size_t size) {
+/* Attributes purely for documentation purposes */
+#define IN
+#define OUT
+#define INOUT
+
+#define NONNULL
+#define NULLABLE
+#define OWNED
+#define UNOWNED
+
+#define INVARIANT(...)
+#define NONNULL_WHEN(...)
+#define NULLABLE_WHEN(...)
+#define OWNED_WHEN(...)
+#define UNOWNED_WHEN(...)
+
+
+#include "error.h"
+
+static inline OWNED NONNULL_WHEN(size > 0) void* fmalloc(size_t size) {
 	void* ret = malloc(size);
 	if(ret == NULL && size > 0) {
 		allocError();
@@ -64,7 +81,7 @@ static inline void* fmalloc(size_t size) {
 	return ret;
 }
 
-static inline void* fcalloc(size_t count, size_t size) {
+static inline OWNED NONNULL_WHEN(count > 0 && size > 0) void* fcalloc(size_t count, size_t size) {
 	void* ret = calloc(count, size);
 	if(ret == NULL && count > 0 && size > 0) {
 		allocError();
@@ -72,7 +89,7 @@ static inline void* fcalloc(size_t count, size_t size) {
 	return ret;
 }
 
-static inline void* frealloc(void* mem, size_t size) {
+static inline OWNED NONNULL_WHEN(size > 0) void* frealloc(OWNED NULLABLE void* mem, size_t size) {
 	void* ret = realloc(mem, size);
 	if(ret == NULL && size > 0) {
 		allocError();
@@ -95,21 +112,23 @@ typedef enum {
 #define SC_LINE_SIZE 1000
 
 extern char* g_line;
+extern unsigned g_lineNumber;
 extern FILE* g_inputFile;
+extern const char* g_inputFileName;
 
 /* Tokenization */
-void trimSpaces(const char** str);
-char* nextSpecial(const char** expr);
-char* nextToken(const char** expr);
-int getSign(const char** expr);
+void trimSpaces(NONNULL const char** str);
+OWNED NULLABLE char* nextSpecial(NONNULL const char** expr);
+OWNED NULLABLE char* nextToken(NONNULL const char** expr);
+int getSign(NONNULL const char** expr);
 
 /* Input */
-char* nextLine(const char* prompt);
-bool isInteractive(FILE* fp);
-VERBOSITY getVerbosity(const char** str);
+UNOWNED char* nextLine(NONNULL const char* prompt);
+bool isInteractive(NONNULL FILE* fp);
+VERBOSITY getVerbosity(INOUT UNOWNED NONNULL char** str);
 
 /* Verbose printing */
-const char* getPretty(const char* name);
+const char* getPretty(NULLABLE const char* name);
 const char* indentation(unsigned level);
 
 /* Math */

@@ -15,6 +15,7 @@ typedef struct BinOp BinOp;
 
 #include "context.h"
 #include "value.h"
+#include "generic.h"
 
 
 typedef enum {
@@ -32,9 +33,9 @@ typedef enum {
 #define BIN_COUNT (BIN_AFTERMAX)
 
 struct BinOp {
-	BINTYPE type;
-	Value* a;
-	Value* b;
+	INVARIANT(type >= BIN_ADD) BINTYPE type;
+	OWNED NONNULL Value* a;
+	OWNED NULLABLE Value* b;
 };
 
 /* Contains strings such as "multiply" for index BIN_MUL */
@@ -42,27 +43,27 @@ extern const char* binop_verb[BIN_COUNT];
 
 /* Constructor */
 /* This method consumes both the `a` and `b` arguments */
-BinOp* BinOp_new(BINTYPE type, Value* a, Value* b);
+BinOp* BinOp_new(BINTYPE type, OWNED NONNULL Value* a, OWNED NULLABLE Value* b);
 
 /* Destructor */
-void BinOp_free(BinOp* node);
+void BinOp_free(OWNED NULLABLE BinOp* node);
 
 /* Copying */
-BinOp* BinOp_copy(const BinOp* node);
+OWNED NULLABLE_WHEN(node == NULL) BinOp* BinOp_copy(NULLABLE const BinOp* node);
 
 /* Evaluation */
-Value* BinOp_eval(const BinOp* node, const Context* ctx);
+OWNED NONNULL Value* BinOp_eval(NONNULL INVARIANT(node->b != NULL) const BinOp* node, NONNULL const Context* ctx);
 
 /* Tokenizer */
-BINTYPE BinOp_nextType(const char** expr, char sep, char end);
+BINTYPE BinOp_nextType(INOUT NONNULL const char** expr, char sep, char end);
 
 /* Operator precedence */
 int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
-char* BinOp_repr(const BinOp* node, bool pretty);
-char* BinOp_wrap(const BinOp* node);
-char* BinOp_verbose(const BinOp* node, unsigned indent);
-char* BinOp_xml(const BinOp* node, unsigned indent);
+OWNED NONNULL char* BinOp_repr(NONNULL INVARIANT(node->b != NULL) const BinOp* node, bool pretty);
+OWNED NONNULL char* BinOp_wrap(NONNULL INVARIANT(node->b != NULL) const BinOp* node);
+OWNED NONNULL char* BinOp_verbose(NONNULL INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
+OWNED NONNULL char* BinOp_xml(NONNULL INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
 
 #endif /* SC_BINOP_H */

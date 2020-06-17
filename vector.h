@@ -16,51 +16,52 @@ typedef struct Vector Vector;
 #include "value.h"
 #include "arglist.h"
 #include "context.h"
+#include "generic.h"
 
 
 struct Vector {
-	ArgList* vals;
+	OWNED NONNULL ArgList* vals;
 };
 
 
 /* Constructor */
-Vector* Vector_new(ArgList* vals);
-Vector* Vector_create(unsigned count, /* Value* */...);
-Vector* Vector_vcreate(unsigned count, va_list args);
+OWNED NONNULL Vector* Vector_new(OWNED NONNULL ArgList* vals);
+OWNED NONNULL Vector* Vector_create(INVARIANT(count >= 1) unsigned count, /* Value* */...);
+OWNED NONNULL Vector* Vector_vcreate(INVARIANT(count >= 1) unsigned count, va_list args);
 
 /* Destructor */
-void Vector_free(Vector* vec);
+void Vector_free(OWNED NULLABLE Vector* vec);
 
 /* Copying */
-Vector* Vector_copy(const Vector* vec);
+OWNED NONNULL_WHEN(vec == NULL) Vector* Vector_copy(NULLABLE const Vector* vec);
 
 /* Parsing */
-Value* Vector_parse(const char** expr, parser_cb* cb);
+OWNED NONNULL Value* Vector_parse(INOUT NONNULL const char** expr, NONNULL parser_cb* cb);
 
 /* Evaluation */
-Value* Vector_eval(const Vector* vec, const Context* ctx);
+OWNED NONNULL Value* Vector_eval(NONNULL const Vector* vec, NONNULL const Context* ctx);
 
 /* Arithmetic */
-Value* Vector_add(const Vector* vec, const Value* other, const Context* ctx);
-Value* Vector_sub(const Vector* vec, const Value* other, const Context* ctx);
-Value* Vector_rsub(const Vector* vec, const Value* scalar, const Context* ctx);
-Value* Vector_mul(const Vector* vec, const Value* other, const Context* ctx);
-Value* Vector_div(const Vector* vec, const Value* other, const Context* ctx);
-Value* Vector_rdiv(const Vector* vec, const Value* scalar, const Context* ctx);
-Value* Vector_pow(const Vector* vec, const Value* other, const Context* ctx);
-Value* Vector_rpow(const Vector* vec, const Value* scalar, const Context* ctx);
-Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* ctx);
-Value* Vector_cross(const Vector* vector1, const Vector* vector2, const Context* ctx);
-Value* Vector_magnitude(const Vector* vec, const Context* ctx);
-Value* Vector_normalize(const Vector* vec, const Context* ctx);
+OWNED NONNULL Value* Vector_add(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_sub(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_rsub(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_mul(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_div(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_rdiv(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_pow(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_rpow(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_dot(NONNULL const Vector* vector1, NONNULL const Vector* vector2, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_cross(NONNULL const Vector* vector1, NONNULL const Vector* vector2, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_magnitude(NONNULL const Vector* vec, NONNULL const Context* ctx);
+OWNED NONNULL Value* Vector_normalize(NONNULL const Vector* vec, NONNULL const Context* ctx);
 
 /* Access Values */
-Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx);
+OWNED NONNULL Value* Vector_elem(NONNULL const Vector* vec, NONNULL const Value* index, NONNULL const Context* ctx);
 
 /* Printing */
-char* Vector_repr(const Vector* vec, bool pretty);
-char* Vector_wrap(const Vector* vec);
-char* Vector_verbose(const Vector* vec, unsigned indent);
-char* Vector_xml(const Vector* vec, unsigned indent);
+OWNED NONNULL char* Vector_repr(NONNULL const Vector* vec, bool pretty);
+OWNED NONNULL char* Vector_wrap(NONNULL const Vector* vec);
+OWNED NONNULL char* Vector_verbose(NONNULL const Vector* vec, unsigned indent);
+OWNED NONNULL char* Vector_xml(NONNULL const Vector* vec, unsigned indent);
 
 #endif /* SC_VECTOR_H */

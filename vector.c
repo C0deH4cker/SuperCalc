@@ -39,7 +39,7 @@ Vector* Vector_new(ArgList* vals) {
 }
 
 Vector* Vector_create(unsigned count, ...) {
-	if(count < 2) {
+	if(count < 1) {
 		return NULL;
 	}
 	
@@ -57,25 +57,33 @@ Vector* Vector_vcreate(unsigned count, va_list args) {
 }
 
 void Vector_free(Vector* vec) {
+	if(!vec) {
+		return;
+	}
+	
 	ArgList_free(vec->vals);
 	free(vec);
 }
 
 Vector* Vector_copy(const Vector* vec) {
+	if(!vec) {
+		return NULL;
+	}
+	
 	return Vector_new(ArgList_copy(vec->vals));
 }
 
 Value* Vector_parse(const char** expr, parser_cb* cb) {
-	ArgList* vals = ArgList_parse(expr, ',', '>', cb);
+	Error* err = NULL;
+	ArgList* vals = ArgList_parse(expr, ',', '>', cb, &err);
 	
 	if(vals == NULL) {
-		/* Error occurred and has already been raised */
-		return ValErr(ignoreError());
+		return ValErr(err);
 	}
 	
 	if(vals->count < 1) {
 		ArgList_free(vals);
-		return ValErr(syntaxError("Vector must have at least 1 component."));
+		return ValErr(syntaxError(*expr, "Vector must have at least 1 component."));
 	}
 	
 	return ValVec(Vector_new(vals));

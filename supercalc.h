@@ -18,14 +18,15 @@ typedef struct SuperCalc SuperCalc;
 #include "generic.h"
 
 struct SuperCalc {
-	Context* ctx;
+	OWNED NONNULL Context* ctx;
 	bool interactive;
 	uint8_t importDepth;
 };
 
-SuperCalc* SuperCalc_new(void);
-void SuperCalc_free(SuperCalc* sc);
-void SuperCalc_run(SuperCalc* sc);
-Value* SuperCalc_runLine(SuperCalc* sc, const char* str, VERBOSITY v);
+OWNED NONNULL SuperCalc* SuperCalc_new(void);
+void SuperCalc_free(OWNED NULLABLE SuperCalc* sc);
+void SuperCalc_run(UNOWNED NONNULL SuperCalc* sc);
+OWNED NONNULL Error* SuperCalc_importFile(UNOWNED NONNULL SuperCalc* sc, NONNULL const char* filename);
+OWNED NULLABLE Value* SuperCalc_runLine(UNOWNED NONNULL SuperCalc* sc, UNOWNED NONNULL char* str, VERBOSITY v);
 
 #endif /* SC_SUPERCALC_H */

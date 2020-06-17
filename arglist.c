@@ -34,6 +34,10 @@ ArgList* ArgList_new(unsigned count) {
 }
 
 void ArgList_free(ArgList* arglist) {
+	if(!arglist) {
+		return;
+	}
+	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		Value_free(arglist->args[i]);
@@ -67,6 +71,10 @@ ArgList* ArgList_vcreate(unsigned count, va_list args) {
 }
 
 ArgList* ArgList_copy(const ArgList* arglist) {
+	if(!arglist) {
+		return NULL;
+	}
+	
 	unsigned count = arglist->count;
 	ArgList* ret = ArgList_new(count);
 	
@@ -119,11 +127,13 @@ double* ArgList_toReals(const ArgList* arglist, const Context* ctx) {
 	return ret;
 }
 
-ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
+ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb, Error** err) {
 	/* Since most funcs take at most 2 args, 2 is a good starting size */
 	unsigned size = 2;
 	unsigned count = 0;
 	unsigned i;
+	
+	*err = NULL;
 	
 	Value** args = fmalloc(size * sizeof(*args));
 	
@@ -151,11 +161,12 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	
 	if(arg && arg->type == VAL_ERR) {
 		for(i = 0; i < count; i++) {
-			free(args[i]);
+			Value_free(args[i]);
 		}
 		free(args);
 		
-		Error_raise(arg->err, false);
+		*err = arg->err;
+		arg->err = NULL;
 		Value_free(arg);
 		return NULL;
 	}
@@ -167,17 +178,16 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	if(**expr && **expr != end) {
 		/* Not NUL and not end means invalid char */
 		for(i = 0; i < count; i++) {
-			free(args[i]);
+			Value_free(args[i]);
 		}
 		free(args);
 		
-		RAISE(badChar(**expr), false);
+		*err = badChar(*expr);
 		return NULL;
 	}
 	
 	ArgList* ret = ArgList_new(count);
 	memcpy(ret->args, args, count * sizeof(*args));
-	
 	free(args);
 	
 	if(**expr == end) {

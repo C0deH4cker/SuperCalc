@@ -439,6 +439,10 @@ void BinOp_free(BinOp* node) {
 }
 
 BinOp* BinOp_copy(const BinOp* node) {
+	if(node == NULL) {
+		return NULL;
+	}
+	
 	return BinOp_new(node->type, Value_copy(node->a), Value_copy(node->b));
 }
 

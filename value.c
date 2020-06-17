@@ -43,7 +43,7 @@ static Value* parseToken(const char** expr, parser_cb* cb);
 static Value* _default_cb(const char** expr, void* data) {
 	UNREFERENCED_PARAMETER(data);
 	
-	return ValErr(badChar(**expr));
+	return ValErr(badChar(*expr));
 }
 parser_cb default_cb = {&_default_cb, NULL};
 
@@ -105,9 +105,9 @@ Value* ValCall(FuncCall* call) {
 	return ret;
 }
 
-Value* ValVar(const char* name) {
+Value* ValVar(char* name) {
 	Value* ret = allocValue(VAL_VAR);
-	ret->name = strdup(name);
+	ret->name = name;
 	return ret;
 }
 
@@ -136,7 +136,9 @@ Value* ValPlace(Placeholder* ph) {
 }
 
 void Value_free(Value* val) {
-	if(!val) return;
+	if(!val) {
+		return;
+	}
 	
 	switch(val->type) {
 		case VAL_EXPR:
@@ -184,6 +186,10 @@ void Value_free(Value* val) {
 }
 
 Value* Value_copy(const Value* val) {
+	if(!val) {
+		return NULL;
+	}
+	
 	Value* ret;
 	
 	switch(val->type) {
@@ -212,7 +218,7 @@ Value* Value_copy(const Value* val) {
 			break;
 		
 		case VAL_VAR:
-			ret = ValVar(val->name);
+			ret = ValVar(strdup(val->name));
 			break;
 		
 		case VAL_VEC:
@@ -364,6 +370,16 @@ double Value_asReal(const Value* val) {
 	return ret;
 }
 
+Value* Value_parseTop(const char** expr) {
+	Value* ret = Value_parse(expr, 0, 0, &default_cb);
+	if(ret->type == VAL_END) {
+		Value_free(ret);
+		return ValErr(earlyEnd(*expr));
+	}
+	
+	return ret;
+}
+
 Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	Value* val;
 	BINTYPE op = BIN_UNK;
@@ -372,7 +388,7 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	
 	while(1) {
 		/* Get next value */
-		val = Value_next(expr, end, cb);
+		val = Value_next(expr, sep, end, cb);
 		
 		/* Error parsing next value? */
 		if(val->type == VAL_ERR) {
@@ -387,6 +403,8 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 		if(val->type == VAL_END) {
 			if(tree) {
 				BinOp_free(tree);
+				Value_free(val);
+				return ValErr(earlyEnd(*expr));
 			}
 			
 			return val;
@@ -425,7 +443,7 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 				}
 				
 				Value_free(val);
-				return ValErr(badChar(**expr));
+				return ValErr(badChar(*expr));
 			}
 			/* End of the statement? */
 			else if(op == BIN_END) {
@@ -440,11 +458,6 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 					}
 					
 					/* Failed to get another line, so fallthrough to continue with the EOF handling */
-				}
-				
-				/* Only skip end character if there's only one value to parse */
-				if(!sep && **expr != '\0' && **expr == end) {
-					(*expr)++;
 				}
 				
 				/* If there was only one value, return it */
@@ -544,7 +557,7 @@ static Value* parseNum(const char** expr) {
 	}
 	else {
 		/* Both failed to convert the data */
-		ret = ValErr(badChar(**expr));
+		ret = ValErr(badChar(*expr));
 	}
 	
 	return ret;
@@ -561,6 +574,11 @@ static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 		return index;
 	}
 	
+	/* Skip past closing bracket character */
+	if(**expr == ']') {
+		(*expr)++;
+	}
+	
 	/* Use builtin function from vector.c */
 	TP(tp);
 	return TP_FILL(tp, "@elem(@@, @@)", val, index);
@@ -568,17 +586,18 @@ static Value* subscriptVector(Value* val, const char** expr, parser_cb* cb) {
 
 static Value* callFunc(Value* val, const char** expr, parser_cb* cb) {
 	/* Ugly, but parses better. Only variables and the results of calls can be funcs */
-	if(val->type != VAL_VAR && val->type != VAL_CALL && val->type != VAL_PLACE) {
+	if(val->type != VAL_VAR && val->type != VAL_CALL && val->type != VAL_PLACE && val->type != VAL_FUNC) {
 		return val;
 	}
 	
 	/* Move past the opening parenthesis */
 	(*expr)++;
 	
-	ArgList* args = ArgList_parse(expr, ',', ')', cb);
+	Error* err = NULL;
+	ArgList* args = ArgList_parse(expr, ',', ')', cb, &err);
 	if(args == NULL) {
 		Value_free(val);
-		return ValErr(ignoreError());
+		return ValErr(err);
 	}
 	
 	return ValCall(FuncCall_new(val, args));
@@ -589,30 +608,31 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 	
 	char* token = nextToken(expr);
 	if(token == NULL) {
-		return ValErr(badChar(**expr));
+		return ValErr(badChar(*expr));
 	}
 	
 	trimSpaces(expr);
 	if(**expr == '(') {
 		(*expr)++;
-		ArgList* arglist = ArgList_parse(expr, ',', ')', cb);
+		Error* err = NULL;
+		ArgList* arglist = ArgList_parse(expr, ',', ')', cb, &err);
 		if(arglist == NULL) {
-			/* Parse error occurred and has already been raised */
 			free(token);
-			return ValErr(ignoreError());
+			return ValErr(err);
 		}
 		
 		ret = ValCall(FuncCall_create(token, arglist));
+		token = NULL;
 	}
 	else {
 		ret = ValVar(token);
+		token = NULL;
 	}
 	
-	free(token);
 	return ret;
 }
 
-Value* Value_next(const char** expr, char end, parser_cb* cb) {
+Value* Value_next(const char** expr, char sep, char end, parser_cb* cb) {
 	Value* ret;
 	
 	bool again;
@@ -648,25 +668,41 @@ Value* Value_next(const char** expr, char end, parser_cb* cb) {
 		ret = parseNum(expr);
 	}
 	else if(**expr == '(') {
+		/* Parenthesized subexpression */
 		(*expr)++;
 		ret = Value_parse(expr, 0, ')', cb);
+		if(ret->type != VAL_ERR && **expr == ')') {
+			(*expr)++;
+		}
 	}
 	else if(**expr == '<') {
+		/* Vector */
 		(*expr)++;
 		ret = Vector_parse(expr, cb);
 	}
 	else if(**expr == '|') {
+		/* Closure */
 		(*expr)++;
-		Value* val = Value_parse(expr, 0, '|', cb);
 		
-		/* Error checking */
-		if(val->type == VAL_ERR) {
-			return val;
+		/* Parse parameters part of closure: |x, y| x + y */
+		Error* err = NULL;
+		Function* closure = Function_parseArgs(expr, ',', '|', &err);
+		if(closure == NULL) {
+			return ValErr(err);
 		}
 		
-		/* Use absolute value builtin */
-		TP(tp);
-		ret = TP_FILL(tp, "@abs(@@)", val);
+		/* Parse body of closure */
+		Value* body = Value_parse(expr, sep, end, cb);
+		if(body->type == VAL_ERR) {
+			Function_free(closure);
+			return body;
+		}
+		closure->body = body;
+		body = NULL;
+		
+		/* If the above parse hit the sep or end character, it will still be in **expr */
+		ret = ValFunc(closure);
+		closure = NULL;
 	}
 	else if(**expr == '@') {
 		/* Invoke callback to handle special value */
@@ -767,7 +803,7 @@ char* Value_repr(const Value* val, bool pretty, bool top) {
 			break;
 		
 		case VAL_FUNC:
-			ret = Function_repr(val->func, pretty);
+			ret = Function_repr(val->func, NULL, pretty);
 			break;
 		
 		case VAL_BUILTIN:
@@ -823,7 +859,7 @@ char* Value_wrap(const Value* val, bool top) {
 			break;
 		
 		case VAL_FUNC:
-			ret = Function_wrap(val->func);
+			ret = Function_wrap(val->func, NULL, top);
 			break;
 		
 		case VAL_BUILTIN:
@@ -876,6 +912,14 @@ char* Value_verbose(const Value* val, unsigned indent) {
 		
 		case VAL_PLACE:
 			ret = Placeholder_repr(val->ph);
+			break;
+		
+		case VAL_FUNC:
+			ret = Function_verbose(val->func, indent);
+			break;
+		
+		case VAL_BUILTIN:
+			ret = Builtin_verbose(val->blt, indent);
 			break;
 		
 		default:
@@ -949,9 +993,7 @@ char* Value_xml(const Value* val, unsigned indent) {
 	return ret;
 }
 
-void Value_print(const Value* val, const SuperCalc* sc, VERBOSITY v) {
-	UNREFERENCED_PARAMETER(sc);
-	
+void Value_print(const Value* val, VERBOSITY v) {
 	if(val->type == VAL_ERR) {
 		/* An error occurred, so print it and continue. */
 		Error_raise(val->err, false);

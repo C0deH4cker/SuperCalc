@@ -50,6 +50,10 @@ void Fraction_free(Fraction* frac) {
 }
 
 Fraction* Fraction_copy(const Fraction* frac) {
+	if(!frac) {
+		return NULL;
+	}
+	
 	return Fraction_new(frac->n, frac->d);
 }
 
@@ -180,6 +184,10 @@ static Value* fracDiv(const Fraction* a, const Fraction* b) {
 	long long n = a->n * b->d;
 	long long d = a->d * b->n;
 	
+	if(b->n == 0) {
+		return ValErr(zeroDivError());
+	}
+	
 	return ValFrac(Fraction_new(n, d));
 }
 
@@ -193,6 +201,10 @@ Value* Fraction_div(const Fraction* a, const Value* b) {
 			break;
 			
 		case VAL_INT:
+			if(b->ival == 0) {
+				return ValErr(zeroDivError());
+			}
+			
 			n = a->n;
 			d = a->d * b->ival;
 			
@@ -200,6 +212,10 @@ Value* Fraction_div(const Fraction* a, const Value* b) {
 			break;
 			
 		case VAL_REAL:
+			if(!b->rval) {
+				return ValErr(zeroDivError());
+			}
+			
 			ret = ValReal(Fraction_asReal(a) / b->rval);
 			break;
 			
@@ -213,14 +229,18 @@ Value* Fraction_div(const Fraction* a, const Value* b) {
 static Value* fracMod(const Fraction* a, const Fraction* b) {
 	Value* f;
 	Value* next;
-	Value* diff;
+	int diff;
+	
+	if(b->n == 0) {
+		return ValErr(zeroModError());
+	}
 	
 	f = ValFrac(Fraction_copy(b));
 	next = Value_copy(f);
 	
 	/* While the next multiple is still valid, set f to next */
 	/* TODO: Fix hang with "2/3%-2" */
-	for(diff = Fraction_cmp(a, next); diff->ival > 0; diff = Fraction_cmp(a, next)) {
+	for(diff = Fraction_cmp(a, next); diff > 0; diff = Fraction_cmp(a, next)) {
 		Value_free(f);
 		f = Value_copy(next);
 		
@@ -254,12 +274,20 @@ Value* Fraction_mod(const Fraction* a, const Value* b) {
 				break;
 				
 			case VAL_INT:
+				if(b->ival == 0) {
+					return ValErr(zeroModError());
+				}
+				
 				f = Fraction_new(b->ival, 1);
 				ret = fracMod(a, f);
 				Fraction_free(f);
 				break;
 				
 			case VAL_REAL:
+				if(!b->rval) {
+					return ValErr(zeroModError());
+				}
+				
 				ret = ValReal(fmod(Fraction_asReal(a), b->rval));
 				break;
 				
@@ -511,7 +539,7 @@ static int fracCmp(const Fraction* a, const Fraction* b) {
 	return (int)CLAMP(val, -1, 1);
 }
 
-Value* Fraction_cmp(const Fraction* a, const Value* b) {
+int Fraction_cmp(const Fraction* a, const Value* b) {
 	int diff;
 	long long val;
 	double real;
@@ -535,7 +563,7 @@ Value* Fraction_cmp(const Fraction* a, const Value* b) {
 			badValType(b->type);
 	}
 	
-	return ValInt(diff);
+	return diff;
 }
 
 double Fraction_asReal(const Fraction* frac) {

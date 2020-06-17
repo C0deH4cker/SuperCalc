@@ -22,10 +22,10 @@
 #include "variable.h"
 
 
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction) {
+Builtin* Builtin_new(char* name, builtin_eval_t evaluator, bool isFunction) {
 	Builtin* ret = fmalloc(sizeof(*ret));
 	
-	ret->name = strdup(name);
+	ret->name = name;
 	ret->evaluator = evaluator;
 	ret->isFunction = isFunction;
 	
@@ -33,12 +33,20 @@ Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction
 }
 
 void Builtin_free(Builtin* blt) {
+	if(!blt) {
+		return;
+	}
+	
 	free(blt->name);
 	free(blt);
 }
 
 Builtin* Builtin_copy(const Builtin* blt) {
-	return Builtin_new(blt->name, blt->evaluator, blt->isFunction);
+	if(!blt) {
+		return NULL;
+	}
+	
+	return Builtin_new(strdup(blt->name), blt->evaluator, blt->isFunction);
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
@@ -49,10 +57,7 @@ void Builtin_register(Builtin* blt, Context* ctx) {
 Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
 	/* Call the builtin's evaluator function */
 	Value* ret = blt->evaluator(ctx, arglist, internal);
-	if(ret->type == VAL_ERR && ret->err->type == ERR_MATH) {
-		return ret;
-	}
-	else if(ret->type == VAL_REAL && isnan(ret->rval)) {
+	if(ret->type == VAL_REAL && isnan(ret->rval)) {
 		Value_free(ret);
 		return ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));
 	}

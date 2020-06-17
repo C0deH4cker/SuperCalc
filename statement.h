@@ -17,9 +17,10 @@ typedef struct Statement Statement;
 #include "value.h"
 #include "supercalc.h"
 #include "context.h"
+#include "generic.h"
 
 struct Statement {
-	Variable* var;
+	OWNED NONNULL Variable* var;
 };
 
 
@@ -29,25 +30,25 @@ struct Statement {
   - Its name is NULL unless there is an assignment
   - Its value is not simplified. It will store the entire tree
 */
-Statement* Statement_new(Variable* var);
+OWNED NONNULL Statement* Statement_new(OWNED NONNULL Variable* var);
 
 /* Destructor */
-void Statement_free(Statement* stmt);
+void Statement_free(OWNED NULLABLE Statement* stmt);
 
 /* Parsing */
-Statement* Statement_parse(const char** expr);
+OWNED NONNULL Statement* Statement_parse(INOUT NONNULL const char** expr);
 
 /* Error handling */
-bool Statement_didError(const Statement* stmt);
+bool Statement_didError(NONNULL const Statement* stmt);
 
 /* Evaluation */
-Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v);
+OWNED NONNULL Value* Statement_eval(NONNULL const Statement* stmt, INOUT UNOWNED NONNULL Context* ctx, VERBOSITY v);
 
 /* Printing */
-char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty);
-char* Statement_wrap(const Statement* stmt, const Context* ctx);
-char* Statement_verbose(const Statement* stmt, const Context* ctx);
-char* Statement_xml(const Statement* stmt, const Context* ctx);
-void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v);
+OWNED NONNULL char* Statement_repr(NONNULL const Statement* stmt, NONNULL const Context* ctx, bool pretty);
+OWNED NONNULL char* Statement_wrap(NONNULL const Statement* stmt, NONNULL const Context* ctx);
+OWNED NONNULL char* Statement_verbose(NONNULL const Statement* stmt, NONNULL const Context* ctx);
+OWNED NONNULL char* Statement_xml(NONNULL const Statement* stmt, NONNULL const Context* ctx);
+void Statement_print(NONNULL const Statement* stmt, NONNULL const SuperCalc* sc, VERBOSITY v);
 
 #endif /* SC_STATEMENT_H */

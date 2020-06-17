@@ -22,8 +22,8 @@
 #ifdef _MSC_VER
 
 /* Not defined when using MSVC */
-int asprintf(char** buffer, const char* fmt, ...);
-int vasprintf(char** buffer, const char* fmt, va_list ap);
+int asprintf(OUT NONNULL_WHEN(return >= 0) char* OWNED NONNULL* buffer, NONNULL const char* fmt, ...);
+int vasprintf(OUT NONNULL_WHEN(return >= 0) char* OWNED NONNULL* buffer, NONNULL const char* fmt, va_list ap);
 
 #endif /* _MSC_VER */
 

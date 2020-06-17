@@ -66,7 +66,9 @@ UnOp* UnOp_new(UNTYPE type, Value* a) {
 }
 
 void UnOp_free(UnOp* term) {
-	if(!term) return;
+	if(!term) {
+		return;
+	}
 	
 	if(term->a) {
 		Value_free(term->a);
@@ -76,6 +78,10 @@ void UnOp_free(UnOp* term) {
 }
 
 UnOp* UnOp_copy(const UnOp* term) {
+	if(!term) {
+		return NULL;
+	}
+	
 	return UnOp_new(term->type, Value_copy(term->a));
 }
 

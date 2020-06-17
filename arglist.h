@@ -15,36 +15,43 @@
 typedef struct ArgList ArgList;
 #include "value.h"
 #include "context.h"
+#include "generic.h"
 
 struct ArgList {
-	Value** args;
+	OWNED NONNULL Value* OWNED NONNULL_WHEN(count > 0)* args;
 	unsigned count;
 };
 
 /* Constructor */
-ArgList* ArgList_new(unsigned count);
+OWNED NONNULL ArgList* ArgList_new(unsigned count);
 
 /* Destructor */
-void ArgList_free(ArgList* arglist);
+void ArgList_free(OWNED NULLABLE ArgList* arglist);
 
 /* Initializer */
-ArgList* ArgList_create(unsigned count, /* Value* */...);
-ArgList* ArgList_vcreate(unsigned count, va_list args);
+OWNED NONNULL ArgList* ArgList_create(unsigned count, /* OWNED NONNULL Value* */...);
+OWNED NONNULL ArgList* ArgList_vcreate(unsigned count, va_list args);
 
 /* Copying */
-ArgList* ArgList_copy(const ArgList* arglist);
+OWNED NONNULL_WHEN(arglist != NULL) ArgList* ArgList_copy(NULLABLE const ArgList* arglist);
 
 /* Evaluation */
-ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx);
-double* ArgList_toReals(const ArgList* arglist, const Context* ctx);
+OWNED NONNULL ArgList* ArgList_eval(NONNULL const ArgList* arglist, NONNULL const Context* ctx);
+OWNED NONNULL_WHEN(arglist->count > 0) double* ArgList_toReals(NONNULL const ArgList* arglist, NONNULL const Context* ctx);
 
 /* Parsing */
-ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb);
+OWNED NULLABLE ArgList* ArgList_parse(
+	NONNULL const char** expr,
+	char sep,
+	char end,
+	NONNULL parser_cb* cb,
+	OWNED NONNULL_WHEN(return == NULL) Error* NONNULL* err
+);
 
 /* Printing */
-char* ArgList_repr(const ArgList* arglist, bool pretty);
-char* ArgList_wrap(const ArgList* arglist);
-char* ArgList_verbose(const ArgList* arglist, unsigned indent);
-char* ArgList_xml(const ArgList* arglist, unsigned indent);
+OWNED NONNULL char* ArgList_repr(NONNULL const ArgList* arglist, bool pretty);
+OWNED NONNULL char* ArgList_wrap(NONNULL const ArgList* arglist);
+OWNED NONNULL char* ArgList_verbose(NONNULL const ArgList* arglist, unsigned indent);
+OWNED NONNULL char* ArgList_xml(NONNULL const ArgList* arglist, unsigned indent);
 
 #endif /* SC_ARGLIST_H */

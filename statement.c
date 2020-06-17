@@ -30,6 +30,10 @@ Statement* Statement_new(Variable* var) {
 }
 
 void Statement_free(Statement* stmt) {
+	if(!stmt) {
+		return;
+	}
+	
 	Variable_free(stmt->var);
 	free(stmt);
 }
@@ -43,14 +47,10 @@ Statement* Statement_parse(const char** expr) {
 	
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
-		val = Value_parse(expr, 0, 0, &default_cb);
-		
-		if(val->type == VAL_END) {
-			Value_free(val);
-			var = VarErr(earlyEnd());
-		}
-		else if(val->type == VAL_ERR) {
-			var = VarErr(Error_copy(val->err));
+		val = Value_parseTop(expr);
+		if(val->type == VAL_ERR) {
+			var = VarErr(val->err);
+			val->err = NULL;
 			Value_free(val);
 		}
 		else {
@@ -61,163 +61,87 @@ Statement* Statement_parse(const char** expr) {
 	}
 	
 	/* There is an assignment */
-	/* First, parse the right side of the assignment */
 	equals++;
-	val = Value_parse(&equals, 0, 0, &default_cb);
 	
-	if(val->type == VAL_ERR) {
-		/* A parse error occurred */
-		var = VarErr(Error_copy(val->err));
-		Value_free(val);
-		return Statement_new(var);
-	}
-	
-	if(val->type == VAL_END) {
-		/* Empty input */
-		Value_free(val);
-		return Statement_new(VarErr(earlyEnd()));
-	}
-	
-	/* Now parse the left side */
+	/* First, parse the left side */
 	char* name = nextToken(expr);
 	if(name == NULL) {
-		Value_free(val);
-		return Statement_new(VarErr(syntaxError("No variable to assign to.")));
+		return Statement_new(VarErr(syntaxError(*expr, "No variable to assign to.")));
 	}
 	
 	trimSpaces(expr);
 	
 	if(**expr == '(') {
 		/* Defining a function */
-		/*
-		 TODO: Consider utilizing ArgList_parse for this and
-		 just check to make sure all args are VAL_VAR
-		*/
 		(*expr)++;
 		
-		/* Array of argument names */
-		unsigned size = 2;
-		char** args = fmalloc(size * sizeof(*args));
-		unsigned len = 0;
-		
-		/* Add each argument name to the array */
-		char* arg = nextToken(expr);
-		
-		if(arg == NULL && **expr != ')') {
-			/* Invalid character */
-			Value_free(val);
-			free(args);
+		Error* err = NULL;
+		Function* func = Function_parseArgs(expr, ',', ')', &err);
+		if(func == NULL) {
 			free(name);
-			return Statement_new(VarErr(badChar(**expr)));
+			return Statement_new(VarErr(err));
 		}
 		
-		trimSpaces(expr);
-		
-		if(arg == NULL) {
-			/* Empty parameter list means function with no args */
-			free(args);
-			args = NULL;
-			len = 0;
-		}
-		else {
-			/* Loop through each argument in the list */
-			while(**expr == ',' || **expr == ')') {
-				args[len++] = arg;
-				arg = NULL;
-				
-				if(**expr == ')') {
-					break;
-				}
-				
-				(*expr)++;
-				
-				/* Expand argument array if it's too small */
-				if(len >= size) {
-					size *= 2;
-					args = frealloc(args, size * sizeof(*args));
-				}
-				
-				arg = nextToken(expr);
-				if(arg == NULL) {
-					/* Invalid character */
-					Value_free(val);
-					free(name);
-					
-					/* Free argument names and return */
-					unsigned i;
-					for(i = 0; i < len; i++) {
-						free(args[i]);
-					}
-					free(args);
-					return Statement_new(VarErr(badChar(**expr)));
-				}
-				
-				trimSpaces(expr);
-			}
-		}
-		
-		if(arg) {
-			free(arg);
-		}
-		
-		if(**expr != ')') {
-			/* Invalid character inside argument name list */
-			Value_free(val);
-			free(name);
-			
-			if(args) {
-				/* Free argument names and return */
-				unsigned i;
-				for(i = 0; i < len; i++) {
-					free(args[i]);
-				}
-				free(args);
-			}
-			
-			return Statement_new(VarErr(badChar(**expr)));
-		}
-		
-		/* Skip closing parenthesis */
-		(*expr)++;
 		trimSpaces(expr);
 		
 		if(**expr != '=') {
-			Value_free(val);
 			free(name);
+			Function_free(func);
 			
-			if(args) {
-				unsigned i;
-				for(i = 0; i < len; i++) {
-					free(args[i]);
-				}
-				free(args);
-			}
+			return Statement_new(VarErr(badChar(*expr)));
+		}
+		
+		/* Now, parse the right side of the equals sign (function body) */
+		val = Value_parseTop(&equals);
+		if(val->type == VAL_ERR) {
+			/* A parse error occurred */
+			free(name);
+			Function_free(func);
 			
-			return Statement_new(VarErr(badChar(**expr)));
+			var = VarErr(Error_copy(val->err));
+			Value_free(val);
+			return Statement_new(var);
 		}
 		
 		/* Construct function and return it */
-		Function* func = Function_new(len, args, val);
+		func->body = val;
 		Variable* var = Variable_new(name, ValFunc(func));
+		name = NULL;
 		ret = Statement_new(var);
 	}
 	else {
 		/* Defining a variable */
+		BINTYPE bin = BIN_UNK;
+		
 		if(**expr != '=') {
 			/* In-place manipulation */
-			BINTYPE bin = BinOp_nextType(expr, 0, 0);
+			bin = BinOp_nextType(expr, 0, 0);
 			
 			/* Still not an equals sign means invalid character */
 			if(**expr != '=') {
-				Value_free(val);
 				free(name);
-				return Statement_new(VarErr(badChar(**expr)));
+				return Statement_new(VarErr(badChar(*expr)));
 			}
+		}
+		
+		/* Now, parse the right side of the equals sign (variable's expression) */
+		val = Value_parseTop(&equals);
+		if(val->type == VAL_ERR) {
+			/* A parse error occurred */
+			free(name);
 			
-			val = ValExpr(BinOp_new(bin, ValVar(name), val));
+			var = VarErr(Error_copy(val->err));
+			Value_free(val);
+			return Statement_new(var);
+		}
+		
+		/* Is this an in-place binop like "+="? */
+		if(bin != BIN_UNK) {
+			val = ValExpr(BinOp_new(bin, ValVar(strdup(name)), val));
 		}
 		
 		ret = Statement_new(Variable_new(name, val));
+		name = NULL;
 	}
 	
 	return ret;
@@ -245,7 +169,7 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 		}
 		
 		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Variable_copy(func));
+			Context_setGlobal(ctx, var->name, Value_copy(func->val));
 		}
 		else if((v & (V_REPR|V_TREE|V_XML)) == 0) {
 			/* Coerce the variable to a Value */
@@ -262,16 +186,12 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 			ret = tmp;
 		}
 		
-		/* This means ret must be a Value */
-		Value_free(var->val);
-		var->val = Value_copy(ret);
-		
 		/* Update ans */
-		Context_setGlobal(ctx, "ans", Variable_copy(var));
+		Context_setGlobal(ctx, "ans", Value_copy(ret));
 		
 		/* Save the newly evaluated variable */
 		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Variable_copy(var));
+			Context_setGlobal(ctx, var->name, Value_copy(ret));
 		}
 	}
 	
@@ -349,7 +269,6 @@ char* Statement_xml(const Statement* stmt, const Context* ctx) {
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 	/* Error parsing? */
 	if(Statement_didError(stmt)) {
-		Error_raise(stmt->var->val->err, false);
 		return;
 	}
 	
@@ -392,7 +311,7 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		}
 		
 		/* Print parenthesized statement */
-		char* reprinted = Statement_repr(stmt, sc->ctx, v & V_PRETTY);
+		char* reprinted = Statement_repr(stmt, sc->ctx, !!(v & V_PRETTY));
 		printf("%s\n", reprinted);
 		free(reprinted);
 	}

@@ -1,12 +1,12 @@
-Name Error: No variable named 'a' found.
-Name Error: No variable named 'f' found.
-Name Error: No variable named 'a' found.
-Name Error: No variable named 'f' found.
-Math Error: Division by zero.
-Type Error: Builtin 'sqrt' expects 1 argument, not 0.
-Type Error: Builtin 'sqrt' expects 1 argument, not 2.
-Math Error: Builtin function 'sqrt' returned an invalid value.
-Name Error: No variable named 'a' found.
-Syntax Error: Unexpected character: '$'.
-Syntax Error: Premature end of input.
-Type Error: Builtin 'pi' is not a function.
+<interactive>:85: Name Error: No variable named 'a' found.
+<interactive>:88: Name Error: No variable named 'f' found.
+<interactive>:94: Name Error: No variable named 'a' found.
+<interactive>:95: Name Error: No variable named 'f' found.
+<interactive>:97: Math Error: Division by zero.
+<interactive>:98: Type Error: Builtin 'sqrt' expects 1 argument, not 0.
+<interactive>:99: Type Error: Builtin 'sqrt' expects 1 argument, not 2.
+<interactive>:100: Math Error: Power result is complex
+<interactive>:101: Name Error: No variable named 'a' found.
+<interactive>:102:4: Syntax Error: Unexpected character: '$'.
+<interactive>:103:6: Syntax Error: Premature end of input.
+<interactive>:104: Type Error: Builtin 'pi' is not a function.

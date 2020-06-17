@@ -25,7 +25,7 @@
 
 
 static Value* callVar(const Context* ctx, const char* name, const ArgList* args);
-static char* reprFunc(const char* name, const ArgList* arglist, bool pretty);
+static char* reprFunc(VALTYPE valtype, const char* name, const ArgList* arglist, bool pretty);
 static char* specialRepr(const char* name, const ArgList* arglist, bool pretty);
 static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent);
 static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent);
@@ -40,18 +40,26 @@ FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
 	return ret;
 }
 
-FuncCall* FuncCall_create(const char* name, ArgList* arglist) {
+FuncCall* FuncCall_create(char* name, ArgList* arglist) {
 	Value* func = ValVar(name);
 	return FuncCall_new(func, arglist);
 }
 
 void FuncCall_free(FuncCall* call) {
+	if(!call) {
+		return;
+	}
+	
 	Value_free(call->func);
 	ArgList_free(call->arglist);
 	free(call);
 }
 
 FuncCall* FuncCall_copy(const FuncCall* call) {
+	if(!call) {
+		return NULL;
+	}
+	
 	return FuncCall_new(Value_copy(call->func), ArgList_copy(call->arglist));
 }
 
@@ -148,12 +156,17 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 	return ret;
 }
 
-static char* reprFunc(const char* name, const ArgList* arglist, bool pretty) {
+static char* reprFunc(VALTYPE valtype, const char* callable, const ArgList* arglist, bool pretty) {
 	char* ret;
 	char* argstr = ArgList_repr(arglist, pretty);
-	const char* disp = pretty ? getPretty(name) : name;
+	const char* disp = pretty ? getPretty(callable) : callable;
 	
-	asprintf(&ret, "%s(%s)", disp, argstr);
+	const char* format = "%s(%s)";
+	if(valtype == VAL_FUNC) {
+		format = "(%s)(%s)";
+	}
+	
+	asprintf(&ret, format, disp, argstr);
 	
 	free(argstr);
 	return ret;
@@ -162,18 +175,7 @@ static char* reprFunc(const char* name, const ArgList* arglist, bool pretty) {
 static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) {
 	char* ret;
 	
-	/* TODO: Consider removing special printing for abs in repr */
-	if(strcmp(name, "abs") == 0) {
-		if(arglist->count != 1) {
-			/* Shouldn't ever happen */
-			RAISE(internalError("More than one argument passed to internal call of abs"), true);
-		}
-		
-		char* args = ArgList_repr(arglist, pretty);
-		asprintf(&ret, "|%s|", args);
-		free(args);
-	}
-	else if(strcmp(name, "elem") == 0) {
+	if(strcmp(name, "elem") == 0) {
 		if(arglist->count != 2) {
 			/* Freak out */
 			RAISE(internalError("Invalid argument count passed to internal call of elem"), true);
@@ -189,7 +191,7 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 	}
 	else {
 		/* Just default to printing the function */
-		ret = reprFunc(name, arglist, pretty);
+		ret = reprFunc(VAL_VAR, name, arglist, pretty);
 	}
 	
 	return ret;
@@ -202,7 +204,7 @@ char* FuncCall_repr(const FuncCall* call, bool pretty) {
 	}
 	
 	char* callable = Value_repr(call->func, pretty, false);
-	char* ret = reprFunc(callable, call->arglist, pretty);
+	char* ret = reprFunc(call->func->type, callable, call->arglist, pretty);
 	
 	free(callable);
 	return ret;
@@ -239,17 +241,7 @@ static char* verboseFunc(const char* name, const ArgList* arglist, unsigned inde
 static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent) {
 	char* ret;
 	
-	if(strcmp(name, "abs") == 0) {
-		if(arglist->count != 1) {
-			/* Shouldn't ever happen */
-			RAISE(internalError("More than one argument passed to internal call of abs"), true);
-		}
-		
-		char* args = ArgList_verbose(arglist, indent + 1);
-		asprintf(&ret, "|%s|", args);
-		free(args);
-	}
-	else if(strcmp(name, "elem") == 0) {
+	if(strcmp(name, "elem") == 0) {
 		if(arglist->count != 2) {
 			/* Freak out */
 			RAISE(internalError("Invalid argument count passed to internal call of elem"), true);

@@ -35,6 +35,10 @@ Function* Function_new(unsigned argcount, char** argnames, Value* body) {
 }
 
 void Function_free(Function* func) {
+	if(!func) {
+		return;
+	}
+	
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
 		free(func->argnames[i]);
@@ -47,6 +51,10 @@ void Function_free(Function* func) {
 }
 
 Function* Function_copy(const Function* func) {
+	if(!func) {
+		return NULL;
+	}
+	
 	char** argsCopy = fmalloc(func->argcount * sizeof(*argsCopy));
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
@@ -112,41 +120,145 @@ static char* argsToString(const Function* func) {
 	return ret;
 }
 
-char* Function_repr(const Function* func, bool pretty) {
+Function* Function_parseArgs(const char** expr, char sep, char end, Error** err) {
+	*err = NULL;
+	
+	/* Array of argument names */
+	unsigned size = 2;
+	char** args = fmalloc(size * sizeof(*args));
+	unsigned len = 0;
+	
+	/* Add each argument name to the array */
+	char* arg = nextToken(expr);
+	
+	if(arg == NULL && **expr != end) {
+		/* Invalid character */
+		free(args);
+		*err = badChar(*expr);
+		return NULL;
+	}
+	
+	trimSpaces(expr);
+	
+	if(arg == NULL) {
+		/* Empty parameter list means function with no args */
+		free(args);
+		args = NULL;
+		len = 0;
+	}
+	else {
+		/* Loop through each argument in the list */
+		while(**expr == sep || **expr == end) {
+			args[len++] = arg;
+			arg = NULL;
+			
+			if(**expr == end) {
+				break;
+			}
+			
+			(*expr)++;
+			
+			/* Expand argument array if it's too small */
+			if(len >= size) {
+				size *= 2;
+				args = frealloc(args, size * sizeof(*args));
+			}
+			
+			arg = nextToken(expr);
+			if(arg == NULL) {
+				/* Free argument names and return */
+				unsigned i;
+				for(i = 0; i < len; i++) {
+					free(args[i]);
+				}
+				free(args);
+				
+				*err = badChar(*expr);
+				return NULL;
+			}
+			
+			trimSpaces(expr);
+		}
+	}
+	
+	if(arg) {
+		free(arg);
+	}
+	
+	if(**expr != end) {
+		/* Invalid character inside argument name list */
+		if(args) {
+			/* Free argument names and return */
+			unsigned i;
+			for(i = 0; i < len; i++) {
+				free(args[i]);
+			}
+			free(args);
+		}
+		
+		*err = badChar(*expr);
+		return NULL;
+	}
+	
+	/* Skip closing parenthesis */
+	(*expr)++;
+	
+	return Function_new(len, args, NULL);
+}
+
+char* Function_repr(const Function* func, const char* name, bool pretty) {
 	char* ret;
 	char* args = argsToString(func);
 	char* body = Value_repr(func->body, pretty, false);
 	
-	asprintf(&ret, "(%s) = %s", args ?: "", body);
+	if(name != NULL) {
+		asprintf(&ret, "%s(%s) = %s", name, args ?: "", body);
+	}
+	else {
+		asprintf(&ret, "|%s| %s", args ?: "", body);
+	}
 	
 	free(body);
 	free(args);
 	return ret;
 }
 
-char* Function_wrap(const Function* func) {
+char* Function_wrap(const Function* func, const char* name, bool top) {
 	char* ret;
 	char* args = argsToString(func);
 	char* body = Value_wrap(func->body, false);
 	
-	asprintf(&ret, "(%s) = %s", args ?: "", body);
+	if(name != NULL) {
+		asprintf(&ret, "%s(%s) = %s", name, args ?: "", body);
+	}
+	else {
+		const char* format;
+		if(top) {
+			format = "|%s| %s";
+		}
+		else {
+			format = "(|%s| %s)";
+		}
+		
+		asprintf(&ret, format, args ?: "", body);
+	}
 	
 	free(body);
 	free(args);
 	return ret;
 }
 
-char* Function_verbose(const Function* func) {
+char* Function_verbose(const Function* func, unsigned indent) {
 	char* ret;
 	char* args = argsToString(func);
-	char* body = Value_verbose(func->body, 1);
+	char* body = Value_verbose(func->body, indent + 1);
 	
 	asprintf(&ret,
-			 "(%s) {\n"
+			 "|%s| {\n"
 				 "%s%s\n"
 			 "}",
 			 args ?: "",
-			 indentation(1), body);
+			 indentation(indent + 1), body);
 	
 	free(body);
 	free(args);

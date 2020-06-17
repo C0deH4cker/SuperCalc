@@ -11,42 +11,44 @@
 
 typedef struct Fraction Fraction;
 #include "value.h"
+#include "generic.h"
 
 struct Fraction {
+	/* If the fraction's value is negative, the sign will be on the numerator */
 	long long n;
-	long long d;
+	INVARIANT(d > 0) long long d;
 };
 
 /* Constructor */
-Fraction* Fraction_new(long long numerator, long long denominator);
+OWNED NONNULL Fraction* Fraction_new(long long numerator, INVARIANT(denominator != 0) long long denominator);
 
 /* Destructor */
-void Fraction_free(Fraction* frac);
+void Fraction_free(OWNED NULLABLE Fraction* frac);
 
 /* Copying */
-Fraction* Fraction_copy(const Fraction* frac);
+OWNED NULLABLE_WHEN(frac == NULL) Fraction* Fraction_copy(NULLABLE const Fraction* frac);
 
 /* In-place simplification */
-void Fraction_simplify(Fraction* frac);
-void Fraction_reduce(Value* frac);
+void Fraction_simplify(INOUT NONNULL Fraction* frac);
+void Fraction_reduce(INOUT NONNULL Value* frac);
 
 /* Arithmetic operations */
-Value* Fraction_add(const Fraction* a, const Value* b);
-Value* Fraction_sub(const Fraction* a, const Value* b);
-Value* Fraction_mul(const Fraction* a, const Value* b);
-Value* Fraction_div(const Fraction* a, const Value* b);
-Value* Fraction_mod(const Fraction* a, const Value* b);
-Value* Fraction_pow(const Fraction* base, const Value* exp);
-Value* Fraction_rpow(const Fraction* exp, const Value* base);
+OWNED NONNULL Value* Fraction_add(NONNULL const Fraction* a, NONNULL const Value* b);
+OWNED NONNULL Value* Fraction_sub(NONNULL const Fraction* a, NONNULL const Value* b);
+OWNED NONNULL Value* Fraction_mul(NONNULL const Fraction* a, NONNULL const Value* b);
+OWNED NONNULL Value* Fraction_div(NONNULL const Fraction* a, NONNULL const Value* b);
+OWNED NONNULL Value* Fraction_mod(NONNULL const Fraction* a, NONNULL const Value* b);
+OWNED NONNULL Value* Fraction_pow(NONNULL const Fraction* base, NONNULL const Value* exp);
+OWNED NONNULL Value* Fraction_rpow(NONNULL const Fraction* exp, NONNULL const Value* base);
 
 /* Comparison */
-Value* Fraction_cmp(const Fraction* a, const Value* b);
+int Fraction_cmp(NONNULL const Fraction* a, NONNULL const Value* b);
 
 /* Conversion */
-double Fraction_asReal(const Fraction* frac);
+double Fraction_asReal(NONNULL const Fraction* frac);
 
 /* Printing */
-char* Fraction_repr(const Fraction* frac, bool approx);
-char* Fraction_xml(const Fraction* frac);
+OWNED NONNULL char* Fraction_repr(NONNULL const Fraction* frac, bool approx);
+OWNED NONNULL char* Fraction_xml(NONNULL const Fraction* frac);
 
 #endif /* SC_FRACTION_H */

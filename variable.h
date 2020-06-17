@@ -17,43 +17,43 @@ typedef struct Variable Variable;
 #include "value.h"
 #include "function.h"
 #include "error.h"
+#include "generic.h"
 
 
 struct Variable {
-	char* name;
-	Value* val;
+	OWNED NULLABLE char* name;
+	OWNED NONNULL Value* val;
 };
 
 
 /* Constructors */
 /* Each of these methods consume its last argument */
-Variable* Variable_new(char* name, Value* val);
-Variable* VarErr(Error* err);
+OWNED NONNULL Variable* Variable_new(OWNED NULLABLE char* name, OWNED NONNULL Value* val);
+OWNED NONNULL Variable* VarErr(OWNED NONNULL Error* err);
 
 /* Destructor */
-void Variable_free(Variable* var);
+void Variable_free(OWNED NULLABLE Variable* var);
 
 /* Copying */
-Variable* Variable_copy(const Variable* var);
+OWNED NULLABLE_WHEN(var == NULL) Variable* Variable_copy(NULLABLE const Variable* var);
 
 /* Evaluation */
-Value* Variable_eval(const Variable* var, const Context* ctx);
+OWNED NONNULL Value* Variable_eval(NONNULL const Variable* var, NONNULL const Context* ctx);
 
 /* Variable accessing */
-Variable* Variable_get(const Context* ctx, const char* name);
-Variable* Variable_getAbove(const Context* ctx, const char* name);
+UNOWNED NULLABLE Variable* Variable_get(NONNULL const Context* ctx, NONNULL const char* name);
+UNOWNED NULLABLE Variable* Variable_getAbove(NONNULL const Context* ctx, NONNULL const char* name);
 
 /*
- This method basically frees the content of `dst`, moves
- the content of `src` into dst, then frees `src`, so
- `src` is consumed.
+ This method basically frees the content of `dst` and moves
+ the `src` value into `dst`.
 */
-void Variable_update(Variable* dst, Variable* src);
+void Variable_update(INOUT UNOWNED NONNULL Variable* dst, IN OWNED NONNULL Value* src);
 
 /* Printing */
-char* Variable_repr(const Variable* var, bool pretty);
-char* Variable_wrap(const Variable* var);
-char* Variable_verbose(const Variable* var);
-char* Variable_xml(const Variable* var);
+OWNED NONNULL char* Variable_repr(NONNULL const Variable* var, bool pretty);
+OWNED NONNULL char* Variable_wrap(NONNULL const Variable* var);
+OWNED NONNULL char* Variable_verbose(NONNULL const Variable* var);
+OWNED NONNULL char* Variable_xml(NONNULL const Variable* var);
 
 #endif /* SC_VARIABLE_H */

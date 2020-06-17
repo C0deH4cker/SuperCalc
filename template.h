@@ -23,24 +23,25 @@ Template_staticEval(&name, ctx, fmt, __VA_ARGS__)
 typedef struct Template Template;
 #include "value.h"
 #include "context.h"
+#include "generic.h"
 
 /* Create a template with placeholders given a format string */
-Template* Template_create(const char* fmt);
+OWNED NONNULL Template* Template_create(NONNULL const char* fmt);
 
 /* Destructor */
-void Template_free(Template* tp);
+void Template_free(OWNED NULLABLE Template* tp);
 
 /* Fill in placeholders but do not evaluate result */
-Value* Template_fill(const Template* tp, ...);
-Value* Template_fillv(const Template* tp, va_list args);
-Value* Template_staticFill(Template** ptp, const char* fmt, ...);
+OWNED NONNULL Value* Template_fill(NONNULL const Template* tp, OWNED ...);
+OWNED NONNULL Value* Template_fillv(NONNULL const Template* tp, OWNED va_list args);
+OWNED NONNULL Value* Template_staticFill(NULLABLE Template* NONNULL* ptp, NONNULL const char* fmt, OWNED ...);
 
 /* Fill in placeholders and evaluate result */
-Value* Template_eval(const Template* tp, const Context* ctx, ...);
-Value* Template_evalv(const Template* tp, const Context* ctx, va_list args);
-Value* Template_staticEval(Template** ptp, const Context* ctx, const char* fmt, ...);
+OWNED NONNULL Value* Template_eval(NONNULL const Template* tp, NONNULL const Context* ctx, OWNED ...);
+OWNED NONNULL Value* Template_evalv(NONNULL const Template* tp, NONNULL const Context* ctx, OWNED va_list args);
+OWNED NONNULL Value* Template_staticEval(NULLABLE Template* NONNULL* ptp, NONNULL const Context* ctx, NONNULL const char* fmt, OWNED ...);
 
 /* Number of placeholders that must be filled */
-unsigned Template_placeholderCount(const Template* tp);
+unsigned Template_placeholderCount(NONNULL const Template* tp);
 
 #endif /* SC_TEMPLATE_H */

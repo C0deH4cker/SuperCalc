@@ -215,7 +215,7 @@ void register_vector(Context* ctx) {
 	unsigned count = ARRSIZE(_vector_names);
 	unsigned i;
 	for(i = 0; i < count; i++) {
-		Builtin* blt = Builtin_new(_vector_names[i], _vector_funcs[i], true);
+		Builtin* blt = Builtin_new(strdup(_vector_names[i]), _vector_funcs[i], true);
 		Builtin_register(blt, ctx);
 	}
 }

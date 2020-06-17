@@ -173,14 +173,14 @@ void register_math(Context* ctx) {
 	unsigned constCount = ARRSIZE(_math_const_names);
 	
 	for(i = 0; i < constCount; i++) {
-		Builtin* blt = Builtin_new(_math_const_names[i], _math_consts[i], false);
+		Builtin* blt = Builtin_new(strdup(_math_const_names[i]), _math_consts[i], false);
 		Builtin_register(blt, ctx);
 	}
 	
 	unsigned funcCount = ARRSIZE(_math_names);
 	
 	for(i = 0; i < funcCount; i++) {
-		Builtin* blt = Builtin_new(_math_names[i], _math_funcs[i], true);
+		Builtin* blt = Builtin_new(strdup(_math_names[i]), _math_funcs[i], true);
 		Builtin_register(blt, ctx);
 	}
 }

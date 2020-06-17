@@ -15,34 +15,35 @@ typedef struct Builtin Builtin;
 #include "context.h"
 #include "arglist.h"
 #include "value.h"
+#include "generic.h"
 
-typedef Value* (*builtin_eval_t)(const Context*, const ArgList*, bool);
+typedef Value* (*builtin_eval_t)(NONNULL const Context*, NONNULL const ArgList*, bool);
 
 struct Builtin {
-	char* name;
-	builtin_eval_t evaluator;
+	OWNED NONNULL char* name;
+	NONNULL builtin_eval_t evaluator;
 	bool isFunction;
 };
 
 /* Constructor */
-Builtin* Builtin_new(const char* name, builtin_eval_t evaluator, bool isFunction);
+OWNED NONNULL Builtin* Builtin_new(OWNED NONNULL char* name, NONNULL builtin_eval_t evaluator, bool isFunction);
 
 /* Destructor */
-void Builtin_free(Builtin* blt);
+void Builtin_free(OWNED NULLABLE Builtin* blt);
 
 /* Copying */
-Builtin* Builtin_copy(const Builtin* blt);
+OWNED NULLABLE Builtin* Builtin_copy(NULLABLE const Builtin* blt);
 
 /* Registration */
-void Builtin_register(Builtin* blt, Context* ctx);
+void Builtin_register(UNOWNED NONNULL Builtin* blt, UNOWNED NONNULL Context* ctx);
 
 /* Evaluation */
-Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal);
+OWNED NONNULL Value* Builtin_eval(NONNULL const Builtin* blt, NONNULL const Context* ctx, NONNULL const ArgList* arglist, bool internal);
 
 /* Printing */
-char* Builtin_repr(const Builtin* blt, bool pretty);
-char* Builtin_verbose(const Builtin* blt, unsigned indent);
-char* Builtin_xml(const Builtin* blt, unsigned indent);
+OWNED NONNULL char* Builtin_repr(NONNULL const Builtin* blt, bool pretty);
+OWNED NONNULL char* Builtin_verbose(NONNULL const Builtin* blt, unsigned indent);
+OWNED NONNULL char* Builtin_xml(NONNULL const Builtin* blt, unsigned indent);
 
 
 #endif /* SC_BUILTIN_H */

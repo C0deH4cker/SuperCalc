@@ -11,6 +11,7 @@
 
 typedef struct Placeholder Placeholder;
 #include "value.h"
+#include "generic.h"
 
 typedef enum {
 	PH_ERR = -1,
@@ -31,21 +32,21 @@ struct Placeholder {
 };
 
 /* Constructors */
-Placeholder* Placeholder_new(PLACETYPE type, unsigned index);
-Placeholder* Placeholder_create(char type, unsigned index);
-Placeholder* Placeholder_fromString(const char* fmt);
+OWNED NONNULL Placeholder* Placeholder_new(PLACETYPE type, unsigned index);
+OWNED NONNULL Placeholder* Placeholder_create(char type, unsigned index);
+OWNED NONNULL Placeholder* Placeholder_fromString(NONNULL const char* fmt);
 
 /* Destructor */
-void Placeholder_free(Placeholder* ph);
+void Placeholder_free(OWNED NULLABLE Placeholder* ph);
 
 /* Copying */
-Placeholder* Placeholder_copy(const Placeholder* ph);
+OWNED NULLABLE_WHEN(ph == NULL) Placeholder* Placeholder_copy(NULLABLE const Placeholder* ph);
 
 /* Parse a placeholder from a format string */
-Placeholder* Placeholder_parse(const char** expr);
+OWNED NONNULL Placeholder* Placeholder_parse(INOUT NONNULL const char* NONNULL* expr);
 
 /* Printing */
-char* Placeholder_repr(const Placeholder* ph);
-char* Placeholder_xml(const Placeholder* ph, unsigned indent);
+OWNED NONNULL char* Placeholder_repr(NONNULL const Placeholder* ph);
+OWNED NONNULL char* Placeholder_xml(NONNULL const Placeholder* ph, unsigned indent);
 
 #endif /* SC_PLACEHOLDER_H */

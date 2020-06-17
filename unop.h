@@ -24,27 +24,27 @@ typedef enum {
 
 struct UnOp {
 	UNTYPE type;
-	Value* a;
+	OWNED NONNULL Value* a;
 };
 
 
 /* Constructor */
 /* This method consumes the `a` argument */
-UnOp* UnOp_new(UNTYPE type, Value* a);
+OWNED NONNULL UnOp* UnOp_new(UNTYPE type, OWNED NONNULL Value* a);
 
 /* Destructor */
-void UnOp_free(UnOp* term);
+void UnOp_free(OWNED NULLABLE UnOp* term);
 
 /* Copying */
-UnOp* UnOp_copy(const UnOp* term);
+OWNED NULLABLE_WHEN(term == NULL) UnOp* UnOp_copy(NULLABLE const UnOp* term);
 
 /* Evaluation */
-Value* UnOp_eval(const UnOp* term, const Context* ctx);
+OWNED NONNULL Value* UnOp_eval(NONNULL const UnOp* term, NONNULL const Context* ctx);
 
 /* Printing */
-char* UnOp_repr(const UnOp* term, bool pretty);
-char* UnOp_wrap(const UnOp* term);
-char* UnOp_verbose(const UnOp* term, unsigned indent);
-char* UnOp_xml(const UnOp* term, unsigned indent);
+OWNED NONNULL char* UnOp_repr(NONNULL const UnOp* term, bool pretty);
+OWNED NONNULL char* UnOp_wrap(NONNULL const UnOp* term);
+OWNED NONNULL char* UnOp_verbose(NONNULL const UnOp* term, unsigned indent);
+OWNED NONNULL char* UnOp_xml(NONNULL const UnOp* term, unsigned indent);
 
 #endif /* SC_UNOP_H */

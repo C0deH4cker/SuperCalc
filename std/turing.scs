@@ -4,13 +4,13 @@ true = 1
 
 # Logical operations
 ident(x) = x
-not(b) = 1 - b
-and(b1, b2) = b1 * b2
-nor(b1, b2) = and(nand(b1, b1), nand(b2, b2))
-or(b1, b2) = not(nor(b1, b2))
-nand(b1, b2) = not(and(b1, b2))
-xnor(b1, b2) = and(b1^b2, b2^b1)
-xor(b1, b2) = not(xnor(b1, b2))
+b_not(b) = 1 - b
+b_and(b1, b2) = b1 * b2
+b_nor(b1, b2) = b_and(b_nand(b1, b1), b_nand(b2, b2))
+b_or(b1, b2) = b_not(b_nor(b1, b2))
+b_nand(b1, b2) = b_not(b_and(b1, b2))
+b_xnor(b1, b2) = b_and(b1^b2, b2^b1)
+b_xor(b1, b2) = b_not(b_xnor(b1, b2))
 
 # Common comparison operations
 is_pos(x) = eq(x, abs(x))
@@ -18,15 +18,15 @@ is_neg(x) = neq(x, abs(x))
 is_zero(x) = eq(x, 0)
 is_one(x) = eq(x, 1)
 odd(n) = n % 2
-even(n) = not(odd(n))
+even(n) = b_not(odd(n))
 
 # Relational operations
 eq(a, b) = 0^abs(a - b)
-neq(a, b) = not(eq(a, b))
+neq(a, b) = b_not(eq(a, b))
 ge(a, b) = is_pos(a - b)
-gt(a, b) = and(ge(a, b), neq(a, b))
+gt(a, b) = b_and(ge(a, b), neq(a, b))
 lt(a, b) = is_neg(a - b)
-le(a, b) = not(gt(a, b))
+le(a, b) = b_not(gt(a, b))
 
 # Type conversion operations
 #f2i(float) = 
@@ -41,11 +41,11 @@ dim(v) = dim_ones(map(one, v))
 v_ident(v) = v[0]
 v_not(v) = 1 - v[0]
 v_and(v) = v[0] * v[1]
-v_nor(v) = and(nand(v[0], v[0]), nand(v[1], v[1]))
-v_or(v) = not(nor(v[0], v[1]))
-v_nand(v) = not(and(v[0], v[1]))
-v_xnor(v) = and(v[0]^v[1], v[1]^v[0])
-v_xor(v) = not(xnor(v[0], v[1]))
+v_nor(v) = b_and(b_nand(v[0], v[0]), b_nand(v[1], v[1]))
+v_or(v) = b_not(b_nor(v[0], v[1]))
+v_nand(v) = b_not(b_and(v[0], v[1]))
+v_xnor(v) = b_and(v[0]^v[1], v[1]^v[0])
+v_xor(v) = b_not(b_xnor(v[0], v[1]))
 
 # Vector-based common comparison operations
 v_is_pos(v) = eq(v[0], abs(v[0]))
@@ -55,16 +55,11 @@ v_is_one(v) = eq(v[0], 1)
 
 # Vector-based relational operations
 v_eq(v) = 0^abs(v[0] - v[1])
-v_neq(v) = not(eq(v[0], v[1]))
+v_neq(v) = b_not(eq(v[0], v[1]))
 v_ge(v) = is_pos(v[0] - v[1])
-v_gt(v) = and(ge(v[0], v[1]), neq(v[0], v[1]))
+v_gt(v) = b_and(ge(v[0], v[1]), neq(v[0], v[1]))
 v_lt(v) = is_neg(v[0] - v[1])
-v_le(v) = not(gt(v[0], v[1]))
-
-# lambda[0] = function
-# lambda[1] = captures
-fn(func, captures) = <func, captures>
-call(lambda, args) = lambda[0](lambda[1], args)
+v_le(v) = b_not(gt(v[0], v[1]))
 
 if(cond, then, else, arg) = <else, then>[cond(arg)](arg)
 ifeq(a, b, then, else, arg) = <else, then>[eq(a, b)](arg)
@@ -85,55 +80,90 @@ empty(xs) = neq(dim(xs), 2)
 push(x, xs) = <x, xs>
 
 # When called, this will display an error
-err_list_empty(xs) = err_list_empty!
+err_list_empty(xs) = err_list_empty_
 
 # Get the head of a list
-head_get(x_xs) = x_xs[0]
-head(x_xs) = ifeq(empty(x_xs), false, head_get, err_list_empty, x_xs)
+head(x_xs) = ifeq(empty(x_xs), false,
+	#then
+	|l| l[0],
+	#else
+	err_list_empty,
+x_xs)
 
 # Get the tail of a list
-tail_get(x_xs) = x_xs[1]
-tail(x_xs) = ifeq(empty(x_xs), false, tail_get, err_list_empty, x_xs)
+tail(x_xs) = ifeq(empty(x_xs), false,
+	#then
+	|l| l[1],
+	#else
+	err_list_empty,
+x_xs)
 
 # Map a function to a list and return the result
-list_map_empty(f_list) = empty_list
-list_map_recurse(f_list) = push(f_list[0](head(f_list[1])), list_map(f_list[0], tail(f_list[1])))
-list_map(f, xs) = ifeq(empty(xs), false, list_map_recurse, list_map_empty, <f, xs>)
+list_map(f, xs) = ifeq(empty(xs), false,
+	#then
+	|f_list| push(
+		f_list[0](head(f_list[1])),
+		list_map(f_list[0], tail(f_list[1]))
+	),
+	#else
+	|f_list| empty_list,
+<f, xs>)
 
 
 # Factorial
 fact_cond(n) = le(n, 1)
 fact_then(n) = 1
 fact_else(n) = n * fact(n-1)
-fact(n) = if(fact_cond, fact_then, fact_else, n)
+fact(n) = if(|n| le(n, 1),
+	#then
+	|_| 1,
+	#else
+	|n| n * fact(n - 1),
+n)
 
 fib_cond(n) = le(n, 1)
 fib_then(n) = n
 fib_else(n) = fib(n-1) + fib(n-2)
-fib(n) = if(fib_cond, fib_then, fib_else, n)
+fib(n) = if(|n| le(n, 1),
+	#then
+	|n| n,
+	#else
+	|n| fib(n - 1) + fib(n - 2),
+n)
 
 # Collatz conjecture, because it's a good way to test this stuff :P
-collatz_odd(x) = 3 * x + 1
-collatz_even(x) = x / 2
-collatz_step(x) = if(odd, collatz_odd, collatz_even, x)
+collatz(x) = if(odd,
+	#then
+	|x| 3x + 1,
+	#else
+	|x| x / 2,
+x)
 
-collatz_base(_) = list(1)
-collatz_next(x) = push(x, collatz(collatz_step(x)))
-collatz(x) = ifeq(x, 1, collatz_base, collatz_next, x)
-
-# I don't even remember lol, will need some drinks to decipher this
-call(closure, args) = closure[0](closure[1], args)
-v_map(cap, v) = map(cap[0], v[0])
-closure(func, cap) = <func, cap>
-map_sqrt = closure(v_map, <sqrt>)
-call(map_sqrt, <<1, 2, 3>>)
+collatz_chain(x) = ifeq(x, 1,
+	#then
+	|_| list(1),
+	#else
+	|x| push(x, collatz_chain(collatz(x))),
+x)
 
 # Fun with lists
-range_base(_) = empty_list
-range_next(v) = push(v[0], range_recurse(<v[0] + 1, v[1]>))
-range_recurse(v) = ifeq(v[0], v[1], range_base, range_next, v)
+# range_recurse(<cur, n>) -> [cur, n)
+range_recurse(v) = ifeq(v[0], v[1],
+	#then
+	|_| empty_list,
+	#else
+	|v| push(v[0], range_recurse(<v[0] + 1, v[1]>)),
+v)
 range(n) = range_recurse(<0, n>)
 
 # Basic functional functions
 succ(n) = n + 1
 pred(n) = n - 1
+
+# lambda[0] = function
+# lambda[1] = captures
+fn(func, captures) = <func, captures>
+call(lambda, args) = lambda[0](lambda[1], args)
+#v_map(cap, v) = map(cap[0], v[0])
+#map_sqrt = fn(v_map, <sqrt>)
+#call(map_sqrt, <<1, 2, 3>>)

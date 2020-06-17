@@ -37,7 +37,9 @@ typedef enum {
 } VERBOSITY_CHAR;
 
 char* g_line = NULL;
+unsigned g_lineNumber = 0;
 FILE* g_inputFile = NULL;
+const char* g_inputFileName = "<interactive>";
 
 char* nextLine(const char* prompt) {
 #ifdef WITH_LINENOISE
@@ -49,6 +51,9 @@ char* nextLine(const char* prompt) {
 			linenoiseHistoryAdd(g_line);
 		}
 		
+		/* Strip trailing newline and comments */
+		g_line = strsep(&g_line, "#\r\n");
+		++g_lineNumber;
 		return g_line;
 	}
 #endif /* WITH_LINENOISE */
@@ -72,6 +77,7 @@ char* nextLine(const char* prompt) {
 	
 	/* Strip trailing newline and comments */
 	g_line = strsep(&g_line, "#\r\n");
+	++g_lineNumber;
 	return g_line;
 }
 
@@ -79,7 +85,7 @@ bool isInteractive(FILE* fp) {
 	return ISATTY(fileno(fp));
 }
 
-VERBOSITY getVerbosity(const char** str) {
+VERBOSITY getVerbosity(char** str) {
 	VERBOSITY ret = V_NONE;
 	
 	if(**str != '?') {
@@ -94,7 +100,7 @@ VERBOSITY getVerbosity(const char** str) {
 		switch(**str) {
 #define ADD_V(lvl) do { \
 	if(ret & V_##lvl) { \
-		RAISE(syntaxError("Specified " #lvl " verbosity more than once."), false); \
+		RAISE(syntaxError(*str, "Specified " #lvl " verbosity more than once."), false); \
 		return V_ERR; \
 	} \
 	ret |= V_##lvl; \
@@ -129,7 +135,7 @@ VERBOSITY getVerbosity(const char** str) {
 				break;
 			
 			default:
-				RAISE(badChar(**str), false);
+				RAISE(badChar(*str), false);
 				return V_ERR;
 		}
 		
@@ -182,47 +188,30 @@ void trimSpaces(const char** str) {
 	*str += strspn(*str, " \t");
 }
 
+
+#define FIVE_TIMES(x...) x,x,x,x,x
+#define EIGHT_TIMES(x...) FIVE_TIMES(x),x,x,x
+#define FORTY_TIMES(x...) FIVE_TIMES(EIGHT_TIMES(x))
+
+#if IWIDTH == 2
+#define INDENT ICHAR,ICHAR
+#else /* IWIDTH */
+#error This code must be changed!
+#endif /* IWIDTH */
+
 const char* indentation(unsigned level) {
-	/* Try just using a static array full of spaces */
-	static char blanks[40 * IWIDTH + 1] = "";
-	if(blanks[0] == '\0') {
-		memset(blanks, ICHAR, ARRSIZE(blanks) - 1);
-		blanks[ARRSIZE(blanks) - 1] = '\0';
-	}
+	/* Use a static array full of spaces */
+	static const char blanks[40 * IWIDTH + 1] = {FORTY_TIMES(INDENT)};
 	
-	if(level <= (ARRSIZE(blanks) - 1) / IWIDTH) {
-		return &blanks[ARRSIZE(blanks) - 1 - level * IWIDTH];
-	}
-	
-	/* Too much indentation for static array */
-	
-	/* Find target index of spaces array large enough */
-	size_t index = 0;
-	size_t count = (ARRSIZE(blanks) - 1) / IWIDTH;
-	while(level > count) {
-		++index;
-		count *= 2;
-	}
-	
-	/* Expand array if necessary */
-	static size_t large_count = 0;
-	static char** larger = NULL;
-	if(index + 1 > large_count) {
-		size_t new_count = index + 1;
-		larger = frealloc(larger, new_count * sizeof(*larger));
-		memset(larger + large_count, 0, (new_count - large_count) * sizeof(*larger));
-		large_count = new_count;
-	}
-	
-	/* Need to create array of spaces */
-	if(larger[index] == NULL) {
-		larger[index] = fmalloc(count * IWIDTH + 1);
-		memset(larger[index], ICHAR, count * IWIDTH);
-		larger[index][count * IWIDTH] = '\0';
-	}
-	
-	return &larger[index][(count - level) * IWIDTH];
+	/* If the requested indentation is too big, just cap it */
+	level = MIN(level, (ARRSIZE(blanks) - 1) / IWIDTH);
+	return &blanks[ARRSIZE(blanks) - 1 - level * IWIDTH];
 }
+
+#undef INDENT
+#undef FORTY_TIMES
+#undef EIGHT_TIMES
+#undef FIVE_TIMES
 
 long long ipow(long long base, long long exp) {
 	long long result = 1;

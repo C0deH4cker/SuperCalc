@@ -45,6 +45,10 @@ void Variable_free(Variable* var) {
 }
 
 Variable* Variable_copy(const Variable* var) {
+	if(!var) {
+		return NULL;
+	}
+	
 	char* name = var->name ? strdup(var->name) : NULL;
 	return Variable_new(name, Value_copy(var->val));
 }
@@ -61,25 +65,36 @@ Variable* Variable_getAbove(const Context* ctx, const char* name) {
 	return Context_getAbove(ctx, name);
 }
 
-void Variable_update(Variable* dst, Variable* src) {
+void Variable_update(Variable* dst, Value* src) {
 	/* Free old value */
 	Value_free(dst->val);
-	dst->val = src->val;
-	free(src->name);
-	free(src);
+	
+	/* Move value from src to dst */
+	dst->val = src;
 }
 
 char* Variable_repr(const Variable* var, bool pretty) {
 	char* ret = NULL;
-	
 	const char* name = var->name;
+	
+	/* When the variable contains a function, print it like "f(x) = x + 4" instead of "f = |x| x + 4" */
+	if(var->val->type == VAL_FUNC) {
+		return Function_repr(var->val->func, name, pretty);
+	}
+	
 	if(pretty) {
 		name = getPretty(name);
 	}
 	
 	char* val = Value_repr(var->val, pretty, false);
-	asprintf(&ret, "%s = %s", name, val);
-	free(val);
+	
+	if(name == NULL) {
+		ret = val;
+	}
+	else {
+		asprintf(&ret, "%s = %s", name, val);
+		free(val);
+	}
 	
 	return ret;
 }
@@ -87,6 +102,12 @@ char* Variable_repr(const Variable* var, bool pretty) {
 char* Variable_wrap(const Variable* var) {
 	char* ret = NULL;
 	const char* name = var->name;
+	
+	/* When the variable contains a function, print it like "f(x) = x + 4" instead of "f = |x| x + 4" */
+	if(var->val->type == VAL_FUNC) {
+		return Function_wrap(var->val->func, name, true);
+	}
+	
 	char* val = Value_wrap(var->val, true);
 	
 	if(name == NULL) {
@@ -102,13 +123,14 @@ char* Variable_wrap(const Variable* var) {
 
 char* Variable_verbose(const Variable* var) {
 	char* ret = NULL;
+	const char* name = var->name;
 	
 	char* val = Value_verbose(var->val, 0);
-	if(var->name == NULL) {
+	if(name == NULL) {
 		ret = val;
 	}
 	else {
-		asprintf(&ret, "%s = %s", var->name, val);
+		asprintf(&ret, "%s = %s", name, val);
 		free(val);
 	}
 	
@@ -122,7 +144,7 @@ char* Variable_xml(const Variable* var) {
 	 <vardata name="f">
 	   <func>
 	     <argnames>
-		   <arg name="x"/>
+	       <arg name="x"/>
 	     </argnames>
 	     <expr>
 	       <add>
@@ -131,7 +153,7 @@ char* Variable_xml(const Variable* var) {
 	           <var name="x"/>
 	         </mul>
 	         <int>4</int>
-		   </add>
+	       </add>
 	     </expr>
 	   </func>
 	 </vardata>
@@ -148,7 +170,7 @@ char* Variable_xml(const Variable* var) {
 	
 	asprintf(&ret,
 			 "<vardata name=\"%2$s\">\n" /* name */
-				 "%1$s%3$s\n"            /* value */
+			     "%1$s%3$s\n"            /* value */
 			 "</vardata>",
 			 indentation(1),
 			 var->name,
