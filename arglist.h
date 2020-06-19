@@ -35,6 +35,8 @@ OWNED NONNULL ArgList* ArgList_vcreate(unsigned count, va_list args);
 /* Copying */
 OWNED NONNULL_WHEN(arglist != NULL) ArgList* ArgList_copy(NULLABLE const ArgList* arglist);
 
+void ArgList_setScope(UNOWNED NONNULL ArgList* arglist, NONNULL const Context* ctx);
+
 /* Evaluation */
 OWNED NONNULL ArgList* ArgList_eval(NONNULL const ArgList* arglist, NONNULL const Context* ctx);
 OWNED NONNULL_WHEN(arglist->count > 0) double* ArgList_toReals(NONNULL const ArgList* arglist, NONNULL const Context* ctx);

@@ -29,9 +29,7 @@ EVAL_CONST(e, M_E);
 EVAL_CONST(phi, PHI);
 
 
-static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_sqrt(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("sqrt", 1, arglist->count));
 	}
@@ -40,14 +38,12 @@ static Value* eval_sqrt(const Context* ctx, const ArgList* arglist, bool interna
 	return TP_EVAL(tp, ctx, "@@^(1/2)", Value_copy(arglist->args[0]));
 }
 
-static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_abs(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("abs", 1, arglist->count));
 	}
 	
-	Value* val = Value_coerce(arglist->args[0], ctx);
+	Value* val = Value_eval(arglist->args[0], ctx);
 	if(val->type == VAL_ERR) {
 		return val;
 	}
@@ -78,9 +74,7 @@ static Value* eval_abs(const Context* ctx, const ArgList* arglist, bool internal
 	return ret;
 }
 
-static Value* eval_exp(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_exp(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("exp", 1, arglist->count));
 	}

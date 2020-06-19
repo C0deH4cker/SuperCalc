@@ -50,13 +50,12 @@ Builtin* Builtin_copy(const Builtin* blt) {
 }
 
 void Builtin_register(Builtin* blt, Context* ctx) {
-	Variable* var = Variable_new(strdup(blt->name), ValBuiltin(blt));
-	Context_addGlobal(ctx, var);
+	Context_addGlobal(ctx, strdup(blt->name), ValBuiltin(blt));
 }
 
-Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist, bool internal) {
+Value* Builtin_eval(const Builtin* blt, const Context* ctx, const ArgList* arglist) {
 	/* Call the builtin's evaluator function */
-	Value* ret = blt->evaluator(ctx, arglist, internal);
+	Value* ret = blt->evaluator(ctx, arglist);
 	if(ret->type == VAL_REAL && isnan(ret->rval)) {
 		Value_free(ret);
 		return ValErr(mathError("Builtin function '%s' returned an invalid value.", blt->name));

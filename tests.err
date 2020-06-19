@@ -9,4 +9,4 @@
 <interactive>:101: Name Error: No variable named 'a' found.
 <interactive>:102:4: Syntax Error: Unexpected character: '$'.
 <interactive>:103:6: Syntax Error: Premature end of input.
-<interactive>:104: Type Error: Builtin 'pi' is not a function.
+<interactive>:104: Type Error: Value 'pi' is not a callable.

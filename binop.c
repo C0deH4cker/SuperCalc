@@ -84,8 +84,18 @@ static Value* val_ipow(long long base, long long exp) {
 	return ValInt(result);
 }
 
-static Value* binop_add(const Context* ctx, const Value* a, const Value* b) {
+static Value* binop_add(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		return a;
+	}
+	
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		Value_free(a);
+		return b;
+	}
 	
 	if(a->type == VAL_VEC) {
 		/* Let the vector class handle the operation */
@@ -134,8 +144,18 @@ static Value* binop_add(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
-static Value* binop_sub(const Context* ctx, const Value* a, const Value* b) {
+static Value* binop_sub(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		return a;
+	}
+	
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		Value_free(a);
+		return b;
+	}
 	
 	if(a->type == VAL_VEC) {
 		ret = Vector_sub(a->vec, b, ctx);
@@ -186,8 +206,24 @@ static Value* binop_sub(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
-static Value* binop_mul(const Context* ctx, const Value* a, const Value* b) {
+static Value* binop_mul(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		return a;
+	}
+	
+	/* Short circuit evaluation of multiplication when the left side is zero */
+	double a_real = Value_asReal(a);
+	if(!isnan(a_real) && !a_real) {
+		return ValInt(0);
+	}
+	
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		Value_free(a);
+		return b;
+	}
 	
 	if(a->type == VAL_VEC) {
 		ret = Vector_mul(a->vec, b, ctx);
@@ -234,8 +270,19 @@ static Value* binop_mul(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
-static Value* binop_div(const Context* ctx, const Value* a, const Value* b) {
+static Value* binop_div(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
+	
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		return a;
+	}
+	
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		Value_free(a);
+		return b;
+	}
 	
 	if(a->type == VAL_VEC) {
 		ret = Vector_div(a->vec, b, ctx);
@@ -299,10 +346,19 @@ static Value* binop_div(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
-static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
-	UNREFERENCED_PARAMETER(ctx);
-	
+static Value* binop_mod(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
+	
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		return a;
+	}
+	
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		Value_free(a);
+		return b;
+	}
 	
 	if(a->type == VAL_VEC || b->type == VAL_VEC) {
 		ret = ValErr(typeError("Modulus is not supported for vectors."));
@@ -360,14 +416,27 @@ static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
-static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
+static Value* binop_pow(const Context* ctx, const Value* val_a, const Value* val_b) {
 	Value* ret;
 	
-	if(b->type == VAL_INT && b->ival == 0) {
-		/* Shortcut execution of x^0 to not evaluate x */
-		ret = ValInt(1);
+	Value* b = Value_eval(val_b, ctx);
+	if(b->type == VAL_ERR) {
+		return b;
 	}
-	else if(a->type == VAL_INT && b->type == VAL_INT) {
+	
+	/* Shortcut execution of x^0 to not evaluate x */
+	double b_real = Value_asReal(b);
+	if(!isnan(b_real) && !b_real) {
+		return ValInt(1);
+	}
+	
+	Value* a = Value_eval(val_a, ctx);
+	if(a->type == VAL_ERR) {
+		Value_free(b);
+		return a;
+	}
+	
+	if(a->type == VAL_INT && b->type == VAL_INT) {
 		ret = val_ipow(a->ival, b->ival);
 	}
 	else if(a->type == VAL_VEC) {
@@ -396,17 +465,14 @@ static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 			return ValErr(badOpType("left", a->type));
 		}
 		
-		if(b->type == VAL_FRAC) {
-			exp = Fraction_asReal(b->frac);
-		}
-		else if(b->type == VAL_INT) {
+		if(b->type == VAL_INT) {
 			exp = b->ival;
 		}
 		else if(b->type == VAL_REAL) {
 			exp = b->rval;
 		}
 		else {
-			return ValErr(badOpType("rightf", b->type));
+			return ValErr(badOpType("right", b->type));
 		}
 		
 		ret = ValReal(pow(base, exp));
@@ -417,8 +483,6 @@ static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 
 BinOp* BinOp_new(BINTYPE type, Value* a, Value* b) {
 	BinOp* ret = fmalloc(sizeof(*ret));
-	
-	memset(ret, 0, sizeof(*ret));
 	
 	ret->type = type;
 	ret->a = a;
@@ -446,28 +510,17 @@ BinOp* BinOp_copy(const BinOp* node) {
 	return BinOp_new(node->type, Value_copy(node->a), Value_copy(node->b));
 }
 
+void BinOp_setScope(BinOp* node, const Context* ctx) {
+	Value_setScope(node->a, ctx);
+	Value_setScope(node->b, ctx);
+}
+
 Value* BinOp_eval(const BinOp* node, const Context* ctx) {
 	if(node == NULL) {
 		return ValErr(nullError());
 	}
 	
-	Value* a = Value_coerce(node->a, ctx);
-	if(a->type == VAL_ERR) {
-		return a;
-	}
-	
-	Value* b = Value_coerce(node->b, ctx);
-	if(b->type == VAL_ERR) {
-		Value_free(a);
-		return b;
-	}
-	
-	Value* ret = _binop_table[node->type](ctx, a, b);
-	
-	Value_free(a);
-	Value_free(b);
-	
-	return ret;
+	return _binop_table[node->type](ctx, node->a, node->b);
 }
 
 /* Like Rambo */
@@ -519,7 +572,7 @@ BINTYPE BinOp_nextType(const char** expr, char sep, char end) {
 		
 		default:
 			/* This handles cases like 2sqrt(5) -> 2 * sqrt(5) */
-			if(**expr == '(' || **expr == '<' || isalpha(**expr)) {
+			if(**expr == '(' || **expr == '<' || isalpha(**expr) || **expr == '_') {
 				return BIN_MUL;
 			}
 			

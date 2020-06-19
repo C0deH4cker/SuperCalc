@@ -73,6 +73,10 @@ Vector* Vector_copy(const Vector* vec) {
 	return Vector_new(ArgList_copy(vec->vals));
 }
 
+void Vector_setScope(Vector* vec, const Context* ctx) {
+	ArgList_setScope(vec->vals, ctx);
+}
+
 Value* Vector_parse(const char** expr, parser_cb* cb) {
 	Error* err = NULL;
 	ArgList* vals = ArgList_parse(expr, ',', '>', cb, &err);

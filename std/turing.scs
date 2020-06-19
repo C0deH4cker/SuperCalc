@@ -28,6 +28,10 @@ gt(a, b) = b_and(ge(a, b), neq(a, b))
 lt(a, b) = is_neg(a - b)
 le(a, b) = b_not(gt(a, b))
 
+# Short-circuiting boolean logic that works on values other than 0 or 1
+and(e1, e2) = <e2, false>[is_zero(e1)]
+or(e1, e2) = <e1, e2>[is_zero(e1)]
+
 # Type conversion operations
 #f2i(float) = 
 

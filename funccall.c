@@ -24,7 +24,6 @@
 #include "binop.h"
 
 
-static Value* callVar(const Context* ctx, const char* name, const ArgList* args);
 static char* reprFunc(VALTYPE valtype, const char* name, const ArgList* arglist, bool pretty);
 static char* specialRepr(const char* name, const ArgList* arglist, bool pretty);
 static char* verboseFunc(const char* name, const ArgList* arglist, unsigned indent);
@@ -41,7 +40,7 @@ FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
 }
 
 FuncCall* FuncCall_create(char* name, ArgList* arglist) {
-	Value* func = ValVar(name);
+	Value* func = ValVar(Variable_new(name));
 	return FuncCall_new(func, arglist);
 }
 
@@ -63,79 +62,25 @@ FuncCall* FuncCall_copy(const FuncCall* call) {
 	return FuncCall_new(Value_copy(call->func), ArgList_copy(call->arglist));
 }
 
-static Value* callVar(const Context* ctx, const char* name, const ArgList* args) {
-	Value* ret;
-	
-	bool internal = false;
-	if(*name == '@') {
-		internal = true;
-		name++;
-	}
-	
-	Variable* var = Variable_get(ctx, name);
-	if(var == NULL) {
-		return ValErr(varNotFound(name));
-	}
-	
-	switch(var->val->type) {
-		case VAL_BUILTIN:
-			ret = Builtin_eval(var->val->blt, ctx, args, internal);
-			
-			if(!var->val->blt->isFunction) {
-				if(args->count > 1) {
-					Value_free(ret);
-					ret = ValErr(builtinNotFunc(name));
-				}
-				else if(args->count == 1) {
-					/* i.e. pi(2) -> pi * 2 */
-					ret = ValExpr(BinOp_new(BIN_MUL, ret, Value_copy(args->args[0])));
-				}
-			}
-			
-			break;
-		
-		case VAL_FUNC:
-			ret = Function_eval(var->val->func, ctx, args);
-			break;
-		
-		case VAL_ERR:
-			/* Shouldn't be reached... */
-			ret = ValErr(Error_copy(var->val->err));
-			break;
-		
-		default:
-			ret = ValErr(typeError("Variable %s is not callable", name));
-			break;
-	}
-	
-	return ret;
+void FuncCall_setScope(FuncCall* call, const Context* ctx) {
+	Value_setScope(call->func, ctx);
+	ArgList_setScope(call->arglist, ctx);
 }
 
 Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
-	Value* func;
-	if(call->func->type == VAL_VAR) {
-		func = Value_copy(call->func);
-	}
-	else {
-		func = Value_eval(call->func, ctx);
-	}
-	
+	Value* func = Value_eval(call->func, ctx);
 	if(func->type == VAL_ERR) {
 		return func;
 	}
 	
 	Value* ret;
 	switch(func->type) {
-		case VAL_VAR:
-			ret = callVar(ctx, func->name, call->arglist);
-			break;
-		
 		case VAL_FUNC:
 			ret = Function_eval(func->func, ctx, call->arglist);
 			break;
 		
 		case VAL_BUILTIN:
-			ret = Builtin_eval(func->blt, ctx, call->arglist, false);
+			ret = Builtin_eval(func->blt, ctx, call->arglist);
 			break;
 		
 		case VAL_INT:
@@ -143,7 +88,7 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 		case VAL_FRAC:
 		case VAL_VEC: {
 			char* repr = Value_repr(call->func, false, false);
-			ret = ValErr(typeError("Value %s is not a callable.", repr));
+			ret = ValErr(typeError("Value '%s' is not a callable.", repr));
 			free(repr);
 			break;
 		}
@@ -198,9 +143,9 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 }
 
 char* FuncCall_repr(const FuncCall* call, bool pretty) {
-	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
+	if(call->func->type == VAL_VAR && call->func->var->name[0] == '@') {
 		/* Internal call */
-		return specialRepr(call->func->name + 1, call->arglist, pretty);
+		return specialRepr(&call->func->var->name[1], call->arglist, pretty);
 	}
 	
 	char* callable = Value_repr(call->func, pretty, false);
@@ -269,9 +214,9 @@ static char* specialVerbose(const char* name, const ArgList* arglist, unsigned i
 }
 
 char* FuncCall_verbose(const FuncCall* call, unsigned indent) {
-	if(call->func->type == VAL_VAR && call->func->name[0] == '@') {
+	if(call->func->type == VAL_VAR && call->func->var->name[0] == '@') {
 		/* Internal call */
-		return specialVerbose(&call->func->name[1], call->arglist, indent);
+		return specialVerbose(&call->func->var->name[1], call->arglist, indent);
 	}
 	
 	char* callable = Value_verbose(call->func, indent);

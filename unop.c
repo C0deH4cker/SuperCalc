@@ -85,12 +85,16 @@ UnOp* UnOp_copy(const UnOp* term) {
 	return UnOp_new(term->type, Value_copy(term->a));
 }
 
+void UnOp_setScope(UnOp* term, const Context* ctx) {
+	Value_setScope(term->a, ctx);
+}
+
 Value* UnOp_eval(const UnOp* term, const Context* ctx) {
 	if(!term) {
 		return ValErr(nullError());
 	}
 	
-	Value* a = Value_coerce(term->a, ctx);
+	Value* a = Value_eval(term->a, ctx);
 	if(a->type == VAL_ERR) {
 		return a;
 	}

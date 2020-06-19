@@ -36,6 +36,8 @@ void FuncCall_free(OWNED NULLABLE FuncCall* call);
 /* Copying */
 OWNED NULLABLE_WHEN(call == NULL) FuncCall* FuncCall_copy(NULLABLE const FuncCall* call);
 
+void FuncCall_setScope(UNOWNED NONNULL FuncCall* call, NONNULL const Context* ctx);
+
 /* Evaluation */
 OWNED NONNULL Value* FuncCall_eval(NULLABLE const FuncCall* call, NONNULL const Context* ctx);
 

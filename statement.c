@@ -21,10 +21,11 @@
 #include "binop.h"
 
 
-Statement* Statement_new(Variable* var) {
+Statement* Statement_new(char* assignee, Value* val) {
 	Statement* ret = fmalloc(sizeof(*ret));
 	
-	ret->var = var;
+	ret->assignee = assignee;
+	ret->val = val;
 	
 	return ret;
 }
@@ -34,13 +35,13 @@ void Statement_free(Statement* stmt) {
 		return;
 	}
 	
-	Variable_free(stmt->var);
+	free(stmt->assignee);
+	Value_free(stmt->val);
 	free(stmt);
 }
 
 Statement* Statement_parse(const char** expr) {
 	Statement* ret = NULL;
-	Variable* var;
 	Value* val;
 	
 	const char* equals = strchr(*expr, '=');
@@ -48,16 +49,7 @@ Statement* Statement_parse(const char** expr) {
 	if(equals == NULL) {
 		/* No assignment, just a plain expression. */
 		val = Value_parseTop(expr);
-		if(val->type == VAL_ERR) {
-			var = VarErr(val->err);
-			val->err = NULL;
-			Value_free(val);
-		}
-		else {
-			var = Variable_new(NULL, val);
-		}
-		
-		return Statement_new(var);
+		return Statement_new(NULL, val);
 	}
 	
 	/* There is an assignment */
@@ -66,7 +58,7 @@ Statement* Statement_parse(const char** expr) {
 	/* First, parse the left side */
 	char* name = nextToken(expr);
 	if(name == NULL) {
-		return Statement_new(VarErr(syntaxError(*expr, "No variable to assign to.")));
+		return Statement_new(NULL, ValErr(syntaxError(*expr, "No variable to assign to.")));
 	}
 	
 	trimSpaces(expr);
@@ -79,7 +71,7 @@ Statement* Statement_parse(const char** expr) {
 		Function* func = Function_parseArgs(expr, ',', ')', &err);
 		if(func == NULL) {
 			free(name);
-			return Statement_new(VarErr(err));
+			return Statement_new(NULL, ValErr(err));
 		}
 		
 		trimSpaces(expr);
@@ -87,8 +79,7 @@ Statement* Statement_parse(const char** expr) {
 		if(**expr != '=') {
 			free(name);
 			Function_free(func);
-			
-			return Statement_new(VarErr(badChar(*expr)));
+			return Statement_new(NULL, ValErr(badChar(*expr)));
 		}
 		
 		/* Now, parse the right side of the equals sign (function body) */
@@ -97,17 +88,13 @@ Statement* Statement_parse(const char** expr) {
 			/* A parse error occurred */
 			free(name);
 			Function_free(func);
-			
-			var = VarErr(Error_copy(val->err));
-			Value_free(val);
-			return Statement_new(var);
+			return Statement_new(NULL, val);
 		}
 		
 		/* Construct function and return it */
 		func->body = val;
-		Variable* var = Variable_new(name, ValFunc(func));
+		ret = Statement_new(name, ValFunc(func));
 		name = NULL;
-		ret = Statement_new(var);
 	}
 	else {
 		/* Defining a variable */
@@ -120,7 +107,7 @@ Statement* Statement_parse(const char** expr) {
 			/* Still not an equals sign means invalid character */
 			if(**expr != '=') {
 				free(name);
-				return Statement_new(VarErr(badChar(*expr)));
+				return Statement_new(NULL, ValErr(badChar(*expr)));
 			}
 		}
 		
@@ -129,141 +116,85 @@ Statement* Statement_parse(const char** expr) {
 		if(val->type == VAL_ERR) {
 			/* A parse error occurred */
 			free(name);
-			
-			var = VarErr(Error_copy(val->err));
-			Value_free(val);
-			return Statement_new(var);
+			return Statement_new(NULL, val);
 		}
 		
 		/* Is this an in-place binop like "+="? */
 		if(bin != BIN_UNK) {
-			val = ValExpr(BinOp_new(bin, ValVar(strdup(name)), val));
+			val = ValExpr(BinOp_new(bin, ValVar(Variable_new(strdup(name))), val));
 		}
 		
-		ret = Statement_new(Variable_new(name, val));
+		ret = Statement_new(name, val);
 		name = NULL;
 	}
 	
 	return ret;
 }
 
-Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
+Value* Statement_eval(const Statement* stmt, Context* ctx) {
 	Value* ret;
-	Variable* var = stmt->var;
 	
 	/* Evaluate right side */
-	ret = Value_eval(var->val, ctx);
+	ret = Value_eval(stmt->val, ctx);
 	
 	/* If an error occurred, bail */
 	if(ret->type == VAL_ERR) {
 		return ret;
 	}
 	
-	/* Statement result is a variable? */
-	if(ret->type == VAL_VAR) {
-		Variable* func = Variable_get(ctx, ret->name);
-		if(func == NULL) {
-			Error* err = varNotFound(ret->name);
-			Value_free(ret);
-			return ValErr(err);
-		}
-		
-		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Value_copy(func->val));
-		}
-		else if((v & (V_REPR|V_TREE|V_XML)) == 0) {
-			/* Coerce the variable to a Value */
-			Value* val = Variable_eval(func, ctx);
-			Value_free(ret);
-			ret = val;
-		}
-	}
-	else {
-		/* To handle statements like "pi" */
-		if(ret->type == VAL_BUILTIN && !ret->blt->isFunction) {
-			Value* tmp = Value_coerce(ret, ctx);
-			Value_free(ret);
-			ret = tmp;
-		}
-		
-		/* Update ans */
-		Context_setGlobal(ctx, "ans", Value_copy(ret));
-		
-		/* Save the newly evaluated variable */
-		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Value_copy(ret));
-		}
+	/* Update ans */
+	Context_setGlobal(ctx, "ans", Value_copy(ret));
+	
+	/* Save the newly evaluated variable */
+	if(stmt->assignee != NULL) {
+		Context_setGlobal(ctx, stmt->assignee, Value_copy(ret));
 	}
 	
 	return ret;
 }
 
 bool Statement_didError(const Statement* stmt) {
-	return (stmt->var->val->type == VAL_ERR);
+	return (stmt->val->type == VAL_ERR);
 }
 
 char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty) {
-	if(stmt->var->val->type == VAL_VAR) {
+	if(stmt->assignee == NULL && stmt->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
-		Variable* var = Variable_get(ctx, stmt->var->val->name);
-		if(var == NULL) {
-			/* If the variable doesn't exist, just return its name */
-			if(pretty) {
-				return strdup(getPretty(stmt->var->val->name));
-			}
-			
-			return strdup(stmt->var->val->name);
-		}
-		
-		return Variable_repr(var, pretty);
+		Value* val = Variable_lookup(stmt->val->var, ctx);
+		return Variable_repr(stmt->val->var->name, val, pretty);
 	}
 	
-	return Variable_repr(stmt->var, pretty);
+	return Variable_repr(stmt->assignee, stmt->val, pretty);
 }
 
 char* Statement_wrap(const Statement* stmt, const Context* ctx) {
-	if(stmt->var->val->type == VAL_VAR) {
+	if(stmt->assignee == NULL && stmt->val->type == VAL_VAR) {
 		/* Return the reprint of the variable in ctx */
-		Variable* var = Variable_get(ctx, stmt->var->val->name);
-		if(var == NULL) {
-			/* If the variable doesn't exist, just return its name */
-			return strdup(stmt->var->val->name);
-		}
-		
-		return Variable_wrap(var);
+		Value* val = Variable_lookup(stmt->val->var, ctx);
+		return Variable_wrap(stmt->val->var->name, val);
 	}
 	
-	return Variable_wrap(stmt->var);
+	return Variable_wrap(stmt->assignee, stmt->val);
 }
 
 char* Statement_verbose(const Statement* stmt, const Context* ctx) {
-	if(stmt->var->val->type == VAL_VAR) {
+	if(stmt->assignee == NULL && stmt->val->type == VAL_VAR) {
 		/* Return the verbose representation of the variable in ctx */
-		Variable* var = Variable_get(ctx, stmt->var->val->name);
-		if(var == NULL) {
-			/* If the variable doesn't exist, just return its name */
-			return Value_verbose(stmt->var->val, 0);
-		}
-		
-		return Variable_verbose(var);
+		Value* val = Variable_lookup(stmt->val->var, ctx);
+		return Variable_verbose(stmt->val->var->name, val);
 	}
 	
-	return Variable_verbose(stmt->var);
+	return Variable_verbose(stmt->assignee, stmt->val);
 }
 
 char* Statement_xml(const Statement* stmt, const Context* ctx) {
-	if(stmt->var->val->type == VAL_VAR) {
+	if(stmt->assignee == NULL && stmt->val->type == VAL_VAR) {
 		/* Return the xml representation of the variable in ctx */
-		Variable* var = Variable_get(ctx, stmt->var->val->name);
-		if(var == NULL) {
-			/* If the variable doesn't exist, just return its name */
-			return Value_xml(stmt->var->val, 0);
-		}
-		
-		return Variable_xml(var);
+		Value* val = Variable_lookup(stmt->val->var, ctx);
+		return Variable_xml(stmt->val->var->name, val);
 	}
 	
-	return Variable_xml(stmt->var);
+	return Variable_xml(stmt->assignee, stmt->val);
 }
 
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {

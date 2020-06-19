@@ -69,31 +69,20 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 		return ValErr(typeError("Function expects %u argument%s, not %u.", func->argcount, func->argcount == 1 ? "" : "s", arglist->count));
 	}
 	
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
-	if(evaluated == NULL) {
-		return ValErr(ignoreError());
-	}
-	
 	Context* frame = Context_pushFrame(ctx);
 	
 	unsigned i;
-	for(i = 0; i < evaluated->count; i++) {
-		Value* val = Value_copy(evaluated->args[i]);
-		Variable* arg;
-		char* argname = strdup(func->argnames[i]);
+	for(i = 0; i < arglist->count; i++) {
+		Value* argval = Value_copy(arglist->args[i]);
 		
-		if(val->type == VAL_VAR) {
-			Variable* var = Variable_getAbove(frame, val->name);
-			arg = Variable_new(argname, Value_copy(var->val));
-		}
-		else {
-			arg = Variable_new(argname, Value_copy(val));
-		}
-		
-		Context_addLocal(frame, arg);
+		/*
+		 * When variables in this expression are evaluated, they need to
+		 * be looked up in the correct scope (above this function's frame).
+		 * This is to allow for lazy evaluation of parameter expressions.
+		 */
+		Value_setScope(argval, ctx);
+		Context_addLocal(frame, strdup(func->argnames[i]), argval);
 	}
-	
-	ArgList_free(evaluated);
 	
 	Value* ret = Value_eval(func->body, frame);
 	

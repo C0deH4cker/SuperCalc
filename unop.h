@@ -29,14 +29,15 @@ struct UnOp {
 
 
 /* Constructor */
-/* This method consumes the `a` argument */
-OWNED NONNULL UnOp* UnOp_new(UNTYPE type, OWNED NONNULL Value* a);
+OWNED NONNULL UnOp* UnOp_new(UNTYPE type, IN OWNED NONNULL Value* a);
 
 /* Destructor */
 void UnOp_free(OWNED NULLABLE UnOp* term);
 
 /* Copying */
 OWNED NULLABLE_WHEN(term == NULL) UnOp* UnOp_copy(NULLABLE const UnOp* term);
+
+void UnOp_setScope(UNOWNED NONNULL UnOp* term, NONNULL const Context* ctx);
 
 /* Evaluation */
 OWNED NONNULL Value* UnOp_eval(NONNULL const UnOp* term, NONNULL const Context* ctx);

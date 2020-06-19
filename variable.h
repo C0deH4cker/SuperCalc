@@ -22,27 +22,25 @@ typedef struct Variable Variable;
 
 struct Variable {
 	OWNED NULLABLE char* name;
-	OWNED NONNULL Value* val;
+	UNOWNED NULLABLE Value* val;
+	NULLABLE const Context* scope;
 };
 
 
 /* Constructors */
-/* Each of these methods consume its last argument */
-OWNED NONNULL Variable* Variable_new(OWNED NULLABLE char* name, OWNED NONNULL Value* val);
-OWNED NONNULL Variable* VarErr(OWNED NONNULL Error* err);
+OWNED NONNULL Variable* Variable_new(OWNED NULLABLE char* name);
 
 /* Destructor */
-void Variable_free(OWNED NULLABLE Variable* var);
+void Variable_free(IN OWNED NULLABLE Variable* var);
 
 /* Copying */
 OWNED NULLABLE_WHEN(var == NULL) Variable* Variable_copy(NULLABLE const Variable* var);
 
-/* Evaluation */
-OWNED NONNULL Value* Variable_eval(NONNULL const Variable* var, NONNULL const Context* ctx);
+/* Override the context that will be used when this variable is evaluated */
+void Variable_setScope(INOUT UNOWNED NONNULL Variable* var, NULLABLE const Context* scope);
 
-/* Variable accessing */
-UNOWNED NULLABLE Variable* Variable_get(NONNULL const Context* ctx, NONNULL const char* name);
-UNOWNED NULLABLE Variable* Variable_getAbove(NONNULL const Context* ctx, NONNULL const char* name);
+/* Get the value this variable stores */
+OWNED NONNULL Value* Variable_lookup(INOUT UNOWNED NONNULL Variable* var, NONNULL const Context* ctx);
 
 /*
  This method basically frees the content of `dst` and moves
@@ -51,9 +49,9 @@ UNOWNED NULLABLE Variable* Variable_getAbove(NONNULL const Context* ctx, NONNULL
 void Variable_update(INOUT UNOWNED NONNULL Variable* dst, IN OWNED NONNULL Value* src);
 
 /* Printing */
-OWNED NONNULL char* Variable_repr(NONNULL const Variable* var, bool pretty);
-OWNED NONNULL char* Variable_wrap(NONNULL const Variable* var);
-OWNED NONNULL char* Variable_verbose(NONNULL const Variable* var);
-OWNED NONNULL char* Variable_xml(NONNULL const Variable* var);
+OWNED NONNULL char* Variable_repr(NONNULL const char* name, NULLABLE const Value* val, bool pretty);
+OWNED NONNULL char* Variable_wrap(NONNULL const char* name, NULLABLE const Value* val);
+OWNED NONNULL char* Variable_verbose(NONNULL const char* name, NULLABLE const Value* val);
+OWNED NONNULL char* Variable_xml(NONNULL const char* name, NULLABLE const Value* val);
 
 #endif /* SC_VARIABLE_H */

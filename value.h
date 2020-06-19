@@ -61,7 +61,7 @@ struct Value {
 		OWNED NONNULL UnOp*        term;
 		OWNED NONNULL BinOp*       expr;
 		OWNED NONNULL FuncCall*    call;
-		OWNED NONNULL char*        name;
+		OWNED NONNULL Variable*    var;
 		OWNED NONNULL Error*       err;
 		OWNED NONNULL Function*    func;
 		OWNED NONNULL Builtin*     blt;
@@ -83,7 +83,7 @@ OWNED NONNULL Value* ValFrac(OWNED NONNULL Fraction* frac);
 OWNED NONNULL Value* ValExpr(OWNED NONNULL BinOp* expr);
 OWNED NONNULL Value* ValUnary(OWNED NONNULL UnOp* term);
 OWNED NONNULL Value* ValCall(OWNED NONNULL FuncCall* call);
-OWNED NONNULL Value* ValVar(OWNED NONNULL char* name);
+OWNED NONNULL Value* ValVar(OWNED NONNULL Variable* var);
 OWNED NONNULL Value* ValVec(OWNED NONNULL Vector* vec);
 OWNED NONNULL Value* ValFunc(OWNED NONNULL Function* func);
 OWNED NONNULL Value* ValBuiltin(OWNED NONNULL Builtin* blt);
@@ -95,9 +95,10 @@ void Value_free(OWNED NULLABLE Value* val);
 /* Copying */
 OWNED NULLABLE_WHEN(val == NULL) Value* Value_copy(NULLABLE const Value* val);
 
+void Value_setScope(UNOWNED NONNULL Value* val, NULLABLE const Context* ctx);
+
 /* Evaluation */
 OWNED NONNULL Value* Value_eval(NONNULL const Value* val, NONNULL const Context* ctx);
-OWNED NONNULL Value* Value_coerce(NONNULL const Value* val, NONNULL const Context* ctx);
 bool Value_isCallable(NONNULL const Value* val);
 
 /* Conversion */

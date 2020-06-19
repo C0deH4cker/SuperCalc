@@ -18,9 +18,7 @@
 #include "builtin.h"
 #include "template.h"
 
-static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_dot(const Context* ctx, const ArgList* arglist) {
 	Value* ret;
 	
 	if(arglist->count != 2) {
@@ -28,12 +26,12 @@ static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal
 		return ValErr(builtinArgs("dot", 2, arglist->count));
 	}
 	
-	Value* vector1 = Value_coerce(arglist->args[0], ctx);
+	Value* vector1 = Value_eval(arglist->args[0], ctx);
 	if(vector1->type == VAL_ERR) {
 		return vector1;
 	}
 	
-	Value* vector2 = Value_coerce(arglist->args[1], ctx);
+	Value* vector2 = Value_eval(arglist->args[1], ctx);
 	if(vector2->type == VAL_ERR) {
 		Value_free(vector1);
 		return vector2;
@@ -52,20 +50,18 @@ static Value* eval_dot(const Context* ctx, const ArgList* arglist, bool internal
 	return ret;
 }
 
-static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_cross(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 2) {
 		/* Two vectors are required for a cross product */
 		return ValErr(builtinArgs("cross", 2, arglist->count));
 	}
 	
-	Value* vector1 = Value_coerce(arglist->args[0], ctx);
+	Value* vector1 = Value_eval(arglist->args[0], ctx);
 	if(vector1->type == VAL_ERR) {
 		return vector1;
 	}
 	
-	Value* vector2 = Value_coerce(arglist->args[1], ctx);
+	Value* vector2 = Value_eval(arglist->args[1], ctx);
 	if(vector2->type == VAL_ERR) {
 		Value_free(vector1);
 		return vector2;
@@ -92,31 +88,22 @@ static Value* eval_cross(const Context* ctx, const ArgList* arglist, bool intern
 	return ret;
 }
 
-static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_map(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("map", 2, arglist->count));
 	}
 	
-	Value* callable = Value_copy(arglist->args[0]);
-	if(callable->type != VAL_VAR) {
-		Value* val = Value_eval(callable, ctx);
-		Value_free(callable);
-		
-		if(val->type == VAL_ERR) {
-			return val;
-		}
-		
-		if(!Value_isCallable(val)) {
-			Value_free(val);
-			return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
-		}
-		
-		callable = val;
+	Value* callable = Value_eval(arglist->args[0], ctx);
+	if(callable->type == VAL_ERR) {
+		return callable;
 	}
 	
-	Value* vec = Value_coerce(arglist->args[1], ctx);
+	if(!Value_isCallable(callable)) {
+		Value_free(callable);
+		return ValErr(typeError("Builtin 'map' expects a callable as its first argument."));
+	}
+	
+	Value* vec = Value_eval(arglist->args[1], ctx);
 	if(vec->type == VAL_ERR) {
 		Value_free(callable);
 		return vec;
@@ -143,20 +130,26 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 	return ValVec(Vector_new(mapping));
 }
 
-static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_elem(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 2) {
 		return ValErr(builtinArgs("elem", 2, arglist->count));
 	}
 	
 	/* Get evaluated values */
-	Value* vec = Value_coerce(arglist->args[0], ctx);
-	Value* index = Value_coerce(arglist->args[1], ctx);
+	Value* vec = Value_eval(arglist->args[0], ctx);
+	if(vec->type == VAL_ERR) {
+		return vec;
+	}
 	
 	/* Check vector type */
 	if(vec->type != VAL_VEC) {
 		return ValErr(typeError("Only vectors are subscriptable."));
+	}
+	
+	Value* index = Value_eval(arglist->args[1], ctx);
+	if(index->type == VAL_ERR) {
+		Value_free(vec);
+		return index;
 	}
 	
 	/* Get actual value */
@@ -168,14 +161,12 @@ static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool interna
 	return ret;
 }
 
-static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_mag(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("mag", 1, arglist->count));
 	}
 	
-	Value* vec = Value_coerce(arglist->args[0], ctx);
+	Value* vec = Value_eval(arglist->args[0], ctx);
 	if(vec->type != VAL_VEC) {
 		Value_free(vec);
 		return ValErr(typeError("Can only evaluate the magnitude of a vector."));
@@ -184,9 +175,7 @@ static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal
 	return Vector_magnitude(vec->vec, ctx);
 }
 
-static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool internal) {
-	UNREFERENCED_PARAMETER(internal);
-	
+static Value* eval_norm(const Context* ctx, const ArgList* arglist) {
 	if(arglist->count != 1) {
 		return ValErr(builtinArgs("norm", 1, arglist->count));
 	}
@@ -198,7 +187,7 @@ static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool interna
 	}
 	
 	TP(tp);
-	return TP_EVAL(tp, ctx, "@1v/mag(@1v)", Vector_copy(val->vec));
+	return TP_EVAL(tp, ctx, "@1v/@mag(@1v)", Vector_copy(val->vec));
 }
 
 static const char* _vector_names[] = {

@@ -39,7 +39,7 @@ typedef enum {
 char* g_line = NULL;
 unsigned g_lineNumber = 0;
 FILE* g_inputFile = NULL;
-const char* g_inputFileName = "<interactive>";
+const char* g_inputFileName = NULL;
 
 char* nextLine(const char* prompt) {
 #ifdef WITH_LINENOISE

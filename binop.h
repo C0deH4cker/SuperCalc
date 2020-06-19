@@ -51,6 +51,8 @@ void BinOp_free(OWNED NULLABLE BinOp* node);
 /* Copying */
 OWNED NULLABLE_WHEN(node == NULL) BinOp* BinOp_copy(NULLABLE const BinOp* node);
 
+void BinOp_setScope(UNOWNED NONNULL BinOp* node, NONNULL const Context* ctx);
+
 /* Evaluation */
 OWNED NONNULL Value* BinOp_eval(NONNULL INVARIANT(node->b != NULL) const BinOp* node, NONNULL const Context* ctx);
 

@@ -66,7 +66,7 @@ static Value* parse_internalName(const char** expr) {
 	free(token);
 	
 	/* Wrap in Value object */
-	Value* ret = ValVar(varname);
+	Value* ret = ValVar(Variable_new(varname));
 	return ret;
 }
 
@@ -190,7 +190,7 @@ static Value* next_value(PLACETYPE type, va_list args) {
 		case PH_EXPR:  return ValExpr(va_arg(args, BinOp*));
 		case PH_UNARY: return ValUnary(va_arg(args, UnOp*));
 		case PH_CALL:  return ValCall(va_arg(args, FuncCall*));
-		case PH_VAR:   return ValVar(va_arg(args, char*));
+		case PH_VAR:   return ValVar(va_arg(args, Variable*));
 		case PH_VEC:   return ValVec(va_arg(args, Vector*));
 		case PH_VAL:   return Value_copy(va_arg(args, Value*));
 			

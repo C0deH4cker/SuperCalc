@@ -68,9 +68,7 @@ void SuperCalc_run(SuperCalc* sc) {
 		
 		Value* ret = SuperCalc_runLine(sc, p, v);
 		if(ret != NULL) {
-			if(ret->type != VAL_VAR) {
-				Value_print(ret, v);
-			}
+			Value_print(ret, v);
 			Value_free(ret);
 			ret = NULL;
 		}
@@ -190,14 +188,14 @@ Value* SuperCalc_runLine(SuperCalc* sc, char* code, VERBOSITY v) {
 	
 	/* Error? Go to next loop iteration */
 	if(Statement_didError(stmt)) {
-		Value* ret = stmt->var->val;
-		stmt->var->val = NULL;
+		Value* ret = stmt->val;
+		stmt->val = NULL;
 		Statement_free(stmt);
 		return ret;
 	}
 	
 	/* Evaluate statement */
-	Value* result = Statement_eval(stmt, sc->ctx, v);
+	Value* result = Statement_eval(stmt, sc->ctx);
 	Statement_free(stmt);
 	
 	return result;

@@ -23,15 +23,12 @@
 #include "arglist.h"
 
 
-Variable* Variable_new(char* name, Value* val) {
+Variable* Variable_new(char* name) {
 	Variable* ret = fmalloc(sizeof(*ret));
 	ret->name = name;
-	ret->val = val;
+	ret->val = NULL;
+	ret->scope = NULL;
 	return ret;
-}
-
-Variable* VarErr(Error* err) {
-	return Variable_new(NULL, ValErr(err));
 }
 
 void Variable_free(Variable* var) {
@@ -40,7 +37,6 @@ void Variable_free(Variable* var) {
 	}
 	
 	free(var->name);
-	Value_free(var->val);
 	free(var);
 }
 
@@ -50,19 +46,31 @@ Variable* Variable_copy(const Variable* var) {
 	}
 	
 	char* name = var->name ? strdup(var->name) : NULL;
-	return Variable_new(name, Value_copy(var->val));
+	Variable* ret = Variable_new(name);
+	ret->val = var->val;
+	ret->scope = var->scope;
+	return ret;
 }
 
-Value* Variable_eval(const Variable* var, const Context* ctx) {
-	return Value_eval(var->val, ctx);
+void Variable_setScope(Variable* var, const Context* scope) {
+	var->scope = scope;
 }
 
-Variable* Variable_get(const Context* ctx, const char* name) {
-	return Context_get(ctx, name);
-}
-
-Variable* Variable_getAbove(const Context* ctx, const char* name) {
-	return Context_getAbove(ctx, name);
+Value* Variable_lookup(Variable* var, const Context* ctx) {
+	if(var->val == NULL) {
+		const char* name = var->name;
+		if(name[0] == '@') {
+			++name;
+		}
+		
+		var->val = Context_get(var->scope ?: ctx, name);
+	}
+	
+	if(var->val == NULL) {
+		return ValErr(varNotFound(var->name));
+	}
+	
+	return var->val;
 }
 
 void Variable_update(Variable* dst, Value* src) {
@@ -73,71 +81,68 @@ void Variable_update(Variable* dst, Value* src) {
 	dst->val = src;
 }
 
-char* Variable_repr(const Variable* var, bool pretty) {
+char* Variable_repr(const char* name, const Value* val, bool pretty) {
 	char* ret = NULL;
-	const char* name = var->name;
 	
 	/* When the variable contains a function, print it like "f(x) = x + 4" instead of "f = |x| x + 4" */
-	if(var->val->type == VAL_FUNC) {
-		return Function_repr(var->val->func, name, pretty);
+	if(val->type == VAL_FUNC) {
+		return Function_repr(val->func, name, pretty);
 	}
 	
 	if(pretty) {
 		name = getPretty(name);
 	}
 	
-	char* val = Value_repr(var->val, pretty, false);
+	char* valstr = Value_repr(val, pretty, false);
 	
 	if(name == NULL) {
-		ret = val;
+		ret = valstr;
 	}
 	else {
-		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		asprintf(&ret, "%s = %s", name, valstr);
+		free(valstr);
 	}
 	
 	return ret;
 }
 
-char* Variable_wrap(const Variable* var) {
+char* Variable_wrap(const char* name, const Value* val) {
 	char* ret = NULL;
-	const char* name = var->name;
 	
 	/* When the variable contains a function, print it like "f(x) = x + 4" instead of "f = |x| x + 4" */
-	if(var->val->type == VAL_FUNC) {
-		return Function_wrap(var->val->func, name, true);
+	if(val->type == VAL_FUNC) {
+		return Function_wrap(val->func, name, true);
 	}
 	
-	char* val = Value_wrap(var->val, true);
+	char* valstr = Value_wrap(val, true);
 	
 	if(name == NULL) {
-		ret = val;
+		ret = valstr;
 	}
 	else {
-		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		asprintf(&ret, "%s = %s", name, valstr);
+		free(valstr);
 	}
 	
 	return ret;
 }
 
-char* Variable_verbose(const Variable* var) {
+char* Variable_verbose(const char* name, const Value* val) {
 	char* ret = NULL;
-	const char* name = var->name;
 	
-	char* val = Value_verbose(var->val, 0);
+	char* valstr = Value_verbose(val, 0);
 	if(name == NULL) {
-		ret = val;
+		ret = valstr;
 	}
 	else {
-		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		asprintf(&ret, "%s = %s", name, valstr);
+		free(valstr);
 	}
 	
 	return ret;
 }
 
-char* Variable_xml(const Variable* var) {
+char* Variable_xml(const char* name, const Value* val) {
 	/*
 	 sc> ?x f(x) = 3x + 4
 	 
@@ -160,12 +165,12 @@ char* Variable_xml(const Variable* var) {
 	*/
 	char* ret = NULL;
 	
-	unsigned indent = var->name == NULL ? 0 : 1;
+	unsigned indent = name == NULL ? 0 : 1;
 	
-	char* val = Value_xml(var->val, indent);
+	char* valstr = Value_xml(val, indent);
 	
-	if(var->name == NULL) {
-		return val;
+	if(name == NULL) {
+		return valstr;
 	}
 	
 	asprintf(&ret,
@@ -173,10 +178,10 @@ char* Variable_xml(const Variable* var) {
 			     "%1$s%3$s\n"            /* value */
 			 "</vardata>",
 			 indentation(1),
-			 var->name,
-			 val);
+			 name,
+			 valstr);
 	
-	free(val);
+	free(valstr);
 	return ret;
 }
 

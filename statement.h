@@ -13,27 +13,22 @@
 #include <stdbool.h>
 
 typedef struct Statement Statement;
-#include "variable.h"
 #include "value.h"
 #include "supercalc.h"
 #include "context.h"
 #include "generic.h"
 
 struct Statement {
-	OWNED NONNULL Variable* var;
+	OWNED NULLABLE char* assignee;
+	OWNED NONNULL Value* val;
 };
 
 
 /* Constructor */
-/*
- This method consumes the `var` argument, which is an unusual variable:
-  - Its name is NULL unless there is an assignment
-  - Its value is not simplified. It will store the entire tree
-*/
-OWNED NONNULL Statement* Statement_new(OWNED NONNULL Variable* var);
+OWNED NONNULL Statement* Statement_new(IN OWNED NULLABLE char* assignee, IN OWNED NONNULL Value* val);
 
 /* Destructor */
-void Statement_free(OWNED NULLABLE Statement* stmt);
+void Statement_free(IN OWNED NULLABLE Statement* stmt);
 
 /* Parsing */
 OWNED NONNULL Statement* Statement_parse(INOUT NONNULL const char** expr);
@@ -42,7 +37,7 @@ OWNED NONNULL Statement* Statement_parse(INOUT NONNULL const char** expr);
 bool Statement_didError(NONNULL const Statement* stmt);
 
 /* Evaluation */
-OWNED NONNULL Value* Statement_eval(NONNULL const Statement* stmt, INOUT UNOWNED NONNULL Context* ctx, VERBOSITY v);
+OWNED NONNULL Value* Statement_eval(NONNULL const Statement* stmt, INOUT UNOWNED NONNULL Context* ctx);
 
 /* Printing */
 OWNED NONNULL char* Statement_repr(NONNULL const Statement* stmt, NONNULL const Context* ctx, bool pretty);

@@ -11,7 +11,6 @@
 
 
 typedef struct Context Context;
-#include "variable.h"
 #include "generic.h"
 #include "value.h"
 
@@ -26,10 +25,9 @@ void Context_free(OWNED NULLABLE Context* ctx);
 OWNED NONNULL Context* Context_copy(NULLABLE const Context* ctx);
 
 /* Variable accessing */
-/* These methods consume the `var` argument. */
-void Context_addGlobal(NONNULL const Context* ctx, NONNULL Variable* var);
-void Context_addLocal(NONNULL const Context* ctx, NONNULL Variable* var);
-void Context_setGlobal(NONNULL const Context* ctx, NONNULL const char* name, OWNED NONNULL Value* val);
+void Context_addGlobal(NONNULL const Context* ctx, IN OWNED NONNULL char* name, IN OWNED NONNULL Value* val);
+void Context_addLocal(NONNULL const Context* ctx, IN OWNED NONNULL char* name, IN OWNED NONNULL Value* val);
+void Context_setGlobal(NONNULL const Context* ctx, NONNULL const char* name, IN OWNED NONNULL Value* val);
 
 /* Stack frames */
 OWNED NONNULL Context* Context_pushFrame(NONNULL const Context* ctx);
@@ -41,9 +39,9 @@ void Context_clear(NONNULL Context* ctx);
 
 /*
  Context_get and Context_getAbove return a pointer from within the
- context, so do not free the returned variable.
+ context, so do not free the returned value.
 */
-UNOWNED NULLABLE Variable* Context_get(NONNULL const Context* ctx, NONNULL const char* name);
-UNOWNED NULLABLE Variable* Context_getAbove(NONNULL const Context* ctx, NONNULL const char* name);
+UNOWNED NULLABLE Value* Context_get(NONNULL const Context* ctx, NONNULL const char* name);
+UNOWNED NULLABLE Value* Context_getAbove(NONNULL const Context* ctx, NONNULL const char* name);
 
 #endif /* SC_CONTEXT_H */

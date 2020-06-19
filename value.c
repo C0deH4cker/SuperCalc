@@ -105,9 +105,9 @@ Value* ValCall(FuncCall* call) {
 	return ret;
 }
 
-Value* ValVar(char* name) {
+Value* ValVar(Variable* var) {
 	Value* ret = allocValue(VAL_VAR);
-	ret->name = name;
+	ret->var = var;
 	return ret;
 }
 
@@ -158,7 +158,7 @@ void Value_free(Value* val) {
 			break;
 		
 		case VAL_VAR:
-			free(val->name);
+			Variable_free(val->var);
 			break;
 		
 		case VAL_VEC:
@@ -218,7 +218,7 @@ Value* Value_copy(const Value* val) {
 			break;
 		
 		case VAL_VAR:
-			ret = ValVar(strdup(val->name));
+			ret = ValVar(Variable_copy(val->var));
 			break;
 		
 		case VAL_VEC:
@@ -250,11 +250,37 @@ Value* Value_copy(const Value* val) {
 	return ret;
 }
 
+void Value_setScope(Value* val, const Context* ctx) {
+	switch(val->type) {
+		case VAL_VAR:
+			Variable_setScope(val->var, ctx);
+			break;
+		
+		case VAL_EXPR:
+			BinOp_setScope(val->expr, ctx);
+			break;
+		
+		case VAL_UNARY:
+			UnOp_setScope(val->term, ctx);
+			break;
+		
+		case VAL_CALL:
+			FuncCall_setScope(val->call, ctx);
+			break;
+		
+		case VAL_VEC:
+			Vector_setScope(val->vec, ctx);
+			break;
+		
+		default:
+			break;
+	}
+}
+
 Value* Value_eval(const Value* val, const Context* ctx) {
 	if(val == NULL) return ValErr(nullError());
 	
 	Value* ret;
-	Variable* var;
 	
 	switch(val->type) {
 		/* These can be evaluated to a simpler form */
@@ -275,18 +301,23 @@ Value* Value_eval(const Value* val, const Context* ctx) {
 			Fraction_reduce(ret);
 			break;
 		
-		case VAL_VAR:
-			var = Variable_get(ctx, val->name);
-			if(var) {
-				ret = Variable_eval(var, ctx);
-			}
-			else {
-				ret = ValErr(varNotFound(val->name));
-			}
+		case VAL_VAR: {
+			Value* tmp = Variable_lookup(val->var, ctx);
+			ret = Value_eval(tmp, ctx);
 			break;
+		}
 		
 		case VAL_VEC:
 			ret = Vector_eval(val->vec, ctx);
+			break;
+		
+		case VAL_BUILTIN:
+			if(!val->blt->isFunction) {
+				ret = Builtin_eval(val->blt, ctx, NULL);
+			}
+			else {
+				ret = Value_copy(val);
+			}
 			break;
 		
 		/* These can't be simplified, so just copy them */
@@ -295,39 +326,12 @@ Value* Value_eval(const Value* val, const Context* ctx) {
 		case VAL_NEG:
 		case VAL_ERR:
 		case VAL_FUNC:
-		case VAL_BUILTIN:
 			ret = Value_copy(val);
 			break;
 		
 		default:
 			/* Shouldn't be reached */
 			badValType(val->type);
-	}
-	
-	return ret;
-}
-
-Value* Value_coerce(const Value* val, const Context* ctx) {
-	Value* ret = Value_eval(val, ctx);
-	
-	if(ret->type == VAL_VAR) {
-		Variable* var = Variable_get(ctx, ret->name);
-		
-		if(var == NULL) {
-			Value* tmp = ValErr(varNotFound(ret->name));
-			Value_free(ret);
-			ret = tmp;
-		}
-		else {
-			Value* tmp = Variable_eval(var, ctx);
-			ret = Value_coerce(tmp, ctx);
-			Value_free(tmp);
-		}
-	}
-	else if(ret->type == VAL_BUILTIN && !ret->blt->isFunction) {
-		Value* tmp = Builtin_eval(ret->blt, ctx, NULL, false);
-		Value_free(ret);
-		ret = tmp;
 	}
 	
 	return ret;
@@ -625,7 +629,7 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 		token = NULL;
 	}
 	else {
-		ret = ValVar(token);
+		ret = ValVar(Variable_new(token));
 		token = NULL;
 	}
 	
@@ -791,7 +795,7 @@ char* Value_repr(const Value* val, bool pretty, bool top) {
 			break;
 			
 		case VAL_VAR:
-			ret = strdup(pretty ? getPretty(val->name) : val->name);
+			ret = strdup(pretty ? getPretty(val->var->name) : val->var->name);
 			break;
 			
 		case VAL_VEC:
@@ -847,7 +851,7 @@ char* Value_wrap(const Value* val, bool top) {
 			break;
 		
 		case VAL_VAR:
-			ret = strdup(val->name);
+			ret = strdup(val->var->name);
 			break;
 		
 		case VAL_VEC:
@@ -903,7 +907,7 @@ char* Value_verbose(const Value* val, unsigned indent) {
 			break;
 		
 		case VAL_VAR:
-			ret = strdup(val->name);
+			ret = strdup(val->var->name);
 			break;
 		
 		case VAL_VEC:
@@ -958,15 +962,15 @@ char* Value_xml(const Value* val, unsigned indent) {
 			break;
 			
 		case VAL_VAR:
-			if(val->name[0] == '@') {
+			if(val->var->name[0] == '@') {
 				asprintf(&ret,
 						 "<var name=\"%s\" internal=\"true\"/>",
-						 &val->name[1]);
+						 &val->var->name[1]);
 			}
 			else {
 				asprintf(&ret,
 						 "<var name=\"%s\"/>",
-						 val->name);
+						 val->var->name);
 			}
 			break;
 			

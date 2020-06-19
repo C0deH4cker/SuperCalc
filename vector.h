@@ -35,6 +35,8 @@ void Vector_free(OWNED NULLABLE Vector* vec);
 /* Copying */
 OWNED NONNULL_WHEN(vec == NULL) Vector* Vector_copy(NULLABLE const Vector* vec);
 
+void Vector_setScope(UNOWNED NONNULL Vector* vec, NONNULL const Context* ctx);
+
 /* Parsing */
 OWNED NONNULL Value* Vector_parse(INOUT NONNULL const char** expr, NONNULL parser_cb* cb);
 

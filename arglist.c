@@ -86,12 +86,19 @@ ArgList* ArgList_copy(const ArgList* arglist) {
 	return ret;
 }
 
+void ArgList_setScope(ArgList* arglist, const Context* ctx) {
+	unsigned i;
+	for(i = 0; i < arglist->count; i++) {
+		Value_setScope(arglist->args[i], ctx);
+	}
+}
+
 ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx) {
 	ArgList* ret = ArgList_new(arglist->count);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
-		Value* result = Value_coerce(arglist->args[i], ctx);
+		Value* result = Value_eval(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
 			/* An error occurred */
 			Error_raise(result->err, false);

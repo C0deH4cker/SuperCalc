@@ -16,8 +16,9 @@
 
 
 struct VarNode {
-	Variable* var;
-	struct VarNode* next;
+	OWNED NONNULL char* name;
+	OWNED NONNULL Value* val;
+	UNOWNED NULLABLE struct VarNode* next;
 };
 
 struct ContextStack {
@@ -31,23 +32,42 @@ struct Context {
 };
 
 
+static struct VarNode* VarNode_new(OWNED NONNULL char* name, OWNED NONNULL Value* val);
+static void VarNode_free(IN OWNED NULLABLE struct VarNode* node);
 static void freeVars(struct VarNode* vars);
 static void freeStack(struct ContextStack* stack);
 static struct VarNode* copyVars(const struct VarNode* src);
 static struct ContextStack* copyStack(const struct ContextStack* stack);
-static void addVar(struct VarNode** vars, Variable* var);
+static void addVar(struct VarNode** vars, char* name, Value* val);
 static struct VarNode* findPrev(struct VarNode* cur, const char* name);
 static bool isFirst(struct VarNode* cur, const char* name);
 static struct VarNode* findNode(struct VarNode* cur, const char* name);
-static Variable* findVar(struct VarNode* cur, const char* name);
+static Value** findVar(struct VarNode* cur, const char* name);
+
+
+static struct VarNode* VarNode_new(char* name, Value* val) {
+	struct VarNode* ret = fmalloc(sizeof(*ret));
+	ret->name = name;
+	ret->val = val;
+	ret->next = NULL;
+	return ret;
+}
+
+static void VarNode_free(struct VarNode* node) {
+	if(!node) {
+		return;
+	}
+	
+	free(node->name);
+	Value_free(node->val);
+	free(node);
+}
 
 
 Context* Context_new(void) {
 	Context* ret = fmalloc(sizeof(*ret));
 	
-	ret->globals = fmalloc(sizeof(*ret->globals));
-	ret->globals->var = Variable_new(strdup("ans"), ValInt(0));
-	ret->globals->next = NULL;
+	ret->globals = VarNode_new(strdup("ans"), ValInt(0));
 	ret->locals = NULL;
 	
 	return ret;
@@ -59,9 +79,7 @@ static void freeVars(struct VarNode* cur) {
 	struct VarNode* next = cur->next;
 	
 	while(cur) {
-		/* Free current element */
-		Variable_free(cur->var);
-		free(cur);
+		VarNode_free(cur);
 		
 		/* Go to next element in the linked list */
 		cur = next;
@@ -96,10 +114,7 @@ static struct VarNode* copyVars(const struct VarNode* src) {
 	
 	while(src) {
 		/* Allocate next node */
-		cur = fmalloc(sizeof(*cur));
-		cur->var = Variable_copy(src->var);
-		cur->next = NULL;
-		
+		cur = VarNode_new(src->name ? strdup(src->name) : NULL, Value_copy(src->val));
 		
 		if(prev) {
 			/* Link previous node to newly created one */
@@ -156,39 +171,39 @@ Context* Context_copy(const Context* ctx) {
 	return ret;
 }
 
-static void addVar(struct VarNode** vars, Variable* var) {
+static void addVar(struct VarNode** vars, char* name, Value* val) {
 	struct VarNode* elem = fmalloc(sizeof(*elem));
 	
-	elem->var = var;
+	elem->name = name;
+	elem->val = val;
 	
 	/* Put the new element in the front of the linked list and move the rest back */
 	elem->next = *vars;
 	*vars = elem;
 }
 
-void Context_addGlobal(const Context* ctx, Variable* var) {
+void Context_addGlobal(const Context* ctx, char* name, Value* val) {
 	/* Always keep "ans" first */
-	addVar(&ctx->globals->next, var);
+	addVar(&ctx->globals->next, name, val);
 }
 
-void Context_addLocal(const Context* ctx, Variable* var) {
+void Context_addLocal(const Context* ctx, char* name, Value* val) {
 	if(ctx->locals == NULL) {
 		DIE("Tried to add a local variable with no stack frame setup!");
 	}
 	
-	addVar(&ctx->locals->vars, var);
+	addVar(&ctx->locals->vars, name, val);
 }
 
 void Context_setGlobal(const Context* ctx, const char* name, Value* val) {
-	Variable* dst = findVar(ctx->globals, name);
+	Value** dst = findVar(ctx->globals, name);
 	if(dst == NULL) {
 		/* Variable doesn't yet exist, so create it. */
-		Variable* var = Variable_new(strdup(name), val);
-		Context_addGlobal(ctx, var);
+		Context_addGlobal(ctx, strdup(name), val);
 	}
 	else {
 		/* Variable already exists, so update it */
-		Variable_update(dst, val);
+		*dst = val;
 	}
 }
 
@@ -214,7 +229,7 @@ static struct VarNode* findPrev(struct VarNode* cur, const char* name) {
 	if(cur == NULL) return NULL;
 	
 	while(cur->next) {
-		if(strcmp(cur->next->var->name, name) == 0) {
+		if(strcmp(cur->next->name, name) == 0) {
 			return cur;
 		}
 		
@@ -225,7 +240,7 @@ static struct VarNode* findPrev(struct VarNode* cur, const char* name) {
 }
 
 static bool isFirst(struct VarNode* cur, const char* name) {
-	return cur && strcmp(cur->var->name, name) == 0;
+	return cur && strcmp(cur->name, name) == 0;
 }
 
 void Context_del(const Context* ctx, const char* name) {
@@ -244,10 +259,7 @@ void Context_del(const Context* ctx, const char* name) {
 			cur = ctx->locals->vars;
 			ctx->locals->vars = cur->next;
 			
-			/* Free node */
-			Variable_free(cur->var);
-			free(cur);
-			
+			VarNode_free(cur);
 			return;
 		}
 		
@@ -270,8 +282,7 @@ void Context_del(const Context* ctx, const char* name) {
 	prev->next = cur->next;
 	
 	/* Free current node */
-	Variable_free(cur->var);
-	free(cur);
+	VarNode_free(cur);
 }
 
 void Context_clear(Context* ctx) {
@@ -280,8 +291,7 @@ void Context_clear(Context* ctx) {
 	struct VarNode* cur = prev->next;
 	while(cur != NULL) {
 		prev->next = cur->next;
-		Variable_free(cur->var);
-		free(cur);
+		VarNode_free(cur);
 		cur = prev->next;
 	}
 	
@@ -291,7 +301,7 @@ void Context_clear(Context* ctx) {
 
 static struct VarNode* findNode(struct VarNode* cur, const char* name) {
 	while(cur) {
-		if(strcmp(cur->var->name, name) == 0) {
+		if(strcmp(cur->name, name) == 0) {
 			return cur;
 		}
 		
@@ -301,37 +311,44 @@ static struct VarNode* findNode(struct VarNode* cur, const char* name) {
 	return NULL;
 }
 
-static Variable* findVar(struct VarNode* cur, const char* name) {
+static Value** findVar(struct VarNode* cur, const char* name) {
 	struct VarNode* node = findNode(cur, name);
 	
-	return node ? node->var : NULL;
+	return node ? &node->val : NULL;
 }
 
-Variable* Context_get(const Context* ctx, const char* name) {
-	Variable* ret = NULL;
+Value* Context_get(const Context* ctx, const char* name) {
+	Value** pval = NULL;
 	
 	if(ctx->locals != NULL) {
 		/* Search the top locals stack frame for the variable */
-		ret = findVar(ctx->locals->vars, name);
+		pval = findVar(ctx->locals->vars, name);
 	}
 	
 	/* Search globals as a last resort only if it wasn't found in locals */
-	return ret ?: findVar(ctx->globals, name);
+	if(pval == NULL) {
+		pval = findVar(ctx->globals, name);
+	}
+	
+	return pval ? *pval : NULL;
 }
 
-Variable* Context_getAbove(const Context* ctx, const char* name) {
+Value* Context_getAbove(const Context* ctx, const char* name) {
+	Value** pval;
+	
 	if(ctx->locals != NULL) {
 		/* Skip the current frame and walk up the call stack */
 		struct ContextStack* frame;
 		for(frame = ctx->locals->next; frame != NULL; frame = frame->next) {
-			Variable* var = findVar(frame->vars, name);
-			if(var != NULL) {
-				return var;
+			pval = findVar(frame->vars, name);
+			if(pval != NULL) {
+				return *pval;
 			}
 		}
 	}
 	
 	/* Last resort, try to find a global with this name */
-	return findVar(ctx->globals, name);
+	pval = findVar(ctx->globals, name);
+	return pval ? *pval : NULL;
 }
 
