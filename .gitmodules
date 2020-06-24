@@ -1,3 +1,6 @@
 [submodule "linenoise"]
 	path = linenoise
 	url = https://github.com/antirez/linenoise.git
+[submodule "tests/utest"]
+	path = tests/utest
+	url = https://github.com/sheredom/utest.h.git

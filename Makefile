@@ -14,6 +14,13 @@ OBJS := $(patsubst %,$(BUILD)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 BUILD_DIR_RULES := $(addsuffix /.dir,$(sort $(dir $(OBJS))))
 
+# Variables for unit testing
+TESTPROG := $(BUILD)/sc_tests
+TEST_SRCS := $(filter-out main.c,$(SRCS)) $(wildcard tests/*.c)
+TEST_OBJS := $(patsubst %,$(BUILD)/%.o,$(TEST_SRCS))
+DEPS := $(sort $(DEPS) $(TEST_OBJS:.o=.d))
+BUILD_DIR_RULES := $(sort $(BUILD_DIR_RULES) $(addsuffix /.dir,$(sort $(dir $(TEST_OBJS)))))
+
 # Tools to use
 CLANG := clang
 CC := $(CLANG)
@@ -84,6 +91,21 @@ linenoise/linenoise.h:
 
 .PHONY: analyze
 analyze: $(ANALYZE_FILES)
+
+.PHONY: check
+check: $(TESTPROG)
+	$(call status,'Running test suite')
+	$(_v)./$<
+
+$(TESTPROG): $(TEST_OBJS)
+	$(call status,'Linking '$(call underline,'$(@F)'))
+	$(_v)$(LD) $(LDFLAGS) -o $@ $^
+
+$(wildcard tests/*.c): tests/utest/utest.h
+tests/utest/utest.h:
+	$(call status,'Pulling git submodule '$(call underline,'utest.h'))
+	$(_v)git submodule update --init --recursive
+
 
 # Build dependency rules
 -include $(DEPS)
