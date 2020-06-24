@@ -198,7 +198,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb, Err
 }
 
 static char* arglistToString(const ArgList* arglist, char** argstrs) {
-	char* ret;
+	char* ret = NULL;
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		if(i == 0) {
@@ -303,7 +303,7 @@ char* ArgList_xml(const ArgList* arglist, unsigned indent) {
 		return strdup("");
 	}
 	
-	char* ret;
+	char* ret = NULL;
 	const char* spacing = indentation(indent);
 	
 	unsigned i;

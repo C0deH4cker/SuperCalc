@@ -208,7 +208,7 @@ Value* Fraction_div(const Fraction* a, const Value* b) {
 			break;
 			
 		case VAL_REAL:
-			if(!b->rval) {
+			if(b->rval == 0.0) {
 				return ValErr(zeroDivError());
 			}
 			
@@ -282,7 +282,7 @@ Value* Fraction_mod(const Fraction* a, const Value* b) {
 				break;
 				
 			case VAL_REAL:
-				if(!b->rval) {
+				if(b->rval == 0.0) {
 					return ValErr(zeroModError());
 				}
 				

@@ -211,7 +211,7 @@ const char* indentation(unsigned level) {
 	static const char blanks[40 * IWIDTH + 1] = {FORTY_TIMES(INDENT)};
 	
 	/* If the requested indentation is too big, just cap it */
-	level = MIN(level, (ARRSIZE(blanks) - 1) / IWIDTH);
+	level = MIN(level, (unsigned)(ARRSIZE(blanks) - 1) / IWIDTH);
 	return &blanks[ARRSIZE(blanks) - 1 - level * IWIDTH];
 }
 

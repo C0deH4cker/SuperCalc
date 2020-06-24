@@ -1,11 +1,15 @@
 # Target specific variables
 TARGET := sc
-CFLAGS += -Wall -Wextra -Werror -DWITH_LINENOISE
+CFLAGS += -I. -Wall -Wextra -Werror -DWITH_LINENOISE
 LDFLAGS += -lm
 
 ifndef OFLAGS
 OFLAGS := -O2
 endif #OFLAGS
+
+# Use clang's Address Sanitizer to help detect memory errors
+override CFLAGS += -fsanitize=address
+override LDFLAGS += -fsanitize=address
 
 # General build path variables
 BUILD := build
@@ -27,7 +31,7 @@ CC := $(CLANG)
 LD := $(CLANG)
 
 ANALYZE_FLAGS := $(CFLAGS) -DDEBUG=1 -UNDEBUG -Xanalyzer -analyzer-output=text
-ANALYZE_FILES := $(addsuffix .analyze,$(SRCS))
+ANALYZE_TARGETS := $(addsuffix .analyze,$(SRCS))
 
 # Print all commands executed when VERBOSE is defined
 ifdef VERBOSE
@@ -57,14 +61,8 @@ all: $(TARGET)
 # Build in debug mode (with asserts enabled)
 .PHONY: debug
 debug: override CFLAGS += -ggdb -DDEBUG=1 -UNDEBUG
-debug: override OFLAGS :=
+debug: override OFLAGS := -Og
 debug: $(TARGET)
-
-# Uses clang's Address Sanitizer to help detect memory errors
-.PHONY: debug+
-debug+: override CFLAGS += -fsanitize=address
-debug+: override LDFLAGS += -fsanitize=address
-debug+: debug
 
 
 # Linking rule
@@ -75,6 +73,8 @@ $(TARGET): $(OBJS)
 
 # Compiling rule
 $(BUILD)/%.o: % | $(BUILD_DIR_RULES)
+	$(call status,'Analyzing '$(call underline,'$<'))
+	$(_v)$(CLANG) --analyze $(ANALYZE_FLAGS) $<
 	$(call status,'Compiling '$(call underline,'$<'))
 	$(_v)$(CC) $(CFLAGS) $(OFLAGS) -I$(<D) -MD -MP -MF $(BUILD)/$*.d -c -o $@ $<
 
@@ -90,7 +90,7 @@ linenoise/linenoise.h:
 	$(_v)$(CLANG) --analyze $(ANALYZE_FLAGS) $<
 
 .PHONY: analyze
-analyze: $(ANALYZE_FILES)
+analyze: $(ANALYZE_TARGETS)
 
 .PHONY: check
 check: $(TESTPROG)

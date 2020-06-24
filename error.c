@@ -67,7 +67,7 @@ Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) {
 	ret->line = g_lineNumber;
 	
 	if(errpos != NULL) {
-		ret->column = errpos - g_line + 1;
+		ret->column = (unsigned)(errpos - g_line) + 1;
 	}
 	
 	return ret;

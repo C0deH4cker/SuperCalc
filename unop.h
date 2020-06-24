@@ -21,6 +21,7 @@ typedef struct UnOp UnOp;
 ASSUME_NONNULL_BEGIN
 
 typedef enum {
+	UN_UNK = -1,
 	UN_FACT = 0
 } UNTYPE;
 

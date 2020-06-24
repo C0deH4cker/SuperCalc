@@ -381,7 +381,7 @@ Value* Value_parse(const char** expr, char sep, char end, parser_cb* cb) {
 	Value* val;
 	BINTYPE op = BIN_UNK;
 	BinOp* tree = NULL;
-	BinOp* prev;
+	BinOp* prev = NULL;
 	
 	while(1) {
 		/* Get next value */
