@@ -1,6 +1,6 @@
-#SuperCalc
+# SuperCalc
 
-#####A mathematical expression parser and evaluator plus more.
+##### A mathematical expression parser and evaluator, plus more.
 
 Currently, SuperCalc supports the following binary operators:
 
@@ -20,13 +20,13 @@ Additionally, the following constants are defined:
 
 * `pi`
 * `e`
-* `phi`
+* `phi` (golden ratio)
 
 As well as the following mathematical functions:
 
 * `sqrt(x)`
-* `abs(x)`
-* `exp(x)`
+* `abs(x)` -> |x|
+* `exp(x)` -> e<sup>x</sup>
 * `log(x)` -> log<sub>10</sub>(x)
 * `log2(x)` -> log<sub>2</sub>(x)
 * `ln(x)` -> log<sub>e</sub>(x)
@@ -40,7 +40,7 @@ As well as the following mathematical functions:
 * `asin(x)`
 * `acos(x)`
 * `atan(x)`
-* `atan2(y, x)`
+* `atan2(y, x)` -> tan<sup>-1</sup>(y/x)
 * `asec(x)`
 * `acsc(x)`
 * `acot(x)`
@@ -57,7 +57,9 @@ As well as the following mathematical functions:
 * `acsch(x)`
 * `acoth(x)`
 
-SuperCalc likes to be as precise as it knows how, so floating point values are avoided as much as possible. Even for division and negative powers, SuperCalc will attempt to use fractions as a value type instead of floating point values.
+SuperCalc likes to be as precise as it knows how, so floating point values are
+avoided as much as possible. Even for division and negative powers, SuperCalc
+will attempt to use fractions as a value type instead of floating point values.
 
 Example of using fractions:
 
@@ -77,9 +79,11 @@ Variables are supported:
 	sc> ans + 4
 	18
 
-Variable names may only contain alphanumeric characters and '_', but the first character may not be a number.
+Variable names may only contain alphanumeric characters and '_', but the first
+character may not be a number.
 
-Shorthand notations for variable modification work as well using any of the binary operators:
+Shorthand notations for variable modification work as well using any of the
+binary operators:
 
 	sc> x = 4
 	4
@@ -205,12 +209,16 @@ Examples using `map`:
 	<0, 1.5707963267949, 3.14159265358979, 4.71238898038469, 6.28318530717959>
 	sc> map(sin, angles)
 	<0, 1, 0, -1, 0>
-	sc> 
+	sc> add1(x) = 1 + x
 	sc> map(add1, map(sqrt, <1, 4, 9, 16, 20, 16/9>))
-	<2, 3, 4, 5, 5.472add1(x) = 1 + x13595499958, 7/3>
+	<2, 3, 4, 5, 5.47213595499958, 7/3>
 
+Anonymous functions (syntax is similar to Rust's lambdas):
 
-Vectors can have any dimension greater than one:
+	sc> map(|x| x + 1, <1, 2, 3>)
+	<2, 3, 4>
+
+Vectors can have any dimension greater than or equal to one:
 
 	sc> a = <7, 2, 5.5, 7.6>
 	<7, 2, 5.5, 7.6>
@@ -218,6 +226,8 @@ Vectors can have any dimension greater than one:
 	57.9
 	sc> c = <1, 2>
 	<1, 2>
+	sc> sillyVec = <0>
+	<0>
 	
 Multiplying or dividing two vectors uses their components:
 
@@ -283,7 +293,12 @@ Error messages attempt to be clear:
 	sc> pi(1, 2)
 	Type Error: Builtin 'pi' is not a function.
 
-For curious users, there is a verbose printing feature. Starting the input with a `?` will enable verbose printing of some form. Directly following the `?` will be character codes to specify which types of verbose printing to use. A single `?` by itself is the same as `?r`. There must be at least one space after all character codes in the `?` group before the expression to calculate starts. Multiple printing codes can be mixed in a single grouping.
+For curious users, there is a verbose printing feature. Starting the input with
+a `?` will enable verbose printing of some form. Directly following the `?`
+will be character codes to specify which types of verbose printing to use. A
+single `?` by itself is the same as `?r`. There must be at least one space
+after all character codes in the `?` group before the expression to calculate
+starts. Multiple printing codes can be mixed in a single grouping.
 
 * `r` - Reprint output. Prints the expression out in normal mathematical form, using as few parentheses as possible.
 * `p` - Pretty reprint output. Same as `r` but will use certain Unicode characters instead of function names, such as `√` for `sqrt` or `π` for `pi`.
@@ -324,7 +339,11 @@ Examples of verbose printing:
 	
 	-149229631/343 (-435071.810495627)
 
-Another usage of SuperCalc's verbose output is with functions. For verbosity >= 1, SuperCalc will print a parenthesized version of the function declaration, showing the function's name, argument names, and body. For verbosity >= 2, SuperCalc will also print the function's name, argument names, and the parse tree of its body.
+Another usage of SuperCalc's verbose output is with functions. For
+verbosity >= 1, SuperCalc will print a parenthesized version of the function
+declaration, showing the function's name, argument names, and body. For
+verbosity >= 2, SuperCalc will also print the function's name, argument names,
+and the parse tree of its body.
 
 Examples of printing functions verbosely:
 
@@ -384,10 +403,38 @@ Examples of printing functions verbosely:
 	  </func>
 	</vardata>
 
-##Building
 
-To build on Linux or Mac OS X, you can use Automake and Autoconf:
+## Turing Completeness?
 
-	$ ./autogen.sh
-	$ ./configure
-	$ make
+It turns out that SuperCalc is accidentally Turing Complete, or at least I
+think so. For some examples of using SuperCalc like a functional programming
+language, refer to [`std/turing.scs`](std/turing.scs).
+
+
+## Building
+
+To compile SuperCalc, make sure you have installed GNU make and Clang. Then,
+clone the repo and run `make`:
+
+```bash
+git clone --recursive https://github.com/C0deH4cker/SuperCalc.git
+cd SuperCalc
+make
+./sc
+```
+
+It compiles a lot faster if you run make in parallel like `make -j8`.
+
+
+## Tests
+
+SuperCalc now has a unit testing suite, using the
+[utest.h](https://github.com/sheredom/utest.h) unit testing framework for C.
+Run the tests with `make check`.
+
+
+## Clang Static Analyzer
+
+SuperCalc by default runs the Clang Static Analyzer during compilation.
+Annotations have been added to the source code to inform the analyzer about
+nullability as well as object ownership and lifetimes.
