@@ -54,15 +54,11 @@ Placeholder* Placeholder_fromString(const char* fmt) {
 
 /* Destructor */
 void Placeholder_free(Placeholder* ph) {
-	free(ph);
+	destroy(ph);
 }
 
 /* Copying */
 Placeholder* Placeholder_copy(const Placeholder* ph) {
-	if(!ph) {
-		return NULL;
-	}
-	
 	return Placeholder_new(ph->type, ph->index);
 }
 

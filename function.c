@@ -41,37 +41,40 @@ void Function_free(Function* func) {
 	
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
-		free(func->argnames[i]);
+		destroy(func->argnames[i]);
 	}
-	free(func->argnames);
+	destroy(func->argnames);
 	
 	Value_free(func->body);
 	
-	free(func);
+	destroy(func);
 }
 
 Function* Function_copy(const Function* func) {
-	if(!func) {
-		return NULL;
-	}
-	
 	char** argsCopy = fmalloc(func->argcount * sizeof(*argsCopy));
 	unsigned i;
 	for(i = 0; i < func->argcount; i++) {
 		argsCopy[i] = strdup(func->argnames[i]);
 	}
 	
-	return Function_new(func->argcount, argsCopy, Value_copy(func->body));
+	Value* bodyCopy = func->body;
+	if(bodyCopy != NULL) {
+		bodyCopy = Value_copy(bodyCopy);
+	}
+	return Function_new(func->argcount, argsCopy, bodyCopy);
 }
 
 Value* Function_eval(const Function* func, const Context* ctx, const ArgList* arglist) {
+	assert(func->body != NULL);
+	
 	if(func->argcount != arglist->count) {
 		return ValErr(typeError("Function expects %u argument%s, not %u.", func->argcount, func->argcount == 1 ? "" : "s", arglist->count));
 	}
 	
-	ArgList* evaluated = ArgList_eval(arglist, ctx);
+	Error* err = NULL;
+	ArgList* evaluated = ArgList_eval(arglist, ctx, &err);
 	if(evaluated == NULL) {
-		return ValErr(ignoreError());
+		return ValErr(err);
 	}
 	
 	Context* frame = Context_pushFrame(ctx);
@@ -84,10 +87,11 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 		
 		if(val->type == VAL_VAR) {
 			Variable* var = Variable_getAbove(frame, val->name);
+			Value_free(val);
 			arg = Variable_new(argname, Value_copy(var->val));
 		}
 		else {
-			arg = Variable_new(argname, Value_copy(val));
+			arg = Variable_new(argname, val);
 		}
 		
 		Context_addLocal(frame, arg);
@@ -95,7 +99,8 @@ Value* Function_eval(const Function* func, const Context* ctx, const ArgList* ar
 	
 	ArgList_free(evaluated);
 	
-	Value* ret = Value_eval(func->body, frame);
+	/* Asserted to be nonnull above */
+	Value* ret = Value_eval(CAST_NONNULL(func->body), frame);
 	
 	Context_popFrame(frame);
 	
@@ -112,7 +117,7 @@ static char* argsToString(const Function* func) {
 		else {
 			char* tmp;
 			asprintf(&tmp, "%s, %s", ret, func->argnames[i]);
-			free(ret);
+			destroy(ret);
 			ret = tmp;
 		}
 	}
@@ -133,7 +138,7 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 	
 	if(arg == NULL && **expr != end) {
 		/* Invalid character */
-		free(args);
+		destroy(args);
 		*err = badChar(*expr);
 		return NULL;
 	}
@@ -142,7 +147,7 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 	
 	if(arg == NULL) {
 		/* Empty parameter list means function with no args */
-		free(args);
+		destroy(args);
 		args = NULL;
 		len = 0;
 	}
@@ -169,9 +174,9 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 				/* Free argument names and return */
 				unsigned i;
 				for(i = 0; i < len; i++) {
-					free(args[i]);
+					destroy(args[i]);
 				}
-				free(args);
+				destroy(args);
 				
 				*err = badChar(*expr);
 				return NULL;
@@ -182,7 +187,7 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 	}
 	
 	if(arg) {
-		free(arg);
+		destroy(arg);
 	}
 	
 	if(**expr != end) {
@@ -191,9 +196,9 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 			/* Free argument names and return */
 			unsigned i;
 			for(i = 0; i < len; i++) {
-				free(args[i]);
+				destroy(args[i]);
 			}
-			free(args);
+			destroy(args);
 		}
 		
 		*err = badChar(*expr);
@@ -207,9 +212,11 @@ Function* Function_parseArgs(const char** expr, char sep, char end, Error** err)
 }
 
 char* Function_repr(const Function* func, const char* name, bool pretty) {
+	assert(func->body != NULL);
+	
 	char* ret;
 	char* args = argsToString(func);
-	char* body = Value_repr(func->body, pretty, false);
+	char* body = Value_repr(CAST_NONNULL(func->body), pretty, false);
 	
 	if(name != NULL) {
 		asprintf(&ret, "%s(%s) = %s", name, args ?: "", body);
@@ -218,15 +225,17 @@ char* Function_repr(const Function* func, const char* name, bool pretty) {
 		asprintf(&ret, "|%s| %s", args ?: "", body);
 	}
 	
-	free(body);
-	free(args);
+	destroy(body);
+	destroy(args);
 	return ret;
 }
 
 char* Function_wrap(const Function* func, const char* name, bool top) {
+	assert(func->body != NULL);
+	
 	char* ret;
 	char* args = argsToString(func);
-	char* body = Value_wrap(func->body, false);
+	char* body = Value_wrap(CAST_NONNULL(func->body), false);
 	
 	if(name != NULL) {
 		asprintf(&ret, "%s(%s) = %s", name, args ?: "", body);
@@ -243,15 +252,17 @@ char* Function_wrap(const Function* func, const char* name, bool top) {
 		asprintf(&ret, format, args ?: "", body);
 	}
 	
-	free(body);
-	free(args);
+	destroy(body);
+	destroy(args);
 	return ret;
 }
 
 char* Function_verbose(const Function* func, unsigned indent) {
+	assert(func->body != NULL);
+	
 	char* ret;
 	char* args = argsToString(func);
-	char* body = Value_verbose(func->body, indent + 1);
+	char* body = Value_verbose(CAST_NONNULL(func->body), indent + 1);
 	
 	asprintf(&ret,
 			 "|%s| {\n"
@@ -260,8 +271,8 @@ char* Function_verbose(const Function* func, unsigned indent) {
 			 args ?: "",
 			 indentation(indent + 1), body);
 	
-	free(body);
-	free(args);
+	destroy(body);
+	destroy(args);
 	return ret;
 }
 
@@ -281,7 +292,7 @@ static char* argsXml(const Function* func, unsigned indent) {
 					 "%s<arg name=\"%s\"/>",
 					 ret,
 					 indentation(indent), func->argnames[i]);
-			free(ret);
+			destroy(ret);
 			ret = tmp;
 		}
 	}
@@ -290,6 +301,8 @@ static char* argsXml(const Function* func, unsigned indent) {
 }
 
 char* Function_xml(const Function* func, unsigned indent) {
+	assert(func->body != NULL);
+	
 	/*
 	 sc> ?x f(x) = 3x + 4
 	 
@@ -311,7 +324,7 @@ char* Function_xml(const Function* func, unsigned indent) {
 	 </vardata>
 	*/
 	char* ret;
-	char* body = Value_xml(func->body, indent + 2);
+	char* body = Value_xml(CAST_NONNULL(func->body), indent + 2);
 	
 	if(func->argcount > 0) {
 		char* args = argsXml(func, indent + 2);
@@ -329,7 +342,7 @@ char* Function_xml(const Function* func, unsigned indent) {
 				 args,
 				 body);
 		
-		free(args);
+		destroy(args);
 	}
 	else {
 		asprintf(&ret,
@@ -343,7 +356,7 @@ char* Function_xml(const Function* func, unsigned indent) {
 				 body);
 	}
 	
-	free(body);
+	destroy(body);
 	return ret;
 }
 

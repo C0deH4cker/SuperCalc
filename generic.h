@@ -13,10 +13,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef WITH_LINENOISE
 #include "linenoise/linenoise.h"
 #endif
+
+#include "annotations.h"
 
 
 #ifdef _MSC_VER
@@ -51,28 +54,10 @@
 #define HAS_ANY(flags, flag) (((flags) & (flag)) != 0)
 #define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#define UNREFERENCED_PARAMETER(param) do { param = param; } while(0)
-
-/* Attributes purely for documentation purposes */
-#define IN
-#define OUT
-#define INOUT
-
-#define NONNULL
-#define NULLABLE
-#define OWNED
-#define UNOWNED
-
-#define INVARIANT(...)
-#define NONNULL_WHEN(...)
-#define NULLABLE_WHEN(...)
-#define OWNED_WHEN(...)
-#define UNOWNED_WHEN(...)
-
 
 #include "error.h"
 
-static inline OWNED NONNULL_WHEN(size > 0) void* fmalloc(size_t size) {
+static inline RETURNS_OWNED void* _Nonnull_unless(size == 0) fmalloc(size_t size) {
 	void* ret = malloc(size);
 	if(ret == NULL && size > 0) {
 		allocError();
@@ -81,7 +66,7 @@ static inline OWNED NONNULL_WHEN(size > 0) void* fmalloc(size_t size) {
 	return ret;
 }
 
-static inline OWNED NONNULL_WHEN(count > 0 && size > 0) void* fcalloc(size_t count, size_t size) {
+static inline RETURNS_OWNED void* _Nonnull_unless(count == 0 || size == 0) fcalloc(size_t count, size_t size) {
 	void* ret = calloc(count, size);
 	if(ret == NULL && count > 0 && size > 0) {
 		allocError();
@@ -89,13 +74,20 @@ static inline OWNED NONNULL_WHEN(count > 0 && size > 0) void* fcalloc(size_t cou
 	return ret;
 }
 
-static inline OWNED NONNULL_WHEN(size > 0) void* frealloc(OWNED NULLABLE void* mem, size_t size) {
+static inline RETURNS_OWNED void* _Nonnull_unless(size == 0) frealloc(CONSUMED void* _Nullable mem, size_t size) {
 	void* ret = realloc(mem, size);
 	if(ret == NULL && size > 0) {
 		allocError();
 	}
 	return ret;
 }
+
+/* Version of free() annotated to consume the pointer argument */
+#define destroy(var) do { \
+	free_owned(var); \
+	var = CAST_NONNULL(NULL); \
+} while(0)
+void free_owned(CONSUMED void* _Nullable ptr);
 
 typedef enum {
 	V_NONE   = 0,
@@ -111,29 +103,34 @@ typedef enum {
 #define SC_PROMPT_CONTINUE "... "
 #define SC_LINE_SIZE 1000
 
-extern char* g_line;
+extern char* _Nullable g_line;
 extern unsigned g_lineNumber;
-extern FILE* g_inputFile;
-extern const char* g_inputFileName;
+extern FILE* _Nullable g_inputFile;
+extern const char* _Nullable g_inputFileName;
+
+
+ASSUME_NONNULL_BEGIN
 
 /* Tokenization */
-void trimSpaces(NONNULL const char** str);
-OWNED NULLABLE char* nextSpecial(NONNULL const char** expr);
-OWNED NULLABLE char* nextToken(NONNULL const char** expr);
-int getSign(NONNULL const char** expr);
+void trimSpaces(istring str);
+RETURNS_OWNED char* _Nullable nextSpecial(istring expr);
+RETURNS_OWNED char* _Nullable nextToken(istring expr);
+int getSign(istring expr);
 
 /* Input */
-UNOWNED char* nextLine(NONNULL const char* prompt);
-bool isInteractive(NONNULL FILE* fp);
-VERBOSITY getVerbosity(INOUT UNOWNED NONNULL char** str);
+RETURNS_UNOWNED char* _Nullable nextLine(const char* prompt);
+bool isInteractive(FILE* fp);
+VERBOSITY getVerbosity(INOUT UNOWNED istring str);
 
 /* Verbose printing */
-const char* getPretty(NULLABLE const char* name);
+const char* _Nullable_unless(name != NULL) getPretty(const char* _Nullable name);
 const char* indentation(unsigned level);
 
 /* Math */
 long long ipow(long long base, long long exp);
 long long gcd(long long a, long long b);
 double approx(double real);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_GENERIC_H */

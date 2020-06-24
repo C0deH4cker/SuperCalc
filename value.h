@@ -11,12 +11,14 @@
 
 #include <stdbool.h>
 
+#include "annotations.h"
+
 typedef struct Value Value;
 
 /* Callback and associated data */
 typedef struct parser_cb {
-	Value* (*func)(const char** expr, void* data);
-	void* data;
+	Value* _Nonnull (*_Nonnull func)(istring expr, void* _Nullable data);
+	void* _Nullable data;
 } parser_cb;
 
 #include "fraction.h"
@@ -32,6 +34,8 @@ typedef struct parser_cb {
 #include "builtin.h"
 #include "placeholder.h"
 
+
+ASSUME_NONNULL_BEGIN
 
 typedef enum {
 	VAL_END = -3,
@@ -54,18 +58,18 @@ typedef enum {
 struct Value {
 	VALTYPE type;
 	union {
-		              long long    ival;
-		              double       rval;
-		OWNED NONNULL Fraction*    frac;
-		OWNED NONNULL Vector*      vec;
-		OWNED NONNULL UnOp*        term;
-		OWNED NONNULL BinOp*       expr;
-		OWNED NONNULL FuncCall*    call;
-		OWNED NONNULL char*        name;
-		OWNED NONNULL Error*       err;
-		OWNED NONNULL Function*    func;
-		OWNED NONNULL Builtin*     blt;
-		OWNED NONNULL Placeholder* ph;
+		      long long    ival;
+		      double       rval;
+		OWNED Fraction*    frac;
+		OWNED Vector*      vec;
+		OWNED UnOp*        term;
+		OWNED BinOp*       expr;
+		OWNED FuncCall*    call;
+		OWNED char*        name;
+		OWNED Error*       err;
+		OWNED Function*    func;
+		OWNED Builtin*     blt;
+		OWNED Placeholder* ph;
 	};
 };
 
@@ -73,46 +77,47 @@ struct Value {
 extern parser_cb default_cb;
 
 /* Value constructors */
-/* Each method which takes an object pointer as an argument consumes it */
-OWNED NONNULL Value* ValEnd(void);
-OWNED NONNULL Value* ValErr(OWNED NONNULL Error* err);
-OWNED NONNULL Value* ValNeg(void);
-OWNED NONNULL Value* ValInt(long long val);
-OWNED NONNULL Value* ValReal(double val);
-OWNED NONNULL Value* ValFrac(OWNED NONNULL Fraction* frac);
-OWNED NONNULL Value* ValExpr(OWNED NONNULL BinOp* expr);
-OWNED NONNULL Value* ValUnary(OWNED NONNULL UnOp* term);
-OWNED NONNULL Value* ValCall(OWNED NONNULL FuncCall* call);
-OWNED NONNULL Value* ValVar(OWNED NONNULL char* name);
-OWNED NONNULL Value* ValVec(OWNED NONNULL Vector* vec);
-OWNED NONNULL Value* ValFunc(OWNED NONNULL Function* func);
-OWNED NONNULL Value* ValBuiltin(OWNED NONNULL Builtin* blt);
-OWNED NONNULL Value* ValPlace(OWNED NONNULL Placeholder* ph);
+RETURNS_OWNED Value* ValEnd(void);
+RETURNS_OWNED Value* ValErr(CONSUMED Error* err);
+RETURNS_OWNED Value* ValNeg(void);
+RETURNS_OWNED Value* ValInt(long long val);
+RETURNS_OWNED Value* ValReal(double val);
+RETURNS_OWNED Value* ValFrac(CONSUMED Fraction* frac);
+RETURNS_OWNED Value* ValExpr(CONSUMED BinOp* expr);
+RETURNS_OWNED Value* ValUnary(CONSUMED UnOp* term);
+RETURNS_OWNED Value* ValCall(CONSUMED FuncCall* call);
+RETURNS_OWNED Value* ValVar(CONSUMED char* name);
+RETURNS_OWNED Value* ValVec(CONSUMED Vector* vec);
+RETURNS_OWNED Value* ValFunc(CONSUMED Function* func);
+RETURNS_OWNED Value* ValBuiltin(CONSUMED Builtin* blt);
+RETURNS_OWNED Value* ValPlace(CONSUMED Placeholder* ph);
 
 /* Destructor */
-void Value_free(OWNED NULLABLE Value* val);
+void Value_free(CONSUMED Value* _Nullable val);
 
 /* Copying */
-OWNED NULLABLE_WHEN(val == NULL) Value* Value_copy(NULLABLE const Value* val);
+RETURNS_OWNED Value* Value_copy(const Value* val);
 
 /* Evaluation */
-OWNED NONNULL Value* Value_eval(NONNULL const Value* val, NONNULL const Context* ctx);
-OWNED NONNULL Value* Value_coerce(NONNULL const Value* val, NONNULL const Context* ctx);
-bool Value_isCallable(NONNULL const Value* val);
+RETURNS_OWNED Value* Value_eval(const Value* val, const Context* ctx);
+RETURNS_OWNED Value* Value_coerce(const Value* val, const Context* ctx);
+bool Value_isCallable(const Value* val);
 
 /* Conversion */
-double Value_asReal(NONNULL const Value* val);
+double Value_asReal(const Value* val);
 
 /* Parsing */
-OWNED NONNULL Value* Value_parseTop(INOUT NONNULL const char** expr);
-OWNED NONNULL Value* Value_parse(INOUT NONNULL const char** expr, char sep, char end, NONNULL parser_cb* cb);
-OWNED NONNULL Value* Value_next(INOUT NONNULL const char** expr, char sep, char end, NONNULL parser_cb* cb);
+RETURNS_OWNED Value* Value_parseTop(INOUT istring expr);
+RETURNS_OWNED Value* Value_parse(INOUT istring expr, char sep, char end, parser_cb* cb);
+RETURNS_OWNED Value* Value_next(INOUT istring expr, char sep, char end, parser_cb* cb);
 
 /* Printing */
-OWNED NONNULL char* Value_repr(NONNULL const Value* val, bool pretty, bool top);
-OWNED NONNULL char* Value_wrap(NONNULL const Value* val, bool top);
-OWNED NONNULL char* Value_verbose(NONNULL const Value* val, unsigned indent);
-OWNED NONNULL char* Value_xml(NONNULL const Value* val, unsigned indent);
-void Value_print(NONNULL const Value* val, VERBOSITY v);
+RETURNS_OWNED char* Value_repr(const Value* val, bool pretty, bool top);
+RETURNS_OWNED char* Value_wrap(const Value* val, bool top);
+RETURNS_OWNED char* Value_verbose(const Value* val, unsigned indent);
+RETURNS_OWNED char* Value_xml(const Value* val, unsigned indent);
+void Value_print(const Value* val, VERBOSITY v);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_VALUE_H */

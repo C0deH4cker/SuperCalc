@@ -16,34 +16,37 @@ typedef struct Context Context;
 #include "value.h"
 
 
+ASSUME_NONNULL_BEGIN
+
 /* Constructor */
-OWNED NONNULL Context* Context_new(void);
+RETURNS_OWNED Context* Context_new(void);
 
 /* Destructor */
-void Context_free(OWNED NULLABLE Context* ctx);
+void Context_free(CONSUMED Context* _Nullable ctx);
 
 /* Copying */
-OWNED NONNULL Context* Context_copy(NULLABLE const Context* ctx);
+RETURNS_OWNED Context* Context_copy(const Context* ctx);
 
 /* Variable accessing */
-/* These methods consume the `var` argument. */
-void Context_addGlobal(NONNULL const Context* ctx, NONNULL Variable* var);
-void Context_addLocal(NONNULL const Context* ctx, NONNULL Variable* var);
-void Context_setGlobal(NONNULL const Context* ctx, NONNULL const char* name, OWNED NONNULL Value* val);
+void Context_addGlobal(const Context* ctx, CONSUMED Variable* var);
+void Context_addLocal(const Context* ctx, CONSUMED Variable* var);
+void Context_setGlobal(const Context* ctx, const char* name, CONSUMED Value* val);
 
 /* Stack frames */
-OWNED NONNULL Context* Context_pushFrame(NONNULL const Context* ctx);
-void Context_popFrame(OWNED NONNULL Context* ctx);
+RETURNS_OWNED Context* Context_pushFrame(const Context* ctx);
+void Context_popFrame(CONSUMED Context* ctx);
 
 /* Variable deletion */
-void Context_del(NONNULL const Context* ctx, NONNULL const char* name);
-void Context_clear(NONNULL Context* ctx);
+void Context_del(const Context* ctx, const char* name);
+void Context_clear(UNOWNED Context* ctx);
 
 /*
  Context_get and Context_getAbove return a pointer from within the
  context, so do not free the returned variable.
 */
-UNOWNED NULLABLE Variable* Context_get(NONNULL const Context* ctx, NONNULL const char* name);
-UNOWNED NULLABLE Variable* Context_getAbove(NONNULL const Context* ctx, NONNULL const char* name);
+RETURNS_UNOWNED Variable* _Nullable Context_get(const Context* ctx, const char* name);
+RETURNS_UNOWNED Variable* _Nullable Context_getAbove(const Context* ctx, const char* name);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_CONTEXT_H */

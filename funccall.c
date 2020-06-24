@@ -52,14 +52,10 @@ void FuncCall_free(FuncCall* call) {
 	
 	Value_free(call->func);
 	ArgList_free(call->arglist);
-	free(call);
+	destroy(call);
 }
 
 FuncCall* FuncCall_copy(const FuncCall* call) {
-	if(!call) {
-		return NULL;
-	}
-	
 	return FuncCall_new(Value_copy(call->func), ArgList_copy(call->arglist));
 }
 
@@ -144,7 +140,7 @@ Value* FuncCall_eval(const FuncCall* call, const Context* ctx) {
 		case VAL_VEC: {
 			char* repr = Value_repr(call->func, false, false);
 			ret = ValErr(typeError("Value %s is not a callable.", repr));
-			free(repr);
+			destroy(repr);
 			break;
 		}
 			
@@ -168,7 +164,7 @@ static char* reprFunc(VALTYPE valtype, const char* callable, const ArgList* argl
 	
 	asprintf(&ret, format, disp, argstr);
 	
-	free(argstr);
+	destroy(argstr);
 	return ret;
 }
 
@@ -186,8 +182,8 @@ static char* specialRepr(const char* name, const ArgList* arglist, bool pretty) 
 		
 		asprintf(&ret, "%s[%s]", vec, index);
 		
-		free(index);
-		free(vec);
+		destroy(index);
+		destroy(vec);
 	}
 	else {
 		/* Just default to printing the function */
@@ -206,7 +202,7 @@ char* FuncCall_repr(const FuncCall* call, bool pretty) {
 	char* callable = Value_repr(call->func, pretty, false);
 	char* ret = reprFunc(call->func->type, callable, call->arglist, pretty);
 	
-	free(callable);
+	destroy(callable);
 	return ret;
 }
 
@@ -217,8 +213,8 @@ char* FuncCall_wrap(const FuncCall* call) {
 	
 	asprintf(&ret, "%s(%s)", callable, argstr);
 	
-	free(argstr);
-	free(callable);
+	destroy(argstr);
+	destroy(callable);
 	return ret;
 }
 
@@ -234,7 +230,7 @@ static char* verboseFunc(const char* name, const ArgList* arglist, unsigned inde
 			 name,
 			 args);
 	
-	free(args);
+	destroy(args);
 	return ret;
 }
 
@@ -257,8 +253,8 @@ static char* specialVerbose(const char* name, const ArgList* arglist, unsigned i
 				 indentation(indent), indentation(indent + 1),
 				 vec, index);
 		
-		free(index);
-		free(vec);
+		destroy(index);
+		destroy(vec);
 	}
 	else {
 		/* Just default to printing the function */
@@ -277,7 +273,7 @@ char* FuncCall_verbose(const FuncCall* call, unsigned indent) {
 	char* callable = Value_verbose(call->func, indent);
 	char* ret = verboseFunc(callable, call->arglist, indent);
 	
-	free(callable);
+	destroy(callable);
 	return ret;
 }
 
@@ -317,7 +313,7 @@ char* FuncCall_xml(const FuncCall* call, unsigned indent) {
 				 indentation(indent), indentation(indent + 1), indentation(indent + 2),
 				 callee,
 				 args);
-		free(args);
+		destroy(args);
 	}
 	else {
 		asprintf(&ret,
@@ -331,7 +327,7 @@ char* FuncCall_xml(const FuncCall* call, unsigned indent) {
 				 callee);
 	}
 	
-	free(callee);
+	destroy(callee);
 	return ret;
 }
 

@@ -16,9 +16,6 @@
 
 #include "support.h"
 #include "error.h"
-#include "generic.h"
-#include "context.h"
-#include "value.h"
 #include "fraction.h"
 #include "vector.h"
 
@@ -435,28 +432,26 @@ void BinOp_free(BinOp* node) {
 	Value_free(node->b);
 	
 	/* Free self */
-	free(node);
+	destroy(node);
 }
 
 BinOp* BinOp_copy(const BinOp* node) {
-	if(node == NULL) {
-		return NULL;
+	Value* bCopy = node->b;
+	if(bCopy != NULL) {
+		bCopy = Value_copy(bCopy);
 	}
-	
-	return BinOp_new(node->type, Value_copy(node->a), Value_copy(node->b));
+	return BinOp_new(node->type, Value_copy(node->a), bCopy);
 }
 
 Value* BinOp_eval(const BinOp* node, const Context* ctx) {
-	if(node == NULL) {
-		return ValErr(nullError());
-	}
+	assert(node->b != NULL);
 	
 	Value* a = Value_coerce(node->a, ctx);
 	if(a->type == VAL_ERR) {
 		return a;
 	}
 	
-	Value* b = Value_coerce(node->b, ctx);
+	Value* b = Value_coerce(CAST_NONNULL(node->b), ctx);
 	if(b->type == VAL_ERR) {
 		Value_free(a);
 		return b;
@@ -541,10 +536,12 @@ int BinOp_cmp(BINTYPE a, BINTYPE b) {
 }
 
 char* BinOp_repr(const BinOp* node, bool pretty) {
+	assert(node->b != NULL);
+	
 	char* ret;
 	const char* opstr = (pretty ? _binop_pretty : _binop_repr)[node->type];
 	
-	char* strs[2] = {Value_repr(node->a, pretty, false), Value_repr(node->b, pretty, false)};
+	char* strs[2] = {Value_repr(node->a, pretty, false), Value_repr(CAST_NONNULL(node->b), pretty, false)};
 	BINTYPE types[2] = {BIN_AFTERMAX, BIN_AFTERMAX};
 	
 	/* Determine expr type of a */
@@ -569,22 +566,24 @@ char* BinOp_repr(const BinOp* node, bool pretty) {
 		if(BinOp_cmp(node->type, types[i]) > 0) {
 			char* tmp;
 			asprintf(&tmp, "(%s)", strs[i]);
-			free(strs[i]);
+			destroy(strs[i]);
 			strs[i] = tmp;
 		}
 	}
 	
 	asprintf(&ret, "%s %s %s", strs[0], opstr, strs[1]);
 	
-	free(strs[0]);
-	free(strs[1]);
+	destroy(strs[0]);
+	destroy(strs[1]);
 	return ret;
 }
 
 char* BinOp_wrap(const BinOp* node) {
+	assert(node->b != NULL);
+	
 	char* ret;
 	Value* nodes[2] = {node->a, node->b};
-	char* strs[2] = {Value_wrap(node->a, false), Value_wrap(node->b, false)};
+	char* strs[2] = {Value_wrap(node->a, false), Value_wrap(CAST_NONNULL(node->b), false)};
 	
 	/* Always parenthesize subexpressions */
 	unsigned i;
@@ -592,22 +591,24 @@ char* BinOp_wrap(const BinOp* node) {
 		if(nodes[i]->type == VAL_EXPR) {
 			char* tmp;
 			asprintf(&tmp, "(%s)", strs[i]);
-			free(strs[i]);
+			destroy(strs[i]);
 			strs[i] = tmp;
 		}
 	}
 	
 	asprintf(&ret, "%s %s %s", strs[0], _binop_repr[node->type], strs[1]);
 	
-	free(strs[0]);
-	free(strs[1]);
+	destroy(strs[0]);
+	destroy(strs[1]);
 	return ret;
 }
 
 char* BinOp_verbose(const BinOp* node, unsigned indent) {
+	assert(node->b != NULL);
+	
 	char* ret;
 	char* a = Value_verbose(node->a, indent + 1);
-	char* b = Value_verbose(node->b, indent + 1);
+	char* b = Value_verbose(CAST_NONNULL(node->b), indent + 1);
 	
 	asprintf(&ret,
 			 "%3$s (\n"           /* BinOp type */
@@ -619,12 +620,14 @@ char* BinOp_verbose(const BinOp* node, unsigned indent) {
 			 a,
 			 b);
 	
-	free(b);
-	free(a);
+	destroy(b);
+	destroy(a);
 	return ret;
 }
 
 char* BinOp_xml(const BinOp* node, unsigned indent) {
+	assert(node->b != NULL);
+	
 	/*
 	 sc> ?x 4 + 1 - 3 * 7
 	 
@@ -643,7 +646,7 @@ char* BinOp_xml(const BinOp* node, unsigned indent) {
 	*/
 	char* ret;
 	char* a = Value_xml(node->a, indent + 1);
-	char* b = Value_xml(node->b, indent + 1);
+	char* b = Value_xml(CAST_NONNULL(node->b), indent + 1);
 	
 	asprintf(&ret,
 			 "<%3$s>\n"
@@ -655,8 +658,8 @@ char* BinOp_xml(const BinOp* node, unsigned indent) {
 			 a,
 			 b);
 	
-	free(b);
-	free(a);
+	destroy(b);
+	destroy(a);
 	return ret;
 }
 

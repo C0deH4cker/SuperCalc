@@ -74,14 +74,10 @@ void UnOp_free(UnOp* term) {
 		Value_free(term->a);
 	}
 	
-	free(term);
+	destroy(term);
 }
 
 UnOp* UnOp_copy(const UnOp* term) {
-	if(!term) {
-		return NULL;
-	}
-	
 	return UnOp_new(term->type, Value_copy(term->a));
 }
 
@@ -106,13 +102,13 @@ static char* unopToString(const UnOp* term, char* val) {
 	if(term->a->type == VAL_FRAC || term->a->type == VAL_EXPR) {
 		char* tmp;
 		asprintf(&tmp, "(%s)", val);
-		free(val);
+		destroy(val);
 		val = tmp;
 	}
 	
 	asprintf(&ret, "%s%s", val, _unop_repr[term->type]);
 	
-	free(val);
+	destroy(val);
 	return ret;
 }
 
@@ -136,7 +132,7 @@ char* UnOp_verbose(const UnOp* term, unsigned indent) {
 			 _unop_repr[term->type],
 			 a);
 	
-	free(a);
+	destroy(a);
 	return ret;
 }
 
@@ -164,7 +160,7 @@ char* UnOp_xml(const UnOp* term, unsigned indent) {
 			 indentation(indent), indentation(indent + 1),
 			 a);
 	
-	free(a);
+	destroy(a);
 	return ret;
 }
 

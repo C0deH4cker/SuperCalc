@@ -17,41 +17,50 @@ typedef struct ArgList ArgList;
 #include "context.h"
 #include "generic.h"
 
+
+ASSUME_NONNULL_BEGIN
+
 struct ArgList {
-	OWNED NONNULL Value* OWNED NONNULL_WHEN(count > 0)* args;
+	OWNED Value* _Nonnull * _Nullable_unless(count > 0) args;
 	unsigned count;
 };
 
 /* Constructor */
-OWNED NONNULL ArgList* ArgList_new(unsigned count);
+RETURNS_OWNED ArgList* ArgList_new(unsigned count);
 
 /* Destructor */
-void ArgList_free(OWNED NULLABLE ArgList* arglist);
+void ArgList_free(CONSUMED ArgList* _Nullable arglist);
 
 /* Initializer */
-OWNED NONNULL ArgList* ArgList_create(unsigned count, /* OWNED NONNULL Value* */...);
-OWNED NONNULL ArgList* ArgList_vcreate(unsigned count, va_list args);
+RETURNS_OWNED ArgList* ArgList_create(unsigned count, /* OWNED Value* */...);
+RETURNS_OWNED ArgList* ArgList_vcreate(unsigned count, va_list args);
 
 /* Copying */
-OWNED NONNULL_WHEN(arglist != NULL) ArgList* ArgList_copy(NULLABLE const ArgList* arglist);
+RETURNS_OWNED ArgList* ArgList_copy(const ArgList* arglist);
 
 /* Evaluation */
-OWNED NONNULL ArgList* ArgList_eval(NONNULL const ArgList* arglist, NONNULL const Context* ctx);
-OWNED NONNULL_WHEN(arglist->count > 0) double* ArgList_toReals(NONNULL const ArgList* arglist, NONNULL const Context* ctx);
+RETURNS_OWNED ArgList* _Nullable ArgList_eval(
+	const ArgList* arglist,
+	const Context* ctx,
+	OUT RETURNS_OWNED Error* _Nullable_unless(return == NULL) * _Nonnull err
+);
+RETURNS_OWNED double* _Nullable_unless(arglist->count > 0) ArgList_toReals(const ArgList* arglist, const Context* ctx);
 
 /* Parsing */
-OWNED NULLABLE ArgList* ArgList_parse(
-	NONNULL const char** expr,
+RETURNS_OWNED ArgList* _Nullable ArgList_parse(
+	INOUT istring expr,
 	char sep,
 	char end,
-	NONNULL parser_cb* cb,
-	OWNED NONNULL_WHEN(return == NULL) Error* NONNULL* err
+	parser_cb* cb,
+	RETURNS_OWNED Error* _Nullable_unless(return == NULL) * _Nonnull err
 );
 
 /* Printing */
-OWNED NONNULL char* ArgList_repr(NONNULL const ArgList* arglist, bool pretty);
-OWNED NONNULL char* ArgList_wrap(NONNULL const ArgList* arglist);
-OWNED NONNULL char* ArgList_verbose(NONNULL const ArgList* arglist, unsigned indent);
-OWNED NONNULL char* ArgList_xml(NONNULL const ArgList* arglist, unsigned indent);
+RETURNS_OWNED char* ArgList_repr(const ArgList* arglist, bool pretty);
+RETURNS_OWNED char* ArgList_wrap(const ArgList* arglist);
+RETURNS_OWNED char* ArgList_verbose(const ArgList* arglist, unsigned indent);
+RETURNS_OWNED char* ArgList_xml(const ArgList* arglist, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_ARGLIST_H */

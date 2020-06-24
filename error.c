@@ -17,25 +17,6 @@
 #include "generic.h"
 
 
-const char* kNullErrStr             = "NULL pointer value.";
-const char* kDivByZeroStr           = "Division by zero.";
-const char* kModByZeroStr           = "Modulus by zero.";
-const char* kVarNotFoundStr         = "No variable named '%s' found.";
-const char* kBadOpTypeStr           = "Bad %s operand type: %d.";
-const char* kBadCharStr             = "Unexpected character: '%c'.";
-const char* kBuiltinArgsStr         = "Builtin '%s' expects %u argument%s, not %u.";
-const char* kBuiltinNotFuncStr      = "Builtin '%s' is not a function.";
-const char* kBadConversionStr       = "One or more arguments to builtin '%s' couldn't be converted to numbers.";
-const char* kEarlyEndStr            = "Premature end of input.";
-const char* kMissingPlaceholderStr  = "Missing placeholder number %z.";
-const char* kBadImportDepthStr      = "Exceeded max allowed import depth when trying to import file '%s'.";
-const char* kImportErrorStr         = "Failed to import file '%s': %s.";
-
-const char* kAllocErrStr            = "Unable to allocate memory.";
-const char* kBadValStr              = "Unexpected value type: %d.";
-const char* kBadVarStr              = "Unexpected variable type: %d.";
-
-
 static const char* error_messages[] = {
 	"",
 	"Math Error: %s\n",
@@ -74,7 +55,7 @@ Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) {
 	char* tmp;
 	vasprintf(&tmp, fmt, args);
 	asprintf(&ret->msg, error_messages[type], tmp);
-	free(tmp);
+	destroy(tmp);
 	
 	if(g_inputFileName != NULL) {
 		ret->filename = strdup(g_inputFileName);
@@ -97,16 +78,12 @@ void Error_free(Error* err) {
 		return;
 	}
 	
-	free(err->msg);
-	free(err->filename);
-	free(err);
+	destroy(err->msg);
+	destroy(err->filename);
+	destroy(err);
 }
 
 Error* Error_copy(const Error* err) {
-	if(!err) {
-		return NULL;
-	}
-	
 	Error* ret = fmalloc(sizeof(*ret));
 	
 	ret->type = err->type;
@@ -179,6 +156,6 @@ void die(const char* file, const char* function, int line, const char* fmt, ...)
 	Error_raise(err, true);
 	/* Error_raise will cause the program to die */
 	
-	UNREACHABLE();
+	UNREACHABLE;
 }
 

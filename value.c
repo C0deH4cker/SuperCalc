@@ -158,7 +158,7 @@ void Value_free(Value* val) {
 			break;
 		
 		case VAL_VAR:
-			free(val->name);
+			destroy(val->name);
 			break;
 		
 		case VAL_VEC:
@@ -182,14 +182,10 @@ void Value_free(Value* val) {
 			break;
 	}
 	
-	free(val);
+	destroy(val);
 }
 
 Value* Value_copy(const Value* val) {
-	if(!val) {
-		return NULL;
-	}
-	
 	Value* ret;
 	
 	switch(val->type) {
@@ -319,13 +315,14 @@ Value* Value_coerce(const Value* val, const Context* ctx) {
 			ret = tmp;
 		}
 		else {
+			Value_free(ret);
 			Value* tmp = Variable_eval(var, ctx);
 			ret = Value_coerce(tmp, ctx);
 			Value_free(tmp);
 		}
 	}
 	else if(ret->type == VAL_BUILTIN && !ret->blt->isFunction) {
-		Value* tmp = Builtin_eval(ret->blt, ctx, NULL, false);
+		Value* tmp = Builtin_eval(ret->blt, ctx, CAST_NONNULL(NULL), false);
 		Value_free(ret);
 		ret = tmp;
 	}
@@ -512,7 +509,8 @@ static void treeAddValue(BinOp** tree, BinOp** prev, BINTYPE op, Value* val) {
 		}
 		else {
 			/* Somewhere in the tree */
-			next = BinOp_new(op, parent->b, NULL);
+			assert(parent->b != NULL);
+			next = BinOp_new(op, CAST_NONNULL(parent->b), NULL);
 			parent->b = ValExpr(next);
 		}
 		
@@ -617,7 +615,7 @@ static Value* parseToken(const char** expr, parser_cb* cb) {
 		Error* err = NULL;
 		ArgList* arglist = ArgList_parse(expr, ',', ')', cb, &err);
 		if(arglist == NULL) {
-			free(token);
+			destroy(token);
 			return ValErr(err);
 		}
 		
@@ -1004,7 +1002,7 @@ void Value_print(const Value* val, VERBOSITY v) {
 	char* valString = Value_repr(val, v & V_PRETTY, true);
 	if(valString) {
 		printf("%s", valString);
-		free(valString);
+		destroy(valString);
 	}
 	
 	putchar('\n');

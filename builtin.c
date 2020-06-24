@@ -37,15 +37,11 @@ void Builtin_free(Builtin* blt) {
 		return;
 	}
 	
-	free(blt->name);
-	free(blt);
+	destroy(blt->name);
+	destroy(blt);
 }
 
 Builtin* Builtin_copy(const Builtin* blt) {
-	if(!blt) {
-		return NULL;
-	}
-	
 	return Builtin_new(strdup(blt->name), blt->evaluator, blt->isFunction);
 }
 

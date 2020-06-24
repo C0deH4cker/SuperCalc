@@ -39,16 +39,12 @@ void Variable_free(Variable* var) {
 		return;
 	}
 	
-	free(var->name);
+	destroy(var->name);
 	Value_free(var->val);
-	free(var);
+	destroy(var);
 }
 
 Variable* Variable_copy(const Variable* var) {
-	if(!var) {
-		return NULL;
-	}
-	
 	char* name = var->name ? strdup(var->name) : NULL;
 	return Variable_new(name, Value_copy(var->val));
 }
@@ -93,7 +89,7 @@ char* Variable_repr(const Variable* var, bool pretty) {
 	}
 	else {
 		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		destroy(val);
 	}
 	
 	return ret;
@@ -115,7 +111,7 @@ char* Variable_wrap(const Variable* var) {
 	}
 	else {
 		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		destroy(val);
 	}
 	
 	return ret;
@@ -131,7 +127,7 @@ char* Variable_verbose(const Variable* var) {
 	}
 	else {
 		asprintf(&ret, "%s = %s", name, val);
-		free(val);
+		destroy(val);
 	}
 	
 	return ret;
@@ -176,7 +172,7 @@ char* Variable_xml(const Variable* var) {
 			 var->name,
 			 val);
 	
-	free(val);
+	destroy(val);
 	return ret;
 }
 

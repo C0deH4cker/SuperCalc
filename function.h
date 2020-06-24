@@ -19,42 +19,45 @@ typedef struct Function Function;
 #include "generic.h"
 
 
+ASSUME_NONNULL_BEGIN
+
 struct Function {
 	unsigned argcount;
-	OWNED NONNULL char* OWNED NONNULL_WHEN(argcount > 0)* argnames;
-	OWNED NONNULL Value* body;
+	OWNED char* _Nonnull * _Nullable_unless(argcount > 0) argnames;
+	OWNED Value* _Nullable body;
 };
 
 
 /* Constructor */
-/* This method consumes both the `argnames` and `body` arguments */
-OWNED NONNULL Function* Function_new(
+RETURNS_OWNED Function* Function_new(
 	unsigned argcount,
-	OWNED NONNULL char* OWNED NONNULL_WHEN(argcount > 0)* argnames,
-	OWNED NULLABLE Value* body
+	CONSUMED char* _Nonnull * _Nullable_unless(argcount > 0) argnames,
+	CONSUMED Value* _Nullable body
 );
 
 /* Destructor */
-void Function_free(OWNED NULLABLE Function* func);
+void Function_free(CONSUMED Function* _Nullable func);
 
 /* Copying */
-OWNED NULLABLE_WHEN(func == NULL) Function* Function_copy(NULLABLE const Function* func);
+RETURNS_OWNED Function* Function_copy(const Function* func);
 
 /* Evaluation */
-OWNED NONNULL Value* Function_eval(NONNULL const Function* func, NONNULL const Context* ctx, NONNULL const ArgList* arglist);
+RETURNS_OWNED Value* Function_eval(const Function* func, const Context* ctx, const ArgList* arglist);
 
 /* Parsing */
-OWNED NULLABLE Function* Function_parseArgs(
-	INOUT NONNULL const char** expr,
+RETURNS_OWNED Function* _Nullable Function_parseArgs(
+	INOUT istring expr,
 	char sep,
 	char end,
-	OUT OWNED NONNULL_WHEN(return == NULL) Error* NONNULL* error
+	OUT RETURNS_OWNED Error* _Nullable_unless(return != NULL) * _Nonnull error
 );
 
 /* Printing */
-OWNED NONNULL char* Function_repr(NONNULL const Function* func, NULLABLE const char* name, bool pretty);
-OWNED NONNULL char* Function_wrap(NONNULL const Function* func, NULLABLE const char* name, bool top);
-OWNED NONNULL char* Function_verbose(NONNULL const Function* func, unsigned indent);
-OWNED NONNULL char* Function_xml(NONNULL const Function* func, unsigned indent);
+RETURNS_OWNED char* Function_repr(const Function* func, const char* _Nullable name, bool pretty);
+RETURNS_OWNED char* Function_wrap(const Function* func, const char* _Nullable name, bool top);
+RETURNS_OWNED char* Function_verbose(const Function* func, unsigned indent);
+RETURNS_OWNED char* Function_xml(const Function* func, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_FUNCTION_H */

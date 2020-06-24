@@ -18,10 +18,10 @@
 #include "placeholder.h"
 
 struct Template {
-	OWNED NONNULL Value* tree;
+	OWNED Value* _Nonnull tree;
 	INVARIANT(num_placeholders <= capacity) unsigned num_placeholders;
 	unsigned capacity;
-	OWNED NONNULL Value* OWNED NULLABLE_WHEN(capacity == 0)* placeholders;
+	OWNED Value* _Nonnull * _Nullable_unless(capacity > 0) placeholders;
 };
 
 /*
@@ -63,7 +63,7 @@ static Value* parse_internalName(const char** expr) {
 	char* token = nextToken(expr);
 	char* varname;
 	asprintf(&varname, "@%s", token);
-	free(token);
+	destroy(token);
 	
 	/* Wrap in Value object */
 	Value* ret = ValVar(varname);
@@ -168,8 +168,8 @@ void Template_free(Template* tp) {
 	Value_free(tp->tree);
 	
 	/* Call release on these */
-	free(tp->placeholders);
-	free(tp);
+	destroy(tp->placeholders);
+	destroy(tp);
 }
 
 Value* Template_fill(const Template* tp, ...) {
@@ -195,7 +195,7 @@ static Value* next_value(PLACETYPE type, va_list args) {
 		case PH_VAL:   return Value_copy(va_arg(args, Value*));
 			
 		default:
-			return ValErr(typeError("Unexpected placeholder type", type));
+			return ValErr(typeError("Unexpected placeholder type %d", type));
 	}
 }
 
@@ -210,7 +210,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 	for(i = 0; i < tp->num_placeholders; i++) {
 		Value* cur = tp->placeholders[i];
 		if(cur == NULL) {
-			ret = ValErr(missingPlaceholder(i));
+			RAISE(missingPlaceholder(i), true);
 			break;
 		}
 		
@@ -222,7 +222,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		orig[i] = cur->ph;
 		Value* arg = next_value(cur->ph->type, args);
 		memcpy(cur, arg, sizeof(*cur));
-		free(arg);
+		destroy(arg);
 	}
 	
 	/* Only copy tree when there's no error */
@@ -244,7 +244,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		}
 	}
 	
-	free(orig);
+	destroy(orig);
 	return ret;
 }
 

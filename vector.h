@@ -19,49 +19,53 @@ typedef struct Vector Vector;
 #include "generic.h"
 
 
+ASSUME_NONNULL_BEGIN
+
 struct Vector {
-	OWNED NONNULL ArgList* vals;
+	OWNED ArgList* vals;
 };
 
 
 /* Constructor */
-OWNED NONNULL Vector* Vector_new(OWNED NONNULL ArgList* vals);
-OWNED NONNULL Vector* Vector_create(INVARIANT(count >= 1) unsigned count, /* Value* */...);
-OWNED NONNULL Vector* Vector_vcreate(INVARIANT(count >= 1) unsigned count, va_list args);
+RETURNS_OWNED Vector* Vector_new(CONSUMED ArgList* vals);
+RETURNS_OWNED Vector* Vector_create(INVARIANT(count >= 1) unsigned count, /* Value* */...);
+RETURNS_OWNED Vector* Vector_vcreate(INVARIANT(count >= 1) unsigned count, va_list args);
 
 /* Destructor */
-void Vector_free(OWNED NULLABLE Vector* vec);
+void Vector_free(CONSUMED Vector* _Nullable vec);
 
 /* Copying */
-OWNED NONNULL_WHEN(vec == NULL) Vector* Vector_copy(NULLABLE const Vector* vec);
+RETURNS_OWNED Vector* Vector_copy(const Vector* vec);
 
 /* Parsing */
-OWNED NONNULL Value* Vector_parse(INOUT NONNULL const char** expr, NONNULL parser_cb* cb);
+RETURNS_OWNED Value* Vector_parse(INOUT istring expr, parser_cb* cb);
 
 /* Evaluation */
-OWNED NONNULL Value* Vector_eval(NONNULL const Vector* vec, NONNULL const Context* ctx);
+RETURNS_OWNED Value* Vector_eval(const Vector* vec, const Context* ctx);
 
 /* Arithmetic */
-OWNED NONNULL Value* Vector_add(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_sub(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_rsub(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_mul(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_div(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_rdiv(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_pow(NONNULL const Vector* vec, NONNULL const Value* other, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_rpow(NONNULL const Vector* vec, NONNULL const Value* scalar, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_dot(NONNULL const Vector* vector1, NONNULL const Vector* vector2, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_cross(NONNULL const Vector* vector1, NONNULL const Vector* vector2, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_magnitude(NONNULL const Vector* vec, NONNULL const Context* ctx);
-OWNED NONNULL Value* Vector_normalize(NONNULL const Vector* vec, NONNULL const Context* ctx);
+RETURNS_OWNED Value* Vector_add(const Vector* vec, const Value* other, const Context* ctx);
+RETURNS_OWNED Value* Vector_sub(const Vector* vec, const Value* other, const Context* ctx);
+RETURNS_OWNED Value* Vector_rsub(const Vector* vec, const Value* scalar, const Context* ctx);
+RETURNS_OWNED Value* Vector_mul(const Vector* vec, const Value* other, const Context* ctx);
+RETURNS_OWNED Value* Vector_div(const Vector* vec, const Value* other, const Context* ctx);
+RETURNS_OWNED Value* Vector_rdiv(const Vector* vec, const Value* scalar, const Context* ctx);
+RETURNS_OWNED Value* Vector_pow(const Vector* vec, const Value* other, const Context* ctx);
+RETURNS_OWNED Value* Vector_rpow(const Vector* vec, const Value* scalar, const Context* ctx);
+RETURNS_OWNED Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* ctx);
+RETURNS_OWNED Value* Vector_cross(const Vector* vector1, const Vector* vector2, const Context* ctx);
+RETURNS_OWNED Value* Vector_magnitude(const Vector* vec, const Context* ctx);
+RETURNS_OWNED Value* Vector_normalize(const Vector* vec, const Context* ctx);
 
 /* Access Values */
-OWNED NONNULL Value* Vector_elem(NONNULL const Vector* vec, NONNULL const Value* index, NONNULL const Context* ctx);
+RETURNS_OWNED Value* Vector_elem(const Vector* vec, const Value* index, const Context* ctx);
 
 /* Printing */
-OWNED NONNULL char* Vector_repr(NONNULL const Vector* vec, bool pretty);
-OWNED NONNULL char* Vector_wrap(NONNULL const Vector* vec);
-OWNED NONNULL char* Vector_verbose(NONNULL const Vector* vec, unsigned indent);
-OWNED NONNULL char* Vector_xml(NONNULL const Vector* vec, unsigned indent);
+RETURNS_OWNED char* Vector_repr(const Vector* vec, bool pretty);
+RETURNS_OWNED char* Vector_wrap(const Vector* vec);
+RETURNS_OWNED char* Vector_verbose(const Vector* vec, unsigned indent);
+RETURNS_OWNED char* Vector_xml(const Vector* vec, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_VECTOR_H */

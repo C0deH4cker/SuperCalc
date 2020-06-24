@@ -13,6 +13,9 @@ typedef struct Placeholder Placeholder;
 #include "value.h"
 #include "generic.h"
 
+
+ASSUME_NONNULL_BEGIN
+
 typedef enum {
 	PH_ERR = -1,
 	PH_INT = 0,
@@ -32,21 +35,23 @@ struct Placeholder {
 };
 
 /* Constructors */
-OWNED NONNULL Placeholder* Placeholder_new(PLACETYPE type, unsigned index);
-OWNED NONNULL Placeholder* Placeholder_create(char type, unsigned index);
-OWNED NONNULL Placeholder* Placeholder_fromString(NONNULL const char* fmt);
+RETURNS_OWNED Placeholder* Placeholder_new(PLACETYPE type, unsigned index);
+RETURNS_OWNED Placeholder* Placeholder_create(char type, unsigned index);
+RETURNS_OWNED Placeholder* Placeholder_fromString(const char* fmt);
 
 /* Destructor */
-void Placeholder_free(OWNED NULLABLE Placeholder* ph);
+void Placeholder_free(CONSUMED Placeholder* ph);
 
 /* Copying */
-OWNED NULLABLE_WHEN(ph == NULL) Placeholder* Placeholder_copy(NULLABLE const Placeholder* ph);
+RETURNS_OWNED Placeholder* Placeholder_copy(const Placeholder* ph);
 
 /* Parse a placeholder from a format string */
-OWNED NONNULL Placeholder* Placeholder_parse(INOUT NONNULL const char* NONNULL* expr);
+RETURNS_OWNED Placeholder* Placeholder_parse(INOUT istring expr);
 
 /* Printing */
-OWNED NONNULL char* Placeholder_repr(NONNULL const Placeholder* ph);
-OWNED NONNULL char* Placeholder_xml(NONNULL const Placeholder* ph, unsigned indent);
+RETURNS_OWNED char* Placeholder_repr(const Placeholder* ph);
+RETURNS_OWNED char* Placeholder_xml(const Placeholder* ph, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_PLACEHOLDER_H */

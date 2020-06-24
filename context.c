@@ -17,12 +17,12 @@
 
 struct VarNode {
 	Variable* var;
-	struct VarNode* next;
+	struct VarNode* _Nullable next;
 };
 
 struct ContextStack {
 	struct VarNode* vars;
-	struct ContextStack* next;
+	struct ContextStack* _Nullable next;
 };
 
 struct Context {
@@ -61,7 +61,7 @@ static void freeVars(struct VarNode* cur) {
 	while(cur) {
 		/* Free current element */
 		Variable_free(cur->var);
-		free(cur);
+		destroy(cur);
 		
 		/* Go to next element in the linked list */
 		cur = next;
@@ -86,7 +86,7 @@ void Context_free(Context* ctx) {
 	
 	freeVars(ctx->globals);
 	freeStack(ctx->locals);
-	free(ctx);
+	destroy(ctx);
 }
 
 static struct VarNode* copyVars(const struct VarNode* src) {
@@ -122,23 +122,15 @@ static struct VarNode* copyVars(const struct VarNode* src) {
 
 static struct ContextStack* copyStack(const struct ContextStack* stack) {
 	struct ContextStack* ret = NULL;
-	struct ContextStack* prev = NULL;
+	struct ContextStack** next = &ret;
 	
 	while(stack) {
-		struct ContextStack* dst = fmalloc(sizeof(*dst));
-		dst->vars = copyVars(stack->vars);
-		dst->next = NULL;
+		struct ContextStack* cur = fmalloc(sizeof(*next));
+		cur->vars = copyVars(stack->vars);
+		cur->next = NULL;
+		*next = cur;
 		
-		if(ret == NULL) {
-			ret = dst;
-		}
-		
-		if(prev) {
-			prev->next = dst;
-		}
-		
-		prev = dst;
-		dst = dst->next;
+		next = &cur->next;
 		stack = stack->next;
 	}
 	
@@ -146,8 +138,6 @@ static struct ContextStack* copyStack(const struct ContextStack* stack) {
 }
 
 Context* Context_copy(const Context* ctx) {
-	if(!ctx) return NULL;
-	
 	Context* ret = Context_new();
 	
 	ret->globals = copyVars(ctx->globals);
@@ -206,8 +196,8 @@ Context* Context_pushFrame(const Context* ctx) {
 
 void Context_popFrame(Context* ctx) {
 	freeVars(ctx->locals->vars);
-	free(ctx->locals);
-	free(ctx);
+	destroy(ctx->locals);
+	destroy(ctx);
 }
 
 static struct VarNode* findPrev(struct VarNode* cur, const char* name) {
@@ -246,7 +236,7 @@ void Context_del(const Context* ctx, const char* name) {
 			
 			/* Free node */
 			Variable_free(cur->var);
-			free(cur);
+			destroy(cur);
 			
 			return;
 		}
@@ -271,7 +261,7 @@ void Context_del(const Context* ctx, const char* name) {
 	
 	/* Free current node */
 	Variable_free(cur->var);
-	free(cur);
+	destroy(cur);
 }
 
 void Context_clear(Context* ctx) {
@@ -281,7 +271,7 @@ void Context_clear(Context* ctx) {
 	while(cur != NULL) {
 		prev->next = cur->next;
 		Variable_free(cur->var);
-		free(cur);
+		destroy(cur);
 		cur = prev->next;
 	}
 	

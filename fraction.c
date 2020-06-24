@@ -46,14 +46,10 @@ Fraction* Fraction_new(long long numerator, long long denominator) {
 }
 
 void Fraction_free(Fraction* frac) {
-	free(frac);
+	destroy(frac);
 }
 
 Fraction* Fraction_copy(const Fraction* frac) {
-	if(!frac) {
-		return NULL;
-	}
-	
 	return Fraction_new(frac->n, frac->d);
 }
 
@@ -252,7 +248,9 @@ static Value* fracMod(const Fraction* a, const Fraction* b) {
 	
 	Value_free(next);
 	
-	return Fraction_sub(a, f);
+	Value* ret = Fraction_sub(a, f);
+	Value_free(f);
+	return ret;
 }
 
 Value* Fraction_mod(const Fraction* a, const Value* b) {
@@ -460,12 +458,13 @@ static Value* fracPow(const Fraction* base, const Fraction* exp) {
 										));
 			}
 #else
+			Value_free(coef);
 			ret = ValReal(pow(Fraction_asReal(base), Fraction_asReal(exp)));
 #endif
 		}
 		
-		free(n_primes);
-		free(d_primes);
+		destroy(n_primes);
+		destroy(d_primes);
 	}
 	
 	return ret;

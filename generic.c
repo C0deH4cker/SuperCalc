@@ -36,6 +36,11 @@ typedef enum {
 	VC_XML    = 'x'
 } VERBOSITY_CHAR;
 
+
+void free_owned(void* ptr) {
+	free(ptr);
+}
+
 char* g_line = NULL;
 unsigned g_lineNumber = 0;
 FILE* g_inputFile = NULL;
@@ -45,7 +50,7 @@ char* nextLine(const char* prompt) {
 #ifdef WITH_LINENOISE
 	/* Only use linenoise for the interactive prompt, not for imported files */
 	if(g_inputFile == NULL) {
-		free(g_line);
+		destroy(g_line);
 		g_line = linenoise(prompt);
 		if(g_line != NULL) {
 			linenoiseHistoryAdd(g_line);
@@ -85,7 +90,7 @@ bool isInteractive(FILE* fp) {
 	return ISATTY(fileno(fp));
 }
 
-VERBOSITY getVerbosity(char** str) {
+VERBOSITY getVerbosity(istring str) {
 	VERBOSITY ret = V_NONE;
 	
 	if(**str != '?') {
@@ -171,7 +176,9 @@ static const char* _pretty_tok[] = {
 	"φ", "χ", "ψ", "ω"
 };
 const char* getPretty(const char* name) {
-	if(name == NULL) return NULL;
+	if(name == NULL) {
+		return NULL;
+	}
 	
 	/* More: "∞≠∑ß∂ƒ∆÷≥≤∫≈±∏Ø" */
 	unsigned i;
@@ -184,7 +191,7 @@ const char* getPretty(const char* name) {
 	return name;
 }
 
-void trimSpaces(const char** str) {
+void trimSpaces(istring str) {
 	*str += strspn(*str, " \t");
 }
 
@@ -230,7 +237,7 @@ long long gcd(long long a, long long b) {
 	return b == 0 ? a : gcd(b, a % b);
 }
 
-char* nextSpecial(const char** expr) {
+char* nextSpecial(istring expr) {
 	unsigned i;
 	for(i = 0; i < ARRSIZE(_pretty_tok); i++) {
 		size_t len = strlen(_pretty_tok[i]);
@@ -244,7 +251,7 @@ char* nextSpecial(const char** expr) {
 	return NULL;
 }
 
-char* nextToken(const char** expr) {
+char* nextToken(istring expr) {
 	size_t len = 1;
 	
 	trimSpaces(expr);
@@ -283,7 +290,7 @@ char* nextToken(const char** expr) {
 	return ret;
 }
 
-int getSign(const char** expr) {
+int getSign(istring expr) {
 	int sign = 1;
 	
 	trimSpaces(expr);

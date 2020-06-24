@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 			Error* err = SuperCalc_importFile(sc, argv[i]);
 			if(err != NULL) {
 				Error_raise(err, true);
+				UNREACHABLE;
 			}
 		}
 	}

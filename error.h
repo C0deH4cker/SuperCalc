@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "annotations.h"
 #include "support.h"
 
 typedef struct Error Error;
@@ -22,7 +23,7 @@ typedef struct Error Error;
 	Error* _err = (err); \
 	Error_raise(_err, _death); \
 	if(_death) { \
-		UNREACHABLE(); \
+		UNREACHABLE; \
 	} \
 	Error_free(_err); \
 } while(0)
@@ -39,23 +40,23 @@ typedef struct Error Error;
 #define unknownError(...)           Error_new(ERR_UNK, __VA_ARGS__)
 
 /* Common errors */
-extern const char* kNullErrStr;
-extern const char* kDivByZeroStr;
-extern const char* kModByZeroStr;
-extern const char* kVarNotFoundStr;
-extern const char* kBadOpTypeStr;
-extern const char* kBadCharStr;
-extern const char* kBuiltinArgsStr;
-extern const char* kBuiltinNotFuncStr;
-extern const char* kBadConversionStr;
-extern const char* kEarlyEndStr;
-extern const char* kMissingPlaceholderStr;
-extern const char* kBadImportDepthStr;
-extern const char* kImportErrorStr;
+#define kNullErrStr             "NULL pointer value."
+#define kDivByZeroStr           "Division by zero."
+#define kModByZeroStr           "Modulus by zero."
+#define kVarNotFoundStr         "No variable named '%s' found."
+#define kBadOpTypeStr           "Bad %s operand type: %d."
+#define kBadCharStr             "Unexpected character: '%c'."
+#define kBuiltinArgsStr         "Builtin '%s' expects %u argument%s, not %u."
+#define kBuiltinNotFuncStr      "Builtin '%s' is not a function."
+#define kBadConversionStr       "One or more arguments to builtin '%s' couldn't be converted to numbers."
+#define kEarlyEndStr            "Premature end of input."
+#define kMissingPlaceholderStr  "Missing placeholder number %u."
+#define kBadImportDepthStr      "Exceeded max allowed import depth when trying to import file '%s'."
+#define kImportErrorStr         "Failed to import file '%s': %s."
 
-extern const char* kAllocErrStr;
-extern const char* kBadValStr;
-extern const char* kBadVarStr;
+#define kAllocErrStr            "Unable to allocate memory."
+#define kBadValStr              "Unexpected value type: %d."
+#define kBadVarStr              "Unexpected variable type: %d."
 
 #define nullError()                 unknownError(kNullErrStr)
 #define zeroDivError()              mathError(kDivByZeroStr)
@@ -90,33 +91,38 @@ typedef enum {
 } ERRTYPE;
 
 /* Death function */
-NORETURN void die(const char* file, const char* function, int line, const char* fmt, ...);
+NORETURN void die(const char* _Nonnull file, const char* _Nonnull function, int line, const char* _Nonnull fmt, ...);
 
 
 #include "generic.h"
 
+
+ASSUME_NONNULL_BEGIN
+
 struct Error {
 	ERRTYPE type;
-	OWNED NONNULL char* msg;
-	OWNED NULLABLE char* filename;
+	OWNED char* msg;
+	OWNED char* _Nullable filename;
 	unsigned line;
 	unsigned column;
 };
 
 /* Constructors */
-OWNED NONNULL Error* Error_new(ERRTYPE type, NONNULL const char* fmt, ...);
-OWNED NONNULL Error* Error_vnew(ERRTYPE type, NONNULL const char* fmt, va_list args);
+RETURNS_OWNED Error* Error_new(ERRTYPE type, const char* fmt, ...) PRINTFLIKE(2, 3);
+RETURNS_OWNED Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) PRINTFLIKE(2, 0);
 
 /* Destructor */
-void Error_free(OWNED NULLABLE Error* err);
+void Error_free(CONSUMED Error* _Nullable err);
 
 /* Copying */
-OWNED NONNULL_WHEN(err != NULL) Error* Error_copy(NULLABLE const Error* err);
+RETURNS_OWNED Error* Error_copy(const Error* err);
 
 /* Printing and maybe a side of suicide */
-void Error_raise(NONNULL const Error* err, bool forceDeath);
+void Error_raise(const Error* err, bool forceDeath);
 
 /* Fatal or not? */
-bool Error_canRecover(NONNULL const Error* err);
+bool Error_canRecover(const Error* err);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_ERROR_H */

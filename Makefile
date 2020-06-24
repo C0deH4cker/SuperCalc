@@ -19,6 +19,9 @@ CLANG := clang
 CC := $(CLANG)
 LD := $(CLANG)
 
+ANALYZE_FLAGS := $(CFLAGS) -DDEBUG=1 -UNDEBUG -Xanalyzer -analyzer-output=text
+ANALYZE_FILES := $(addsuffix .analyze,$(SRCS))
+
 # Print all commands executed when VERBOSE is defined
 ifdef VERBOSE
 _v :=
@@ -75,6 +78,12 @@ linenoise/linenoise.h:
 	$(call status,'Pulling git submodule '$(call underline,'linenoise'))
 	$(_v)git submodule update --init --recursive
 
+%.analyze: %
+	$(call status,'Analyzing '$(call underline,'$<'))
+	$(_v)$(CLANG) --analyze $(ANALYZE_FLAGS) $<
+
+.PHONY: analyze
+analyze: $(ANALYZE_FILES)
 
 # Build dependency rules
 -include $(DEPS)

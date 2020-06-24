@@ -10,14 +10,7 @@
 #define SC_SUPPORT_H
 
 #include <stdarg.h>
-
-#ifdef _MSC_VER
-# define NORETURN __declspec("noreturn")
-# define UNREACHABLE() __assume(false)
-#else
-# define NORETURN __attribute__((__noreturn__))
-# define UNREACHABLE() __builtin_unreachable()
-#endif
+#include "annotations.h"
 
 #ifdef _MSC_VER
 

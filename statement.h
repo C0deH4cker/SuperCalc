@@ -19,8 +19,11 @@ typedef struct Statement Statement;
 #include "context.h"
 #include "generic.h"
 
+
+ASSUME_NONNULL_BEGIN
+
 struct Statement {
-	OWNED NONNULL Variable* var;
+	OWNED Variable* var;
 };
 
 
@@ -30,25 +33,27 @@ struct Statement {
   - Its name is NULL unless there is an assignment
   - Its value is not simplified. It will store the entire tree
 */
-OWNED NONNULL Statement* Statement_new(OWNED NONNULL Variable* var);
+RETURNS_OWNED Statement* Statement_new(CONSUMED Variable* var);
 
 /* Destructor */
-void Statement_free(OWNED NULLABLE Statement* stmt);
+void Statement_free(CONSUMED Statement* _Nullable stmt);
 
 /* Parsing */
-OWNED NONNULL Statement* Statement_parse(INOUT NONNULL const char** expr);
+RETURNS_OWNED Statement* Statement_parse(INOUT istring expr);
 
 /* Error handling */
-bool Statement_didError(NONNULL const Statement* stmt);
+bool Statement_didError(const Statement* stmt);
 
 /* Evaluation */
-OWNED NONNULL Value* Statement_eval(NONNULL const Statement* stmt, INOUT UNOWNED NONNULL Context* ctx, VERBOSITY v);
+RETURNS_OWNED Value* Statement_eval(const Statement* stmt, INOUT UNOWNED Context* ctx, VERBOSITY v);
 
 /* Printing */
-OWNED NONNULL char* Statement_repr(NONNULL const Statement* stmt, NONNULL const Context* ctx, bool pretty);
-OWNED NONNULL char* Statement_wrap(NONNULL const Statement* stmt, NONNULL const Context* ctx);
-OWNED NONNULL char* Statement_verbose(NONNULL const Statement* stmt, NONNULL const Context* ctx);
-OWNED NONNULL char* Statement_xml(NONNULL const Statement* stmt, NONNULL const Context* ctx);
-void Statement_print(NONNULL const Statement* stmt, NONNULL const SuperCalc* sc, VERBOSITY v);
+RETURNS_OWNED char* Statement_repr(const Statement* stmt, const Context* ctx, bool pretty);
+RETURNS_OWNED char* Statement_wrap(const Statement* stmt, const Context* ctx);
+RETURNS_OWNED char* Statement_verbose(const Statement* stmt, const Context* ctx);
+RETURNS_OWNED char* Statement_xml(const Statement* stmt, const Context* ctx);
+void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_STATEMENT_H */

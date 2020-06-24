@@ -18,33 +18,36 @@ typedef struct UnOp UnOp;
 #include "generic.h"
 
 
+ASSUME_NONNULL_BEGIN
+
 typedef enum {
 	UN_FACT = 0
 } UNTYPE;
 
 struct UnOp {
 	UNTYPE type;
-	OWNED NONNULL Value* a;
+	OWNED Value* _Nonnull a;
 };
 
 
 /* Constructor */
-/* This method consumes the `a` argument */
-OWNED NONNULL UnOp* UnOp_new(UNTYPE type, OWNED NONNULL Value* a);
+RETURNS_OWNED UnOp* UnOp_new(UNTYPE type, CONSUMED Value* a);
 
 /* Destructor */
-void UnOp_free(OWNED NULLABLE UnOp* term);
+void UnOp_free(CONSUMED UnOp* _Nullable term);
 
 /* Copying */
-OWNED NULLABLE_WHEN(term == NULL) UnOp* UnOp_copy(NULLABLE const UnOp* term);
+RETURNS_OWNED UnOp* UnOp_copy(const UnOp* term);
 
 /* Evaluation */
-OWNED NONNULL Value* UnOp_eval(NONNULL const UnOp* term, NONNULL const Context* ctx);
+RETURNS_OWNED Value* UnOp_eval(const UnOp* term, const Context* ctx);
 
 /* Printing */
-OWNED NONNULL char* UnOp_repr(NONNULL const UnOp* term, bool pretty);
-OWNED NONNULL char* UnOp_wrap(NONNULL const UnOp* term);
-OWNED NONNULL char* UnOp_verbose(NONNULL const UnOp* term, unsigned indent);
-OWNED NONNULL char* UnOp_xml(NONNULL const UnOp* term, unsigned indent);
+RETURNS_OWNED char* UnOp_repr(const UnOp* term, bool pretty);
+RETURNS_OWNED char* UnOp_wrap(const UnOp* term);
+RETURNS_OWNED char* UnOp_verbose(const UnOp* term, unsigned indent);
+RETURNS_OWNED char* UnOp_xml(const UnOp* term, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_UNOP_H */

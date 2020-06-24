@@ -43,8 +43,8 @@ void ArgList_free(ArgList* arglist) {
 		Value_free(arglist->args[i]);
 	}
 	
-	free(arglist->args);
-	free(arglist);
+	destroy(arglist->args);
+	destroy(arglist);
 }
 
 ArgList* ArgList_create(unsigned count, ...) {
@@ -71,10 +71,6 @@ ArgList* ArgList_vcreate(unsigned count, va_list args) {
 }
 
 ArgList* ArgList_copy(const ArgList* arglist) {
-	if(!arglist) {
-		return NULL;
-	}
-	
 	unsigned count = arglist->count;
 	ArgList* ret = ArgList_new(count);
 	
@@ -86,19 +82,21 @@ ArgList* ArgList_copy(const ArgList* arglist) {
 	return ret;
 }
 
-ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx) {
+ArgList* ArgList_eval(const ArgList* arglist, const Context* ctx, Error** err) {
+	*err = NULL;
 	ArgList* ret = ArgList_new(arglist->count);
 	
 	unsigned i;
 	for(i = 0; i < arglist->count; i++) {
 		Value* result = Value_coerce(arglist->args[i], ctx);
 		if(result->type == VAL_ERR) {
-			/* An error occurred */
-			Error_raise(result->err, false);
+			/* An error occurred, so return it as an out param */
+			*err = result->err;
 			
+			/* This is safe because Value_free() handles NULL */
+			result->err = CAST_NONNULL(NULL);
 			Value_free(result);
 			ArgList_free(ret);
-			
 			return NULL;
 		}
 		
@@ -117,7 +115,7 @@ double* ArgList_toReals(const ArgList* arglist, const Context* ctx) {
 	for(i = 0; i < arglist->count; i++) {
 		double real = Value_asReal(arglist->args[i]);
 		if(isnan(real)) {
-			free(ret);
+			destroy(ret);
 			return NULL;
 		}
 		
@@ -163,10 +161,12 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb, Err
 		for(i = 0; i < count; i++) {
 			Value_free(args[i]);
 		}
-		free(args);
+		destroy(args);
 		
 		*err = arg->err;
-		arg->err = NULL;
+		
+		/* Safe to free NULL */
+		arg->err = CAST_NONNULL(NULL);
 		Value_free(arg);
 		return NULL;
 	}
@@ -180,7 +180,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb, Err
 		for(i = 0; i < count; i++) {
 			Value_free(args[i]);
 		}
-		free(args);
+		destroy(args);
 		
 		*err = badChar(*expr);
 		return NULL;
@@ -188,7 +188,7 @@ ArgList* ArgList_parse(const char** expr, char sep, char end, parser_cb* cb, Err
 	
 	ArgList* ret = ArgList_new(count);
 	memcpy(ret->args, args, count * sizeof(*args));
-	free(args);
+	destroy(args);
 	
 	if(**expr == end) {
 		(*expr)++;
@@ -209,13 +209,13 @@ static char* arglistToString(const ArgList* arglist, char** argstrs) {
 			asprintf(&tmp,
 					 "%s, %s",
 					 ret, argstrs[i]);
-			free(ret);
-			free(argstrs[i]);
+			destroy(ret);
+			destroy(argstrs[i]);
 			ret = tmp;
 		}
 	}
 	
-	free(argstrs);
+	destroy(argstrs);
 	return ret;
 }
 
@@ -250,7 +250,7 @@ char* ArgList_wrap(const ArgList* arglist) {
 }
 
 char* ArgList_verbose(const ArgList* arglist, unsigned indent) {
-	char* ret;
+	char* ret = NULL;
 	const char* current = indentation(indent);
 	
 	unsigned i;
@@ -269,14 +269,14 @@ char* ArgList_verbose(const ArgList* arglist, unsigned indent) {
 					 "%s[%d] %s",
 					 ret,
 					 current, i, argstr);
-			free(ret);
+			free_owned(ret);
 			ret = tmp;
 		}
 		
-		free(argstr);
+		free_owned(argstr);
 	}
 	
-	return ret;
+	return ret ?: strdup("");
 }
 
 char* ArgList_xml(const ArgList* arglist, unsigned indent) {
@@ -300,7 +300,7 @@ char* ArgList_xml(const ArgList* arglist, unsigned indent) {
 	 </call>
 	*/
 	if(arglist->count == 0) {
-		return NULL;
+		return strdup("");
 	}
 	
 	char* ret;
@@ -322,11 +322,11 @@ char* ArgList_xml(const ArgList* arglist, unsigned indent) {
 					 "%s%s", /* current arg */
 					 ret,
 					 spacing, arg);
-			free(ret);
+			destroy(ret);
 			ret = tmp;
 		}
 		
-		free(arg);
+		destroy(arg);
 	}
 	
 	return ret;

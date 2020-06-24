@@ -44,7 +44,7 @@ void SuperCalc_free(SuperCalc* sc) {
 	}
 	
 	Context_free(sc->ctx);
-	free(sc);
+	destroy(sc);
 }
 
 void SuperCalc_run(SuperCalc* sc) {
@@ -61,7 +61,9 @@ void SuperCalc_run(SuperCalc* sc) {
 	
 	while((g_line = nextLine(prompt))) {
 		char* p = g_line;
-		VERBOSITY v = getVerbosity(&p);
+		
+		/* I solemnly swear not to modify the string's contents. Pinky promise :) */
+		VERBOSITY v = getVerbosity((istring)&p);
 		if(v & V_ERR) {
 			continue;
 		}
@@ -105,7 +107,7 @@ Error* SuperCalc_importFile(SuperCalc* sc, const char* filename) {
 		Value* val = SuperCalc_runLine(sc, new_line, V_NONE);
 		if(val != NULL && val->type == VAL_ERR) {
 			ret = val->err;
-			val->err = NULL;
+			val->err = CAST_NONNULL(NULL);
 			Value_free(val);
 			break;
 		}
@@ -119,7 +121,7 @@ Error* SuperCalc_importFile(SuperCalc* sc, const char* filename) {
 	
 	/* Restore previous global line buffer and free the new one */
 	g_line = old_g_line;
-	free(new_line);
+	destroy(new_line);
 	g_lineNumber = old_g_lineNumber;
 	g_inputFileName = old_g_inputFileName;
 	
@@ -157,7 +159,7 @@ Value* SuperCalc_runLine(SuperCalc* sc, char* code, VERBOSITY v) {
 		
 		Context_del(sc->ctx, name);
 		
-		free(name);
+		destroy(name);
 		return NULL;
 	}
 	else if(*p == '@') {
@@ -191,7 +193,7 @@ Value* SuperCalc_runLine(SuperCalc* sc, char* code, VERBOSITY v) {
 	/* Error? Go to next loop iteration */
 	if(Statement_didError(stmt)) {
 		Value* ret = stmt->var->val;
-		stmt->var->val = NULL;
+		stmt->var->val = CAST_NONNULL(NULL);
 		Statement_free(stmt);
 		return ret;
 	}

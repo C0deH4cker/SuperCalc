@@ -133,9 +133,13 @@ static Value* eval_map(const Context* ctx, const ArgList* arglist, bool internal
 	unsigned i;
 	for(i = 0; i < mapping->count; i++) {
 		TP(tp);
+		Value* copiedCallable = Value_copy(callable);
+		Value* arg = Value_copy(vec->vec->vals->args[i]);
 		mapping->args[i] = TP_EVAL(tp, ctx, "@@(@@)",
-								   callable,
-								   Value_copy(vec->vec->vals->args[i]));
+								   copiedCallable,
+								   arg);
+		analyzer_consume(copiedCallable);
+		analyzer_consume(arg);
 	}
 	
 	Value_free(callable);
@@ -152,11 +156,20 @@ static Value* eval_elem(const Context* ctx, const ArgList* arglist, bool interna
 	
 	/* Get evaluated values */
 	Value* vec = Value_coerce(arglist->args[0], ctx);
-	Value* index = Value_coerce(arglist->args[1], ctx);
+	if(vec->type == VAL_ERR) {
+		return vec;
+	}
 	
 	/* Check vector type */
 	if(vec->type != VAL_VEC) {
+		Value_free(vec);
 		return ValErr(typeError("Only vectors are subscriptable."));
+	}
+	
+	Value* index = Value_coerce(arglist->args[1], ctx);
+	if(index->type == VAL_ERR) {
+		Value_free(vec);
+		return index;
 	}
 	
 	/* Get actual value */
@@ -176,12 +189,18 @@ static Value* eval_mag(const Context* ctx, const ArgList* arglist, bool internal
 	}
 	
 	Value* vec = Value_coerce(arglist->args[0], ctx);
+	if(vec->type == VAL_ERR) {
+		return vec;
+	}
+	
 	if(vec->type != VAL_VEC) {
 		Value_free(vec);
 		return ValErr(typeError("Can only evaluate the magnitude of a vector."));
 	}
 	
-	return Vector_magnitude(vec->vec, ctx);
+	Value* ret = Vector_magnitude(vec->vec, ctx);
+	Value_free(vec);
+	return ret;
 }
 
 static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool internal) {
@@ -198,7 +217,11 @@ static Value* eval_norm(const Context* ctx, const ArgList* arglist, bool interna
 	}
 	
 	TP(tp);
-	return TP_EVAL(tp, ctx, "@1v/mag(@1v)", Vector_copy(val->vec));
+	Vector* copiedVec = Vector_copy(val->vec);
+	Value_free(val);
+	Value* ret = TP_EVAL(tp, ctx, "@1v/mag(@1v)", copiedVec);
+	analyzer_consume(copiedVec);
+	return ret;
 }
 
 static const char* _vector_names[] = {

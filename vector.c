@@ -39,9 +39,7 @@ Vector* Vector_new(ArgList* vals) {
 }
 
 Vector* Vector_create(unsigned count, ...) {
-	if(count < 1) {
-		return NULL;
-	}
+	assert(count >= 1);
 	
 	va_list ap;
 	va_start(ap, count);
@@ -62,14 +60,10 @@ void Vector_free(Vector* vec) {
 	}
 	
 	ArgList_free(vec->vals);
-	free(vec);
+	destroy(vec);
 }
 
 Vector* Vector_copy(const Vector* vec) {
-	if(!vec) {
-		return NULL;
-	}
-	
 	return Vector_new(ArgList_copy(vec->vals));
 }
 
@@ -90,9 +84,10 @@ Value* Vector_parse(const char** expr, parser_cb* cb) {
 }
 
 Value* Vector_eval(const Vector* vec, const Context* ctx) {
-	ArgList* args = ArgList_eval(vec->vals, ctx);
+	Error* err = NULL;
+	ArgList* args = ArgList_eval(vec->vals, ctx, &err);
 	if(args == NULL) {
-		return ValErr(ignoreError());
+		return ValErr(err);
 	}
 	return ValVec(Vector_new(args));
 }
@@ -136,7 +131,9 @@ static Value* vecMagOp(const Vector* vec, const Value* scalar, const Context* ct
 	/* Both newMag and mag are freed with newDivOld */
 	
 	/* Calculate new vector */
-	return vecScalarOp(vec, scalFact, ctx, BIN_MUL);
+	Value* ret = vecScalarOp(vec, scalFact, ctx, BIN_MUL);
+	Value_free(scalFact);
+	return ret;
 }
 
 static Value* vecScalarOpRev(const Vector* vec, const Value* scalar, const Context* ctx, BINTYPE bin) {
@@ -272,10 +269,16 @@ Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* c
 		
 		/* accum += v1[i] * val2 */
 		TP(tp);
-		accum = TP_EVAL(tp, ctx, "@@+@@*@@",
+		Value* v1 = Value_copy(vector1->vals->args[i]);
+		Value* v2 = Value_copy(val2);
+		Value* newAccum = TP_EVAL(tp, ctx, "@@+@@*@@",
 		                accum,
-		                Value_copy(vector1->vals->args[i]),
-		                Value_copy(val2));
+		                v1,
+		                v2);
+		analyzer_consume(accum);
+		analyzer_consume(v1);
+		analyzer_consume(v2);
+		accum = newAccum;
 	}
 	
 	return accum;
@@ -284,13 +287,27 @@ Value* Vector_dot(const Vector* vector1, const Vector* vector2, const Context* c
 Value* Vector_cross(const Vector* u, const Vector* v, const Context* ctx) {
 	/* Down to one statement from almost 100 lines because of TP_EVAL :) */
 	/* Now up to two statements because MSVC doesn't support statement expressions :( */
+	/* Now up a few more statements to please the Clang Static Analyzer, but worth it :D */
 	TP(tp);
-	return TP_EVAL(tp, ctx,
+	Value* u0 = Value_copy(u->vals->args[0]);
+	Value* u1 = Value_copy(u->vals->args[1]);
+	Value* u2 = Value_copy(u->vals->args[2]);
+	Value* v0 = Value_copy(v->vals->args[0]);
+	Value* v1 = Value_copy(v->vals->args[1]);
+	Value* v2 = Value_copy(v->vals->args[2]);
+	Value* ret = TP_EVAL(tp, ctx,
 		"<@2@*@6@ - @3@*@5@,"
 		" @3@*@4@ - @1@*@6@,"
 		" @1@*@5@ - @2@*@4@>",
-		Value_copy(u->vals->args[0]), Value_copy(u->vals->args[1]), Value_copy(u->vals->args[2]),
-		Value_copy(v->vals->args[0]), Value_copy(v->vals->args[1]), Value_copy(v->vals->args[2]));
+		u0, u1, u2,
+		v0, v1, v2);
+	analyzer_consume(u0);
+	analyzer_consume(u1);
+	analyzer_consume(u2);
+	analyzer_consume(v0);
+	analyzer_consume(v1);
+	analyzer_consume(v2);
+	return ret;
 }
 
 Value* Vector_magnitude(const Vector* vec, const Context* ctx) {
@@ -328,7 +345,7 @@ char* Vector_repr(const Vector* vec, bool pretty) {
 	
 	asprintf(&ret, "<%s>", vals);
 	
-	free(vals);
+	destroy(vals);
 	return ret;
 }
 
@@ -338,7 +355,7 @@ char* Vector_wrap(const Vector* vec) {
 	
 	asprintf(&ret, "<%s>", vals);
 	
-	free(vals);
+	destroy(vals);
 	return ret;
 }
 
@@ -353,7 +370,7 @@ char* Vector_verbose(const Vector* vec, unsigned indent) {
 			 indentation(indent), indentation(indent + 1),
 			 vals);
 	
-	free(vals);
+	destroy(vals);
 	return ret;
 }
 
@@ -384,7 +401,7 @@ char* Vector_xml(const Vector* vec, unsigned indent) {
 			 indentation(indent),
 			 vals);
 	
-	free(vals);
+	destroy(vals);
 	return ret;
 }
 

@@ -18,6 +18,8 @@ typedef struct BinOp BinOp;
 #include "generic.h"
 
 
+ASSUME_NONNULL_BEGIN
+
 typedef enum {
 	BIN_UNK = -2,
 	BIN_END = -1,
@@ -34,36 +36,37 @@ typedef enum {
 
 struct BinOp {
 	INVARIANT(type >= BIN_ADD) BINTYPE type;
-	OWNED NONNULL Value* a;
-	OWNED NULLABLE Value* b;
+	OWNED Value* a;
+	OWNED Value* _Nullable b;
 };
 
 /* Contains strings such as "multiply" for index BIN_MUL */
-extern const char* binop_verb[BIN_COUNT];
+extern const char* _Nonnull binop_verb[BIN_COUNT];
 
 /* Constructor */
-/* This method consumes both the `a` and `b` arguments */
-BinOp* BinOp_new(BINTYPE type, OWNED NONNULL Value* a, OWNED NULLABLE Value* b);
+RETURNS_OWNED BinOp* BinOp_new(BINTYPE type, CONSUMED Value* a, CONSUMED Value* _Nullable b);
 
 /* Destructor */
-void BinOp_free(OWNED NULLABLE BinOp* node);
+void BinOp_free(CONSUMED BinOp* _Nullable node);
 
 /* Copying */
-OWNED NULLABLE_WHEN(node == NULL) BinOp* BinOp_copy(NULLABLE const BinOp* node);
+RETURNS_OWNED BinOp* BinOp_copy(const BinOp* node);
 
 /* Evaluation */
-OWNED NONNULL Value* BinOp_eval(NONNULL INVARIANT(node->b != NULL) const BinOp* node, NONNULL const Context* ctx);
+RETURNS_OWNED Value* BinOp_eval(INVARIANT(node->b != NULL) const BinOp* node, const Context* ctx);
 
 /* Tokenizer */
-BINTYPE BinOp_nextType(INOUT NONNULL const char** expr, char sep, char end);
+BINTYPE BinOp_nextType(INOUT istring expr, char sep, char end);
 
 /* Operator precedence */
 int BinOp_cmp(BINTYPE a, BINTYPE b);
 
 /* Printing */
-OWNED NONNULL char* BinOp_repr(NONNULL INVARIANT(node->b != NULL) const BinOp* node, bool pretty);
-OWNED NONNULL char* BinOp_wrap(NONNULL INVARIANT(node->b != NULL) const BinOp* node);
-OWNED NONNULL char* BinOp_verbose(NONNULL INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
-OWNED NONNULL char* BinOp_xml(NONNULL INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
+RETURNS_OWNED char* BinOp_repr(INVARIANT(node->b != NULL) const BinOp* node, bool pretty);
+RETURNS_OWNED char* BinOp_wrap(INVARIANT(node->b != NULL) const BinOp* node);
+RETURNS_OWNED char* BinOp_verbose(INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
+RETURNS_OWNED char* BinOp_xml(INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
+
+ASSUME_NONNULL_END
 
 #endif /* SC_BINOP_H */

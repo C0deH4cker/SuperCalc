@@ -35,7 +35,7 @@ void Statement_free(Statement* stmt) {
 	}
 	
 	Variable_free(stmt->var);
-	free(stmt);
+	destroy(stmt);
 }
 
 Statement* Statement_parse(const char** expr) {
@@ -50,7 +50,7 @@ Statement* Statement_parse(const char** expr) {
 		val = Value_parseTop(expr);
 		if(val->type == VAL_ERR) {
 			var = VarErr(val->err);
-			val->err = NULL;
+			val->err = CAST_NONNULL(NULL);
 			Value_free(val);
 		}
 		else {
@@ -78,14 +78,14 @@ Statement* Statement_parse(const char** expr) {
 		Error* err = NULL;
 		Function* func = Function_parseArgs(expr, ',', ')', &err);
 		if(func == NULL) {
-			free(name);
+			destroy(name);
 			return Statement_new(VarErr(err));
 		}
 		
 		trimSpaces(expr);
 		
 		if(**expr != '=') {
-			free(name);
+			destroy(name);
 			Function_free(func);
 			
 			return Statement_new(VarErr(badChar(*expr)));
@@ -95,7 +95,7 @@ Statement* Statement_parse(const char** expr) {
 		val = Value_parseTop(&equals);
 		if(val->type == VAL_ERR) {
 			/* A parse error occurred */
-			free(name);
+			destroy(name);
 			Function_free(func);
 			
 			var = VarErr(Error_copy(val->err));
@@ -119,7 +119,7 @@ Statement* Statement_parse(const char** expr) {
 			
 			/* Still not an equals sign means invalid character */
 			if(**expr != '=') {
-				free(name);
+				destroy(name);
 				return Statement_new(VarErr(badChar(*expr)));
 			}
 		}
@@ -128,7 +128,7 @@ Statement* Statement_parse(const char** expr) {
 		val = Value_parseTop(&equals);
 		if(val->type == VAL_ERR) {
 			/* A parse error occurred */
-			free(name);
+			destroy(name);
 			
 			var = VarErr(Error_copy(val->err));
 			Value_free(val);
@@ -169,7 +169,7 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 		}
 		
 		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Value_copy(func->val));
+			Context_setGlobal(ctx, CAST_NONNULL(var->name), Value_copy(func->val));
 		}
 		else if((v & (V_REPR|V_TREE|V_XML)) == 0) {
 			/* Coerce the variable to a Value */
@@ -191,7 +191,7 @@ Value* Statement_eval(const Statement* stmt, Context* ctx, VERBOSITY v) {
 		
 		/* Save the newly evaluated variable */
 		if(var->name != NULL) {
-			Context_setGlobal(ctx, var->name, Value_copy(ret));
+			Context_setGlobal(ctx, CAST_NONNULL(var->name), Value_copy(ret));
 		}
 	}
 	
@@ -280,7 +280,7 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		/* Dump XML output because why not? */
 		char* xml = Statement_xml(stmt, sc->ctx);
 		printf("%s\n", xml);
-		free(xml);
+		destroy(xml);
 	}
 	
 	if(v & V_TREE) {
@@ -291,7 +291,7 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		/* Dump parse tree */
 		char* tree = Statement_verbose(stmt, sc->ctx);
 		printf("%s\n", tree);
-		free(tree);
+		destroy(tree);
 	}
 	
 	if(v & V_WRAP) {
@@ -302,7 +302,7 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		/* Wrap lots of stuff in parentheses for clarity */
 		char* wrapped = Statement_wrap(stmt, sc->ctx);
 		printf("%s\n", wrapped);
-		free(wrapped);
+		destroy(wrapped);
 	}
 	
 	if(v & V_REPR) {
@@ -313,7 +313,7 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 		/* Print parenthesized statement */
 		char* reprinted = Statement_repr(stmt, sc->ctx, !!(v & V_PRETTY));
 		printf("%s\n", reprinted);
-		free(reprinted);
+		destroy(reprinted);
 	}
 	
 	if(needNewline++ && sc->interactive) {

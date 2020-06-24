@@ -33,23 +33,24 @@ static Value* eval_##name(const Context* ctx, const ArgList* arglist, bool inter
 	if(arglist->count != (nargs)) { \
 		return ValErr(builtinArgs(#name, (nargs), arglist->count)); \
 	} \
-	ArgList* e = ArgList_eval(arglist, ctx); \
+	Error* err = NULL; \
+	ArgList* e = ArgList_eval(arglist, ctx, &err); \
 	if(!e) { \
-		return ValErr(ignoreError()); \
+		return ValErr(err); \
 	} \
 	double* a = ArgList_toReals(e, ctx); \
+	ArgList_free(e); \
 	if(!a) { \
 		return ValErr(badConversion(#name)); \
 	} \
-	ArgList_free(e); \
 	Value* ret = ValReal((func)); \
-	free(a); \
+	destroy(a); \
 	return ret; \
 }
 
 
-void register_math(UNOWNED NONNULL Context* ctx);
-void register_vector(UNOWNED NONNULL Context* ctx);
+void register_math(Context* _Nonnull ctx);
+void register_vector(Context* _Nonnull ctx);
 
 
 #endif /* SC_DEFAULTS_H */
