@@ -360,7 +360,7 @@ static Value* binop_mod(const Context* ctx, const Value* a, const Value* b) {
 static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 	Value* ret;
 	
-	if(b->type == VAL_INT && b->ival == 0) {
+	if(b->type == VAL_INT && b->ival == 0 && a->type != VAL_VEC) {
 		/* Shortcut execution of x^0 to not evaluate x */
 		ret = ValInt(1);
 	}

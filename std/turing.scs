@@ -33,7 +33,7 @@ le(a, b) = b_not(gt(a, b))
 
 # Get the dimensions of a vector by converting all of its elements
 # to the integer one and then computing the dot product of itself
-one(x) = x^0
+one(_) = 1
 dim_ones(v) = dot(v, v)
 dim(v) = dim_ones(map(one, v))
 

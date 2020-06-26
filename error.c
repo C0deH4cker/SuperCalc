@@ -99,21 +99,15 @@ Error* Error_copy(const Error* err) {
 }
 
 void Error_raise(const Error* err, bool forceDeath) {
-	bool didPrintPrefix = false;
 	if(err->filename != NULL) {
 		fprintf(stderr, "%s:", err->filename);
-		didPrintPrefix = true;
-	}
-	
-	if(err->line > 0) {
-		fprintf(stderr, "%u:", err->line);
-		if(err->column > 0) {
-			fprintf(stderr, "%u:", err->column);
+		if(err->line > 0) {
+			fprintf(stderr, "%u:", err->line);
+			if(err->column > 0) {
+				fprintf(stderr, "%u:", err->column);
+			}
 		}
-		didPrintPrefix = true;
-	}
-	
-	if(didPrintPrefix) {
+		
 		fprintf(stderr, " ");
 	}
 	

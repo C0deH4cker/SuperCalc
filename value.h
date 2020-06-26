@@ -38,6 +38,7 @@ typedef struct parser_cb {
 ASSUME_NONNULL_BEGIN
 
 typedef enum {
+	VAL_APPROX = -4,
 	VAL_END = -3,
 	VAL_ERR = -2,
 	VAL_NEG = -1,
