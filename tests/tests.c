@@ -31,7 +31,7 @@ UTEST_F_TEARDOWN(SC) {
 	ASSERT_TRUE(true);
 	_fixtureNext(F);
 	Context_free(F->ctx);
-	F->ctx = NULL;
+	F->ctx = CAST_NONNULL(NULL);
 	fclose(g_inputFile);
 	g_inputFile = NULL;
 }
