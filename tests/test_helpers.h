@@ -18,6 +18,7 @@
 #include "context.h"
 #include "defaults.h"
 #include "statement.h"
+#include "template.h"
 
 
 #define F utest_fixture

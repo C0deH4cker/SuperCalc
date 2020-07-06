@@ -36,6 +36,10 @@ int main(int argc, char** argv) {
 	
 	SuperCalc_free(sc);
 	
+	if(check_leaks()) {
+		abort();
+	}
+	
 #if PROFILING
 	sleep(10);
 #endif /* PROFILING */

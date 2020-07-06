@@ -28,6 +28,8 @@ struct Function {
 };
 
 
+DECL(Function);
+
 /* Constructor */
 RETURNS_OWNED Function* Function_new(
 	unsigned argcount,
@@ -57,6 +59,8 @@ RETURNS_OWNED char* Function_repr(const Function* func, const char* _Nullable na
 RETURNS_OWNED char* Function_wrap(const Function* func, const char* _Nullable name, bool top);
 RETURNS_OWNED char* Function_verbose(const Function* func, unsigned indent);
 RETURNS_OWNED char* Function_xml(const Function* func, unsigned indent);
+
+METHOD_debugString(Function);
 
 ASSUME_NONNULL_END
 

@@ -30,6 +30,8 @@ static const char* error_messages[] = {
 };
 
 
+DEF(Error);
+
 Error* Error_new(ERRTYPE type, const char* fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
@@ -49,7 +51,7 @@ Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) {
 		fmt = va_arg(args, const char*);
 	}
 	
-	Error* ret = fmalloc(sizeof(*ret));
+	Error* ret = OBJECT_ALLOC(Error);
 	ret->type = type;
 	
 	char* tmp;
@@ -80,11 +82,11 @@ void Error_free(Error* err) {
 	
 	destroy(err->msg);
 	destroy(err->filename);
-	destroy(err);
+	OBJECT_FREE(Error, err);
 }
 
 Error* Error_copy(const Error* err) {
-	Error* ret = fmalloc(sizeof(*ret));
+	Error* ret = OBJECT_ALLOC(Error);
 	
 	ret->type = err->type;
 	ret->msg = strdup(err->msg);
@@ -153,3 +155,8 @@ void die(const char* file, const char* function, int line, const char* fmt, ...)
 	UNREACHABLE;
 }
 
+METHOD_debugString(Error) {
+	char* ret = NULL;
+	asprintf(&ret, "Error{%d, %s}", self->type, self->msg);
+	return ret;
+}

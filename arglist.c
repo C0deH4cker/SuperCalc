@@ -24,8 +24,10 @@
 static char* arglistToString(const ArgList* arglist, char** argstrs);
 
 
+DEF(ArgList);
+
 ArgList* ArgList_new(unsigned count) {
-	ArgList* ret = fmalloc(sizeof(*ret));
+	ArgList* ret = OBJECT_ALLOC(ArgList);
 	
 	ret->count = count;
 	ret->args = count != 0 ? fcalloc(count, sizeof(*ret->args)) : NULL;
@@ -44,7 +46,7 @@ void ArgList_free(ArgList* arglist) {
 	}
 	
 	destroy(arglist->args);
-	destroy(arglist);
+	OBJECT_FREE(ArgList, arglist);
 }
 
 ArgList* ArgList_create(unsigned count, ...) {
@@ -332,3 +334,6 @@ char* ArgList_xml(const ArgList* arglist, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(ArgList) {
+	return ArgList_repr(self, false);
+}

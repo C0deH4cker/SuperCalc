@@ -27,6 +27,8 @@ struct FuncCall {
 };
 
 
+DECL(FuncCall);
+
 /* Constructor */
 RETURNS_OWNED FuncCall* FuncCall_new(CONSUMED Value* func, CONSUMED ArgList* arglist);
 /* Used to create specific calls like "sqrt" */
@@ -46,6 +48,8 @@ RETURNS_OWNED char* FuncCall_repr(const FuncCall* call, bool pretty);
 RETURNS_OWNED char* FuncCall_wrap(const FuncCall* call);
 RETURNS_OWNED char* FuncCall_verbose(const FuncCall* call, unsigned indent);
 RETURNS_OWNED char* FuncCall_xml(const FuncCall* call, unsigned indent);
+
+METHOD_debugString(FuncCall);
 
 ASSUME_NONNULL_END
 

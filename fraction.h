@@ -22,6 +22,9 @@ struct Fraction {
 	INVARIANT(d > 0) long long d;
 };
 
+
+DECL(Fraction);
+
 /* Constructor */
 RETURNS_OWNED Fraction* Fraction_new(long long numerator, INVARIANT(denominator != 0) long long denominator);
 
@@ -53,6 +56,8 @@ double Fraction_asReal(const Fraction* frac);
 /* Printing */
 RETURNS_OWNED char* Fraction_repr(const Fraction* frac, bool approx);
 RETURNS_OWNED char* Fraction_xml(const Fraction* frac);
+
+METHOD_debugString(Fraction);
 
 ASSUME_NONNULL_END
 

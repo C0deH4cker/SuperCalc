@@ -118,8 +118,10 @@ static Value* parse_extra(const char** expr, void* data) {
 }
 
 
+DEF(Template);
+
 Template* Template_create(const char* fmt) {
-	Template* ret = fcalloc(1, sizeof(*ret));
+	Template* ret = OBJECT_ALLOC(Template);
 	
 	char* old_g_line = g_line;
 	unsigned old_g_lineNumber = g_lineNumber;
@@ -169,7 +171,7 @@ void Template_free(Template* tp) {
 	
 	/* Call release on these */
 	destroy(tp->placeholders);
-	destroy(tp);
+	OBJECT_FREE(Template, tp);
 }
 
 Value* Template_fill(const Template* tp, ...) {
@@ -192,7 +194,7 @@ static Value* next_value(PLACETYPE type, va_list args) {
 		case PH_CALL:  return ValCall(va_arg(args, FuncCall*));
 		case PH_VAR:   return ValVar(va_arg(args, char*));
 		case PH_VEC:   return ValVec(va_arg(args, Vector*));
-		case PH_VAL:   return Value_copy(va_arg(args, Value*));
+		case PH_VAL:   return va_arg(args, Value*);
 			
 		default:
 			return ValErr(typeError("Unexpected placeholder type %d", type));
@@ -211,7 +213,6 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		Value* cur = tp->placeholders[i];
 		if(cur == NULL) {
 			RAISE(missingPlaceholder(i), true);
-			break;
 		}
 		
 		if(cur->type != VAL_PLACE) {
@@ -221,8 +222,11 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		/* Replace the placeholder with the value of the argument */
 		orig[i] = cur->ph;
 		Value* arg = next_value(cur->ph->type, args);
+		
+		/* HACK: Move instead of copy */
 		memcpy(cur, arg, sizeof(*cur));
-		destroy(arg);
+		memset(arg, 0, sizeof(*arg));
+		Value_free(arg);
 	}
 	
 	/* Only copy tree when there's no error */
@@ -235,7 +239,7 @@ Value* Template_fillv(const Template* tp, va_list args) {
 		Value* cur = tp->placeholders[i];
 		if(cur->type != VAL_PLACE) {
 			/* Hack. Allocate a new value just to delete its contents */
-			Value* onDeathRow = fmalloc(sizeof(*onDeathRow));
+			Value* onDeathRow = OBJECT_ALLOC(Value);
 			memcpy(onDeathRow, cur, sizeof(*onDeathRow));
 			Value_free(onDeathRow);
 			
@@ -250,7 +254,16 @@ Value* Template_fillv(const Template* tp, va_list args) {
 
 Value* Template_staticFill(Template** ptp, const char* fmt, ...) {
 	if(*ptp == NULL) {
+#ifdef WITH_OBJECT_COUNTS
+		bool prev_g_allocStatic = g_allocStatic;
+		g_allocStatic = true;
+#endif /* WITH_OBJECT_COUNTS */
+		
 		*ptp = Template_create(fmt);
+		
+#ifdef WITH_OBJECT_COUNTS
+		g_allocStatic = prev_g_allocStatic;
+#endif /* WITH_OBJECT_COUNTS */
 	}
 	
 	va_list args;
@@ -281,7 +294,16 @@ Value* Template_evalv(const Template* tp, const Context* ctx, va_list args) {
 
 Value* Template_staticEval(Template** ptp, const Context* ctx, const char* fmt, ...) {
 	if(*ptp == NULL) {
+#ifdef WITH_OBJECT_COUNTS
+		bool prev_g_allocStatic = g_allocStatic;
+		g_allocStatic = true;
+#endif /* WITH_OBJECT_COUNTS */
+		
 		*ptp = Template_create(fmt);
+		
+#ifdef WITH_OBJECT_COUNTS
+		g_allocStatic = prev_g_allocStatic;
+#endif /* WITH_OBJECT_COUNTS */
 	}
 	
 	va_list args;
@@ -297,3 +319,12 @@ unsigned Template_placeholderCount(const Template* tp) {
 	return tp->num_placeholders;
 }
 
+METHOD_debugString(Template) {
+	char* ret = NULL;
+	
+	char* valstr = Value_repr(self->tree, false, true);
+	asprintf(&ret, "Template{%s}", valstr);
+	destroy(valstr);
+	
+	return ret;
+}

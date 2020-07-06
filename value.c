@@ -48,8 +48,10 @@ static Value* _default_cb(const char** expr, void* data) {
 parser_cb default_cb = {&_default_cb, NULL};
 
 
+DEF(Value);
+
 static Value* allocValue(VALTYPE type) {
-	Value* ret = fcalloc(1, sizeof(*ret));
+	Value* ret = OBJECT_ALLOC(Value);
 	ret->type = type;
 	return ret;
 }
@@ -182,7 +184,7 @@ void Value_free(Value* val) {
 			break;
 	}
 	
-	destroy(val);
+	OBJECT_FREE(Value, val);
 }
 
 Value* Value_copy(const Value* val) {
@@ -1008,3 +1010,6 @@ void Value_print(const Value* val, VERBOSITY v) {
 	putchar('\n');
 }
 
+METHOD_debugString(Value) {
+	return Value_repr(self, false, true);
+}

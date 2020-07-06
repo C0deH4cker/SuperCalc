@@ -34,8 +34,10 @@ static Value* fracPow(const Fraction* base, const Fraction* exp);
 static int fracCmp(const Fraction* a, const Fraction* b);
 
 
+DEF(Fraction);
+
 Fraction* Fraction_new(long long numerator, long long denominator) {
-	Fraction* ret = fmalloc(sizeof(*ret));
+	Fraction* ret = OBJECT_ALLOC(Fraction);
 	
 	ret->n = numerator * (denominator < 0 ? -1 : 1);
 	ret->d = ABS(denominator);
@@ -46,7 +48,11 @@ Fraction* Fraction_new(long long numerator, long long denominator) {
 }
 
 void Fraction_free(Fraction* frac) {
-	destroy(frac);
+	if(!frac) {
+		return;
+	}
+	
+	OBJECT_FREE(Fraction, frac);
 }
 
 Fraction* Fraction_copy(const Fraction* frac) {
@@ -601,3 +607,6 @@ char* Fraction_xml(const Fraction* f) {
 	return ret;
 }
 
+METHOD_debugString(Fraction) {
+	return Fraction_repr(self, false);
+}

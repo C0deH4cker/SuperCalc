@@ -28,6 +28,8 @@ struct Variable {
 };
 
 
+DECL(Variable);
+
 /* Constructors */
 RETURNS_OWNED Variable* Variable_new(CONSUMED char* _Nullable name, CONSUMED Value* val);
 RETURNS_OWNED Variable* VarErr(CONSUMED Error* err);
@@ -56,6 +58,8 @@ RETURNS_OWNED char* Variable_repr(const Variable* var, bool pretty);
 RETURNS_OWNED char* Variable_wrap(const Variable* var);
 RETURNS_OWNED char* Variable_verbose(const Variable* var);
 RETURNS_OWNED char* Variable_xml(const Variable* var);
+
+METHOD_debugString(Variable);
 
 ASSUME_NONNULL_END
 

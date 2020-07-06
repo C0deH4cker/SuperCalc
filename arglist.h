@@ -25,6 +25,9 @@ struct ArgList {
 	unsigned count;
 };
 
+
+DECL(ArgList);
+
 /* Constructor */
 RETURNS_OWNED ArgList* ArgList_new(unsigned count);
 
@@ -60,6 +63,8 @@ RETURNS_OWNED char* ArgList_repr(const ArgList* arglist, bool pretty);
 RETURNS_OWNED char* ArgList_wrap(const ArgList* arglist);
 RETURNS_OWNED char* ArgList_verbose(const ArgList* arglist, unsigned indent);
 RETURNS_OWNED char* ArgList_xml(const ArgList* arglist, unsigned indent);
+
+METHOD_debugString(ArgList);
 
 ASSUME_NONNULL_END
 

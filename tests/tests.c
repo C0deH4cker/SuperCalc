@@ -15,11 +15,18 @@
 #include "value.h"
 
 
-UTEST_MAIN();
+UTEST_STATE();
+
+int main(int argc, const char* const* argv) {
+	int ret = utest_main(argc, argv);
+	
+	/* show_all_counts(); */
+	return ret;
+}
 
 
 UTEST_F_SETUP(SC) {
-	ASSERT_TRUE(true);
+	ASSERT_FALSE(check_leaks());
 	F->ctx = Context_new();
 	register_math(F->ctx);
 	register_vector(F->ctx);
@@ -28,12 +35,12 @@ UTEST_F_SETUP(SC) {
 }
 
 UTEST_F_TEARDOWN(SC) {
-	ASSERT_TRUE(true);
 	_fixtureNext(F);
 	Context_free(F->ctx);
 	F->ctx = CAST_NONNULL(NULL);
 	fclose(g_inputFile);
 	g_inputFile = NULL;
+	ASSERT_FALSE(check_leaks());
 }
 
 
@@ -405,3 +412,28 @@ UTEST_F(SC, vecMapSqrtFracs) {
 			VAL_FRAC, 7ll, 3ll
 	);
 }
+
+
+#define EXPECTED_ALLOCS(cls, num) \
+UTEST(Allocs, count##cls) { \
+	EXPECT_EQ(g_##cls##_meta.allocs, (uint64_t)(num)); \
+}
+
+/*
+ * Total number of allocations of each object type that are counted
+ * while running the test suite. This is here to see how much of an
+ * effect reference counting will have on allocation counts.
+ */
+EXPECTED_ALLOCS(Context,     68)
+EXPECTED_ALLOCS(Variable,  1913)
+EXPECTED_ALLOCS(Builtin,   1727)
+EXPECTED_ALLOCS(Function,    60)
+EXPECTED_ALLOCS(ArgList,    225)
+EXPECTED_ALLOCS(FuncCall,    71)
+EXPECTED_ALLOCS(UnOp,         2)
+EXPECTED_ALLOCS(BinOp,      206)
+EXPECTED_ALLOCS(Value,     3782)
+EXPECTED_ALLOCS(Fraction,    66)
+EXPECTED_ALLOCS(Vector,     123)
+EXPECTED_ALLOCS(Statement,   95)
+EXPECTED_ALLOCS(Error,       10)

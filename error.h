@@ -107,6 +107,9 @@ struct Error {
 	unsigned column;
 };
 
+
+DECL(Error);
+
 /* Constructors */
 RETURNS_OWNED Error* Error_new(ERRTYPE type, const char* fmt, ...) PRINTFLIKE(2, 3);
 RETURNS_OWNED Error* Error_vnew(ERRTYPE type, const char* fmt, va_list args) PRINTFLIKE(2, 0);
@@ -122,6 +125,8 @@ void Error_raise(const Error* err, bool forceDeath);
 
 /* Fatal or not? */
 bool Error_canRecover(const Error* err);
+
+METHOD_debugString(Error);
 
 ASSUME_NONNULL_END
 

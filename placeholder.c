@@ -35,8 +35,10 @@ static PLACETYPE getPlaceholderType(char type) {
 }
 
 
+DEF(Placeholder);
+
 Placeholder* Placeholder_new(PLACETYPE type, unsigned index) {
-	Placeholder* ret = fmalloc(sizeof(*ret));
+	Placeholder* ret = OBJECT_ALLOC(Placeholder);
 	
 	ret->type = type;
 	ret->index = index;
@@ -54,7 +56,11 @@ Placeholder* Placeholder_fromString(const char* fmt) {
 
 /* Destructor */
 void Placeholder_free(Placeholder* ph) {
-	destroy(ph);
+	if(!ph) {
+		return;
+	}
+	
+	OBJECT_FREE(Placeholder, ph);
 }
 
 /* Copying */
@@ -158,3 +164,6 @@ char* Placeholder_xml(const Placeholder* ph, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(Placeholder) {
+	return Placeholder_repr(self);
+}

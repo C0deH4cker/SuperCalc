@@ -56,8 +56,11 @@ static Value* unop_fact(const Context* ctx, const Value* a) {
 	return ValInt(fact(a->ival));
 }
 
+
+DEF(UnOp);
+
 UnOp* UnOp_new(UNTYPE type, Value* a) {
-	UnOp* ret = fmalloc(sizeof(*ret));
+	UnOp* ret = OBJECT_ALLOC(UnOp);
 	
 	ret->type = type;
 	ret->a = a;
@@ -74,7 +77,7 @@ void UnOp_free(UnOp* term) {
 		Value_free(term->a);
 	}
 	
-	destroy(term);
+	OBJECT_FREE(UnOp, term);
 }
 
 UnOp* UnOp_copy(const UnOp* term) {
@@ -164,3 +167,6 @@ char* UnOp_xml(const UnOp* term, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(UnOp) {
+	return UnOp_repr(self, false);
+}

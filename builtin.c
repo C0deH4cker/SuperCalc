@@ -22,8 +22,10 @@
 #include "variable.h"
 
 
+DEF(Builtin);
+
 Builtin* Builtin_new(char* name, builtin_eval_t evaluator, bool isFunction) {
-	Builtin* ret = fmalloc(sizeof(*ret));
+	Builtin* ret = OBJECT_ALLOC(Builtin);
 	
 	ret->name = name;
 	ret->evaluator = evaluator;
@@ -38,7 +40,7 @@ void Builtin_free(Builtin* blt) {
 	}
 	
 	destroy(blt->name);
-	destroy(blt);
+	OBJECT_FREE(Builtin, blt);
 }
 
 Builtin* Builtin_copy(const Builtin* blt) {
@@ -90,5 +92,9 @@ char* Builtin_xml(const Builtin* blt, unsigned indent) {
 	char* ret;
 	asprintf(&ret, "<builtin name=\"%s\"/>", blt->name);
 	return ret;
+}
+
+METHOD_debugString(Builtin) {
+	return Builtin_repr(self, false);
 }
 

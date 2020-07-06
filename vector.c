@@ -32,8 +32,10 @@ static Value* vecScalarOpRev(const Vector* vec, const Value* scalar, const Conte
 static Value* vecCompOp(const Vector* vector1, const Vector* vector2, const Context* ctx, BINTYPE bin);
 
 
+DEF(Vector);
+
 Vector* Vector_new(ArgList* vals) {
-	Vector* ret = fmalloc(sizeof(*ret));
+	Vector* ret = OBJECT_ALLOC(Vector);
 	ret->vals = vals;
 	return ret;
 }
@@ -60,7 +62,7 @@ void Vector_free(Vector* vec) {
 	}
 	
 	ArgList_free(vec->vals);
-	destroy(vec);
+	OBJECT_FREE(Vector, vec);
 }
 
 Vector* Vector_copy(const Vector* vec) {
@@ -405,3 +407,6 @@ char* Vector_xml(const Vector* vec, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(Vector) {
+	return Vector_repr(self, false);
+}

@@ -26,6 +26,8 @@ struct Vector {
 };
 
 
+DECL(Vector);
+
 /* Constructor */
 RETURNS_OWNED Vector* Vector_new(CONSUMED ArgList* vals);
 RETURNS_OWNED Vector* Vector_create(INVARIANT(count >= 1) unsigned count, /* Value* */...);
@@ -65,6 +67,8 @@ RETURNS_OWNED char* Vector_repr(const Vector* vec, bool pretty);
 RETURNS_OWNED char* Vector_wrap(const Vector* vec);
 RETURNS_OWNED char* Vector_verbose(const Vector* vec, unsigned indent);
 RETURNS_OWNED char* Vector_xml(const Vector* vec, unsigned indent);
+
+METHOD_debugString(Vector);
 
 ASSUME_NONNULL_END
 

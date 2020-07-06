@@ -412,8 +412,11 @@ static Value* binop_pow(const Context* ctx, const Value* a, const Value* b) {
 	return ret;
 }
 
+
+DEF(BinOp);
+
 BinOp* BinOp_new(BINTYPE type, Value* a, Value* b) {
-	BinOp* ret = fmalloc(sizeof(*ret));
+	BinOp* ret = OBJECT_ALLOC(BinOp);
 	
 	memset(ret, 0, sizeof(*ret));
 	
@@ -425,14 +428,16 @@ BinOp* BinOp_new(BINTYPE type, Value* a, Value* b) {
 }
 
 void BinOp_free(BinOp* node) {
-	if(node == NULL) return;
+	if(node == NULL) {
+		return;
+	}
 	
 	/* Free child values */
 	Value_free(node->a);
 	Value_free(node->b);
 	
 	/* Free self */
-	destroy(node);
+	OBJECT_FREE(BinOp, node);
 }
 
 BinOp* BinOp_copy(const BinOp* node) {
@@ -663,3 +668,6 @@ char* BinOp_xml(const BinOp* node, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(BinOp) {
+	return BinOp_repr(self, false);
+}

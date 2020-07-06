@@ -31,8 +31,10 @@ static char* verboseFunc(const char* name, const ArgList* arglist, unsigned inde
 static char* specialVerbose(const char* name, const ArgList* arglist, unsigned indent);
 
 
+DEF(FuncCall);
+
 FuncCall* FuncCall_new(Value* func, ArgList* arglist) {
-	FuncCall* ret = fmalloc(sizeof(*ret));
+	FuncCall* ret = OBJECT_ALLOC(FuncCall);
 	
 	ret->func = func;
 	ret->arglist = arglist;
@@ -52,7 +54,7 @@ void FuncCall_free(FuncCall* call) {
 	
 	Value_free(call->func);
 	ArgList_free(call->arglist);
-	destroy(call);
+	OBJECT_FREE(FuncCall, call);
 }
 
 FuncCall* FuncCall_copy(const FuncCall* call) {
@@ -331,3 +333,6 @@ char* FuncCall_xml(const FuncCall* call, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(FuncCall) {
+	return FuncCall_repr(self, false);
+}

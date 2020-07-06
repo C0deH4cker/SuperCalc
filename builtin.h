@@ -28,6 +28,9 @@ struct Builtin {
 	bool isFunction;
 };
 
+
+DECL(Builtin);
+
 /* Constructor */
 RETURNS_OWNED Builtin* Builtin_new(CONSUMED char* name, builtin_eval_t evaluator, bool isFunction);
 
@@ -52,6 +55,8 @@ RETURNS_OWNED Value* Builtin_eval(
 RETURNS_OWNED char* Builtin_repr(const Builtin* blt, bool pretty);
 RETURNS_OWNED char* Builtin_verbose(const Builtin* blt, unsigned indent);
 RETURNS_OWNED char* Builtin_xml(const Builtin* blt, unsigned indent);
+
+METHOD_debugString(Builtin);
 
 ASSUME_NONNULL_END
 

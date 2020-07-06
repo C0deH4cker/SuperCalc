@@ -27,6 +27,8 @@ struct Statement {
 };
 
 
+DECL(Statement);
+
 /* Constructor */
 /*
  This method consumes the `var` argument, which is an unusual variable:
@@ -53,6 +55,8 @@ RETURNS_OWNED char* Statement_wrap(const Statement* stmt, const Context* ctx);
 RETURNS_OWNED char* Statement_verbose(const Statement* stmt, const Context* ctx);
 RETURNS_OWNED char* Statement_xml(const Statement* stmt, const Context* ctx);
 void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v);
+
+METHOD_debugString(Statement);
 
 ASSUME_NONNULL_END
 

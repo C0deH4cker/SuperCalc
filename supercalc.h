@@ -26,11 +26,16 @@ struct SuperCalc {
 	uint8_t importDepth;
 };
 
+
+DECL(SuperCalc);
+
 RETURNS_OWNED SuperCalc* SuperCalc_new(void);
 void SuperCalc_free(CONSUMED SuperCalc* _Nullable sc);
 void SuperCalc_run(UNOWNED SuperCalc* sc);
 RETURNS_OWNED Error* SuperCalc_importFile(UNOWNED SuperCalc* sc, const char* filename);
 RETURNS_OWNED Value* _Nullable SuperCalc_runLine(UNOWNED SuperCalc* sc, UNOWNED char* str, VERBOSITY v);
+
+METHOD_debugString(SuperCalc);
 
 ASSUME_NONNULL_END
 

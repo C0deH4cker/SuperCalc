@@ -31,6 +31,8 @@ struct UnOp {
 };
 
 
+DECL(UnOp);
+
 /* Constructor */
 RETURNS_OWNED UnOp* UnOp_new(UNTYPE type, CONSUMED Value* a);
 
@@ -48,6 +50,8 @@ RETURNS_OWNED char* UnOp_repr(const UnOp* term, bool pretty);
 RETURNS_OWNED char* UnOp_wrap(const UnOp* term);
 RETURNS_OWNED char* UnOp_verbose(const UnOp* term, unsigned indent);
 RETURNS_OWNED char* UnOp_xml(const UnOp* term, unsigned indent);
+
+METHOD_debugString(UnOp);
 
 ASSUME_NONNULL_END
 

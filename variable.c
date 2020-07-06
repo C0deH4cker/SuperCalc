@@ -23,8 +23,10 @@
 #include "arglist.h"
 
 
+DEF(Variable);
+
 Variable* Variable_new(char* name, Value* val) {
-	Variable* ret = fmalloc(sizeof(*ret));
+	Variable* ret = OBJECT_ALLOC(Variable);
 	ret->name = name;
 	ret->val = val;
 	return ret;
@@ -41,7 +43,7 @@ void Variable_free(Variable* var) {
 	
 	destroy(var->name);
 	Value_free(var->val);
-	destroy(var);
+	OBJECT_FREE(Variable, var);
 }
 
 Variable* Variable_copy(const Variable* var) {
@@ -176,3 +178,6 @@ char* Variable_xml(const Variable* var) {
 	return ret;
 }
 
+METHOD_debugString(Variable) {
+	return Variable_repr(self, false);
+}

@@ -7,6 +7,23 @@
 */
 
 #include "test_helpers.h"
+#include "context.h"
+#include "variable.h"
+#include "builtin.h"
+#include "function.h"
+#include "arglist.h"
+#include "funccall.h"
+#include "unop.h"
+#include "binop.h"
+#include "value.h"
+#include "template.h"
+#include "placeholder.h"
+#include "fraction.h"
+#include "vector.h"
+#include "statement.h"
+#include "supercalc.h"
+#include "error.h"
+
 
 static bool vIsArgList(const ArgList* _Nullable arglist, va_list ap);
 

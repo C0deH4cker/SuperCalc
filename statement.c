@@ -21,8 +21,10 @@
 #include "binop.h"
 
 
+DEF(Statement);
+
 Statement* Statement_new(Variable* var) {
-	Statement* ret = fmalloc(sizeof(*ret));
+	Statement* ret = OBJECT_ALLOC(Statement);
 	
 	ret->var = var;
 	
@@ -35,7 +37,7 @@ void Statement_free(Statement* stmt) {
 	}
 	
 	Variable_free(stmt->var);
-	destroy(stmt);
+	OBJECT_FREE(Statement, stmt);
 }
 
 Statement* Statement_parse(const char** expr) {
@@ -321,3 +323,12 @@ void Statement_print(const Statement* stmt, const SuperCalc* sc, VERBOSITY v) {
 	}
 }
 
+METHOD_debugString(Statement) {
+	char* ret = NULL;
+	
+	char* valstr = Value_debugString(self->var->val);
+	asprintf(&ret, "Statement{%s = %s}", self->var->name ?: "(null)", valstr);
+	destroy(valstr);
+	
+	return ret;
+}

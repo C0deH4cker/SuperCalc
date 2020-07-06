@@ -18,7 +18,8 @@ ASSUME_NONNULL_BEGIN
 
 typedef enum {
 	PH_ERR = -1,
-	PH_INT = 0,
+	PH_UNINITIALIZED = 0,
+	PH_INT,
 	PH_REAL,
 	PH_FRAC,
 	PH_EXPR,
@@ -33,6 +34,9 @@ struct Placeholder {
 	PLACETYPE type;
 	unsigned index; /* One-based! Zero means index wasn't specified in the format string */
 };
+
+
+DECL(Placeholder);
 
 /* Constructors */
 RETURNS_OWNED Placeholder* Placeholder_new(PLACETYPE type, unsigned index);
@@ -51,6 +55,8 @@ RETURNS_OWNED Placeholder* Placeholder_parse(INOUT istring expr);
 /* Printing */
 RETURNS_OWNED char* Placeholder_repr(const Placeholder* ph);
 RETURNS_OWNED char* Placeholder_xml(const Placeholder* ph, unsigned indent);
+
+METHOD_debugString(Placeholder);
 
 ASSUME_NONNULL_END
 

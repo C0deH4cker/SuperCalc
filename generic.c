@@ -22,7 +22,22 @@
 # define ISATTY(fp) isatty(fp)
 #endif
 
+#include "context.h"
+#include "variable.h"
+#include "builtin.h"
+#include "function.h"
+#include "arglist.h"
+#include "funccall.h"
+#include "unop.h"
+#include "binop.h"
+#include "value.h"
+#include "template.h"
+#include "placeholder.h"
+#include "fraction.h"
+#include "vector.h"
+#include "statement.h"
 #include "supercalc.h"
+#include "error.h"
 
 #define ICHAR   ' '
 #define IWIDTH  2
@@ -35,6 +50,144 @@ typedef enum {
 	VC_TREE   = 't',
 	VC_XML    = 'x'
 } VERBOSITY_CHAR;
+
+
+void Breakpoint(void) {
+	// Set a breakpoint on this function in your IDE
+}
+
+
+#ifdef WITH_OBJECT_COUNTS
+
+bool g_allocStatic = false;
+
+Metaclass* _Nonnull g_all_classes[16] = {
+	&g_Context_meta,
+	&g_Variable_meta,
+	&g_Builtin_meta,
+	&g_Function_meta,
+	&g_ArgList_meta,
+	&g_FuncCall_meta,
+	&g_UnOp_meta,
+	&g_BinOp_meta,
+	&g_Value_meta,
+	&g_Template_meta,
+	&g_Placeholder_meta,
+	&g_Fraction_meta,
+	&g_Vector_meta,
+	&g_Statement_meta,
+	&g_SuperCalc_meta,
+	&g_Error_meta
+};
+
+
+static bool _check_leak(Metaclass* _Nonnull meta) {
+	if(meta->allocs <= meta->frees) {
+		return false;
+	}
+		
+	fprintf(stderr, "%s: %"PRIu64" leaks!\n", meta->name, meta->allocs - meta->frees);
+	Breakpoint();
+	
+	ObjectReferences** pRef = &meta->refs;
+	while(*pRef != NULL) {
+		ObjectReferences* cur = *pRef;
+		*pRef = cur->next;
+		
+		/* Clean up soft deleted nodes */
+		if(!cur->alive) {
+			destroy(cur);
+			continue;
+		}
+		
+		char* repr = meta->fn_debugString(cur->obj);
+		fprintf(stderr, "Leaked %s[%"PRIu64"] = %s\n", meta->name, cur->ordinal, repr);
+		destroy(repr);
+		destroy(cur);
+	}
+	
+	meta->frees = meta->allocs;
+	return true;
+}
+
+bool check_leaks(void) {
+	/*
+	 * Check each class for leaks. When leaks are found, reset the free count
+	 * to the alloc count so that subsequent checks are okay unless another
+	 * object of that class has leaked in between checks. Also be sure to
+	 * do this for all classes to avoid short-circuiting and forgetting to
+	 * reset the counts for some classes with leaks.
+	 */
+	bool foundLeak = false;
+	
+#define CHECK_LEAK(cls) do { \
+	if(_check_leak(&g_##cls##_meta)) { \
+		foundLeak = true; \
+	} \
+} while(0)
+	
+	CHECK_LEAK(Context);
+	CHECK_LEAK(Variable);
+	CHECK_LEAK(Builtin);
+	CHECK_LEAK(Function);
+	CHECK_LEAK(ArgList);
+	CHECK_LEAK(FuncCall);
+	CHECK_LEAK(UnOp);
+	CHECK_LEAK(BinOp);
+	CHECK_LEAK(Value);
+	CHECK_LEAK(Template);
+	CHECK_LEAK(Placeholder);
+	CHECK_LEAK(Fraction);
+	CHECK_LEAK(Vector);
+	CHECK_LEAK(Statement);
+	CHECK_LEAK(SuperCalc);
+	CHECK_LEAK(Error);
+	
+#undef CHECK_LEAK
+	
+	return foundLeak;
+}
+
+void show_all_counts(void) {
+#define SHOW_COUNTS(cls) do { \
+	if(g_##cls##_meta.allocs != 0) { \
+		printf("%s: +%"PRIu64"/-%"PRIu64" (%"PRIu64" leaked, %"PRIu64" statics)\n", \
+			#cls, \
+			g_##cls##_meta.allocs, \
+			g_##cls##_meta.frees, \
+			g_##cls##_meta.allocs - g_##cls##_meta.frees, \
+			g_##cls##_meta.statics \
+		); \
+	} \
+} while(0)
+	
+	SHOW_COUNTS(Context);
+	SHOW_COUNTS(Variable);
+	SHOW_COUNTS(Builtin);
+	SHOW_COUNTS(Function);
+	SHOW_COUNTS(ArgList);
+	SHOW_COUNTS(FuncCall);
+	SHOW_COUNTS(UnOp);
+	SHOW_COUNTS(BinOp);
+	SHOW_COUNTS(Value);
+	SHOW_COUNTS(Template);
+	SHOW_COUNTS(Placeholder);
+	SHOW_COUNTS(Fraction);
+	SHOW_COUNTS(Vector);
+	SHOW_COUNTS(Statement);
+	SHOW_COUNTS(SuperCalc);
+	SHOW_COUNTS(Error);
+	
+	#undef SHOW_COUNTS
+}
+
+#else /* WITH_OBJECT_COUNTS */
+
+bool check_leaks(void) {
+	return false;
+}
+
+#endif /* WITH_OBJECT_COUNTS */
 
 
 void free_owned(void* ptr) {

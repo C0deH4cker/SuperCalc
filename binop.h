@@ -40,6 +40,9 @@ struct BinOp {
 	OWNED Value* _Nullable b;
 };
 
+
+DECL(BinOp);
+
 /* Contains strings such as "multiply" for index BIN_MUL */
 extern const char* _Nonnull binop_verb[BIN_COUNT];
 
@@ -66,6 +69,8 @@ RETURNS_OWNED char* BinOp_repr(INVARIANT(node->b != NULL) const BinOp* node, boo
 RETURNS_OWNED char* BinOp_wrap(INVARIANT(node->b != NULL) const BinOp* node);
 RETURNS_OWNED char* BinOp_verbose(INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
 RETURNS_OWNED char* BinOp_xml(INVARIANT(node->b != NULL) const BinOp* node, unsigned indent);
+
+METHOD_debugString(BinOp);
 
 ASSUME_NONNULL_END
 

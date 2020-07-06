@@ -19,18 +19,20 @@ DEPS := $(OBJS:.o=.d)
 BUILD_DIR_RULES := $(addsuffix /.dir,$(sort $(dir $(OBJS))))
 
 # Variables for unit testing
-TESTPROG := $(BUILD)/sc_tests
+BUILDCHK := build/chk
+TESTPROG := $(BUILDCHK)/sc_tests
 TEST_SRCS := $(filter-out main.c,$(SRCS)) $(wildcard tests/*.c)
-TEST_OBJS := $(patsubst %,$(BUILD)/%.o,$(TEST_SRCS))
+TEST_OBJS := $(patsubst %,$(BUILDCHK)/%.o,$(TEST_SRCS))
 DEPS := $(sort $(DEPS) $(TEST_OBJS:.o=.d))
 BUILD_DIR_RULES := $(sort $(BUILD_DIR_RULES) $(addsuffix /.dir,$(sort $(dir $(TEST_OBJS)))))
+TEST_CFLAGS := $(CFLAGS) -DWITH_OBJECT_COUNTS=1
 
 # Tools to use
 CLANG := clang
 CC := $(CLANG)
 LD := $(CLANG)
 
-ANALYZE_FLAGS := $(CFLAGS) -DDEBUG=1 -UNDEBUG -Xanalyzer -analyzer-output=text
+ANALYZE_FLAGS := -DDEBUG=1 -UNDEBUG -Xanalyzer -analyzer-output=text
 ANALYZE_TARGETS := $(addsuffix .analyze,$(SRCS))
 
 # Print all commands executed when VERBOSE is defined
@@ -54,9 +56,8 @@ say = @echo $1
 status = $(call say,$(call color,GREEN,'[+] '$1))
 
 # Build the target by default
-all: $(TARGET)
-
 .PHONY: all
+all: $(TARGET)
 
 # Build in debug mode (with asserts enabled)
 .PHONY: debug
@@ -74,9 +75,15 @@ $(TARGET): $(OBJS)
 # Compiling rule
 $(BUILD)/%.o: % | $(BUILD_DIR_RULES)
 	$(call status,'Analyzing '$(call underline,'$<'))
-	$(_v)$(CLANG) --analyze $(ANALYZE_FLAGS) $<
+	$(_v)$(CLANG) --analyze $(CFLAGS) $(ANALYZE_FLAGS) $<
 	$(call status,'Compiling '$(call underline,'$<'))
 	$(_v)$(CC) $(CFLAGS) $(OFLAGS) -I$(<D) -MD -MP -MF $(BUILD)/$*.d -c -o $@ $<
+
+$(BUILDCHK)/%.o: % | $(BUILD_DIR_RULES)
+	$(call status,'[CHK] Analyzing '$(call underline,'$<'))
+	$(_v)$(CLANG) --analyze $(TEST_CFLAGS) $(ANALYZE_FLAGS) $<
+	$(call status,'[CHK] Compiling '$(call underline,'$<'))
+	$(_v)$(CC) $(TEST_CFLAGS) $(OFLAGS) -I$(<D) -MD -MP -MF $(BUILDCHK)/$*.d -c -o $@ $<
 
 
 # Git submodules must be pulled before compiling this project's sources

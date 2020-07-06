@@ -42,8 +42,10 @@ static struct VarNode* findNode(struct VarNode* cur, const char* name);
 static Variable* findVar(struct VarNode* cur, const char* name);
 
 
+DEF(Context);
+
 Context* Context_new(void) {
-	Context* ret = fmalloc(sizeof(*ret));
+	Context* ret = OBJECT_ALLOC(Context);
 	
 	ret->globals = fmalloc(sizeof(*ret->globals));
 	ret->globals->var = Variable_new(strdup("ans"), ValInt(0));
@@ -86,7 +88,7 @@ void Context_free(Context* ctx) {
 	
 	freeVars(ctx->globals);
 	freeStack(ctx->locals);
-	destroy(ctx);
+	OBJECT_FREE(Context, ctx);
 }
 
 static struct VarNode* copyVars(const struct VarNode* src) {
@@ -183,7 +185,7 @@ void Context_setGlobal(const Context* ctx, const char* name, Value* val) {
 }
 
 Context* Context_pushFrame(const Context* ctx) {
-	Context* ret = Context_new();
+	Context* ret = OBJECT_ALLOC(Context);
 	ret->globals = ctx->globals;
 	
 	struct ContextStack* frame = fcalloc(1, sizeof(*frame));
@@ -197,7 +199,7 @@ Context* Context_pushFrame(const Context* ctx) {
 void Context_popFrame(Context* ctx) {
 	freeVars(ctx->locals->vars);
 	destroy(ctx->locals);
-	destroy(ctx);
+	OBJECT_FREE(Context, ctx);
 }
 
 static struct VarNode* findPrev(struct VarNode* cur, const char* name) {
@@ -323,5 +325,58 @@ Variable* Context_getAbove(const Context* ctx, const char* name) {
 	
 	/* Last resort, try to find a global with this name */
 	return findVar(ctx->globals, name);
+}
+
+RETURNS_OWNED static char* VarNode_debugString(const struct VarNode* _Nullable vars) {
+	if(vars == NULL) {
+		return NULL;
+	}
+	
+	char* tail = VarNode_debugString(vars->next);
+	
+	char* joined = NULL;
+	asprintf(&joined, "%s,%s", vars->var->name ?: "(null)", tail);
+	destroy(tail);
+	
+	return joined;
+}
+
+RETURNS_OWNED static char* ContextStack_debugString(const struct ContextStack* _Nullable frame) {
+	if(frame == NULL) {
+		return NULL;
+	}
+	
+	char* head = VarNode_debugString(frame->vars);
+	char* tail = ContextStack_debugString(frame->next);
+	if(!tail) {
+		return head;
+	}
+	
+	char* joined = NULL;
+	asprintf(&joined, "%s\n    %s", head, tail);
+	destroy(head);
+	destroy(tail);
+	
+	return joined;
+}
+
+METHOD_debugString(Context) {
+	char* ret = NULL;
+	
+	char* globals = VarNode_debugString(self->globals);
+	char* locals = ContextStack_debugString(self->locals);
+	asprintf(&ret,
+		"Context {\n"
+		"  globals = %s\n"
+		"  locals = [\n"
+		"    %s\n"
+		"  ]\n"
+		"}",
+		globals ?: "(null)", locals ?: "(null)"
+	);
+	destroy(globals);
+	destroy(locals);
+	
+	return ret;
 }
 

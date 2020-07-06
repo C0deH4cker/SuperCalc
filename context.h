@@ -18,6 +18,8 @@ typedef struct Context Context;
 
 ASSUME_NONNULL_BEGIN
 
+DECL(Context);
+
 /* Constructor */
 RETURNS_OWNED Context* Context_new(void);
 
@@ -46,6 +48,8 @@ void Context_clear(UNOWNED Context* ctx);
 */
 RETURNS_UNOWNED Variable* _Nullable Context_get(const Context* ctx, const char* name);
 RETURNS_UNOWNED Variable* _Nullable Context_getAbove(const Context* ctx, const char* name);
+
+METHOD_debugString(Context);
 
 ASSUME_NONNULL_END
 

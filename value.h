@@ -74,6 +74,9 @@ struct Value {
 	};
 };
 
+
+DECL(Value);
+
 /* Default parser callback errors on '@' */
 extern parser_cb default_cb;
 
@@ -118,6 +121,8 @@ RETURNS_OWNED char* Value_wrap(const Value* val, bool top);
 RETURNS_OWNED char* Value_verbose(const Value* val, unsigned indent);
 RETURNS_OWNED char* Value_xml(const Value* val, unsigned indent);
 void Value_print(const Value* val, VERBOSITY v);
+
+METHOD_debugString(Value);
 
 ASSUME_NONNULL_END
 

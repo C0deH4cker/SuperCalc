@@ -24,8 +24,10 @@
 static char* argsToString(const Function* func);
 
 
+DEF(Function);
+
 Function* Function_new(unsigned argcount, char** argnames, Value* body) {
-	Function* ret = fmalloc(sizeof(*ret));
+	Function* ret = OBJECT_ALLOC(Function);
 	
 	ret->argcount = argcount;
 	ret->argnames = argnames;
@@ -46,8 +48,7 @@ void Function_free(Function* func) {
 	destroy(func->argnames);
 	
 	Value_free(func->body);
-	
-	destroy(func);
+	OBJECT_FREE(Function, func);
 }
 
 Function* Function_copy(const Function* func) {
@@ -360,3 +361,6 @@ char* Function_xml(const Function* func, unsigned indent) {
 	return ret;
 }
 
+METHOD_debugString(Function) {
+	return Function_repr(self, NULL, false);
+}

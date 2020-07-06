@@ -28,6 +28,8 @@ typedef struct Template Template;
 
 ASSUME_NONNULL_BEGIN
 
+DECL(Template);
+
 /* Create a template with placeholders given a format string */
 RETURNS_OWNED Template* Template_create(const char* fmt);
 
@@ -46,6 +48,8 @@ RETURNS_OWNED Value* Template_staticEval(Template* _Nullable * _Nonnull ptp, con
 
 /* Number of placeholders that must be filled */
 unsigned Template_placeholderCount(const Template* tp);
+
+METHOD_debugString(Template);
 
 ASSUME_NONNULL_END
 

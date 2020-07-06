@@ -27,8 +27,11 @@ static void SC_registerModules(SuperCalc* sc) {
 	register_vector(sc->ctx);
 }
 
+
+DEF(SuperCalc);
+
 SuperCalc* SuperCalc_new(void) {
-	SuperCalc* ret = fmalloc(sizeof(*ret));
+	SuperCalc* ret = OBJECT_ALLOC(SuperCalc);
 	
 	/* Create context */
 	ret->ctx = Context_new();
@@ -44,7 +47,7 @@ void SuperCalc_free(SuperCalc* sc) {
 	}
 	
 	Context_free(sc->ctx);
-	destroy(sc);
+	OBJECT_FREE(SuperCalc, sc);
 }
 
 void SuperCalc_run(SuperCalc* sc) {
@@ -203,4 +206,9 @@ Value* SuperCalc_runLine(SuperCalc* sc, char* code, VERBOSITY v) {
 	Statement_free(stmt);
 	
 	return result;
+}
+
+METHOD_debugString(SuperCalc) {
+	UNREFERENCED_PARAMETER(self);
+	return strdup("SuperCalc");
 }
