@@ -135,13 +135,19 @@ bool check_leaks(void);
 
 #include "error.h"
 
-static inline RETURNS_OWNED void* _Nonnull_unless(size == 0) fmalloc(size_t size) {
-	void* ret = calloc(1, size);
+
+static inline RETURNS_OWNED void* _Nonnull fcalloc(size_t count, size_t size) {
+	void* ret = calloc(count, size);
 	if(ret == NULL) {
-		if(size > 0) {
+		if(count > 0 && size > 0) {
 			allocError();
 		}
 		
+		/*
+		 * Requested a zero sized allocation and the allocator returned a NULL pointer, which is allowed
+		 * by the spec. We don't want this function to return a NULL pointer though, so instead request a
+		 * minimum sized allocation (will probably be rounded up to 16 bytes).
+		 */
 		ret = calloc(1, 1);
 		if(ret == NULL) {
 			allocError();
@@ -151,28 +157,35 @@ static inline RETURNS_OWNED void* _Nonnull_unless(size == 0) fmalloc(size_t size
 	return ret;
 }
 
-static inline RETURNS_OWNED void* _Nonnull_unless(count == 0 || size == 0) fcalloc(size_t count, size_t size) {
-	void* ret = calloc(count, size);
-	if(ret == NULL && count > 0 && size > 0) {
-		allocError();
-	}
-	return ret;
+static inline RETURNS_OWNED void* _Nonnull fmalloc(size_t size) {
+	/* Force fmalloc() to return a zero-initialized allocation by proxying to fcalloc() */
+	return fcalloc(1, size);
 }
 
-static inline RETURNS_OWNED void* _Nonnull_unless(size == 0) frealloc(CONSUMED void* _Nullable mem, size_t size) {
+static inline RETURNS_OWNED void* _Nonnull frealloc(CONSUMED void* _Nullable mem, size_t size) {
 	void* ret = realloc(mem, size);
-	if(ret == NULL && size > 0) {
-		allocError();
+	if(ret == NULL) {
+		if(size > 0) {
+			allocError();
+		}
+		
+		/*
+		 * If resizing to a zero-sized allocation and the allocator returned a NULL pointer,
+		 * instead return a pointer to a minimally sized allocation.
+		 */
+		ret = fmalloc(1);
 	}
 	return ret;
 }
 
 /* Version of free() annotated to consume the pointer argument */
+void free_owned(CONSUMED void* _Nullable ptr);
+
+/* Wrapper around free_destroy() that also sets the variable being freed to NULL */
 #define destroy(var) do { \
 	free_owned(var); \
 	var = CAST_NONNULL(NULL); \
 } while(0)
-void free_owned(CONSUMED void* _Nullable ptr);
 
 typedef enum {
 	V_NONE   = 0,
